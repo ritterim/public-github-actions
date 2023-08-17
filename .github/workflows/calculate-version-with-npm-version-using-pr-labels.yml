@@ -1,0 +1,241 @@
+name: Calculate NPM Version (PR Labels)
+
+# Calculates the version using 'npm version'.
+# We look at labels on the PR to determine how we want to bump.
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      always_increment_patch_version:
+        description: Do we always bump the patch value?  Even if there is no such label on the PR?
+        required: true
+        type: boolean
+
+      project_directory:
+        description: Location of the package.json file for the NPM package.
+        required: false
+        type: string
+        default: ./
+
+      package_filename:
+        description: Name of the 'package.json' file if not the default name.
+        required: false
+        type: string
+        default: package.json
+
+      version_suffix:
+        description: The version suffix (e.g. "-pr123" or "-alpha1342") for non-release builds.
+        required: false
+        type: string
+
+    outputs:
+
+      short_git_hash:
+        description: The first 8 digits of the full git hash.
+        value: ${{ jobs.version.outputs.short_git_hash }}
+
+      git_hash:
+        description: The full git hash.
+        value: ${{ jobs.version.outputs.git_hash }}
+
+      major_minor_version:
+        description: The major/minor version, e.g. "10.1".
+        value: ${{ jobs.version.outputs.major_minor_version }}
+
+      patch_version:
+        description: The value for the patch position in the version number.
+        value: ${{ jobs.version.outputs.patch_version }}
+
+      version:
+        description: The version number to be used in most cases.  Usually "10.1.2750" or "10.1.2750-SUFFIX".
+        value: ${{ jobs.version.outputs.version }}
+
+      informational_version:
+        description: The informational version number which includes additional information after a plus sign.  Usually followed by the git short hash, e.g. "10.1.2750+abcd1234".
+        value: ${{ jobs.version.outputs.informational_version }}
+
+      version_suffix:
+        description: The version suffix (e.g. "-pr123" or "-alpha1342") which was passed in.
+        value: ${{ jobs.version.outputs.version_suffix }}
+
+      version_incremented:
+        description:  Was the version incremented?  Returns 'true' if it was. Should this PR result in a publish after it is merged?
+        value: ${{ jobs.version.outputs.version_incremented }}
+
+env:
+  version_number_pattern: '[0-9]{1,5}\.[0-9]{1,5}\.[0-9]{1,5}'
+  major_minor_version_number_pattern: '^[0-9]{1,5}\.[0-9]{1,5}'
+  patch_version_number_pattern: '[0-9]{1,5}$'
+
+jobs:
+
+  version:
+    name: Calculate NPM Version
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.project_directory }}
+
+    env:
+      VERSION: 0.0.0
+      RAWVERSION: 0.0.0
+      MAJOR_MINOR_VERSION: 0.0
+      VERSION_SUFFIX: ${{ inputs.version_suffix }}
+      GH_SHA_CALC: 0000000000000000000000000000000000000000
+      GH_SHORT_SHA_CALC: 00000000
+      NPM_VERSION_COMMAND:
+      VERSION_INCREMENTED: false
+      PACKAGEFILENAME: ${{ inputs.package_filename }}
+      PROJECTDIRECTORY: ${{ inputs.project_directory }}
+
+    outputs:
+      short_git_hash: ${{ steps.set-outputs.outputs.short_git_hash }}
+      git_hash: ${{ steps.set-outputs.outputs.git_hash }}
+      major_minor_version: ${{ steps.set-outputs.outputs.major_minor_version }}
+      patch_version: ${{ steps.set-outputs.outputs.patch_version }}
+      version: ${{ steps.set-outputs.outputs.version }}
+      informational_version: ${{ steps.set-outputs.outputs.informational_version }}
+      version_suffix: ${{ steps.set-outputs.outputs.version_suffix }}
+      version_incremented: ${{ steps.set-outputs.outputs.version_incremented }}
+
+    steps:
+
+      - name: Validate inputs.package_filename
+        run: |
+          echo "${PACKAGEFILENAME}" | grep -E '^[A-Za-z0-9\-\.]{3,50}'
+
+      - name: Validate inputs.project_directory
+        run: |
+          echo "${PROJECTDIRECTORY}" | grep -E '^[A-Za-z0-9\-\.]{1,50}\/$'
+
+      - name: Checkout Project
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      - name: git ref debug information
+        run: |
+          echo "github.base_ref=${{ github.base_ref }}"
+          echo "github.head_ref=${{ github.head_ref }}"
+          echo "github.ref=${{ github.ref }}"
+
+      - name: Examine PR labels
+        env:
+          ALLLABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+        run: |
+          echo "$ALLLABELS"
+
+      # contains() throws errors if the label has spaces in it
+
+      - name: Should we bump the MAJOR version?
+        if: |
+          env.NPM_VERSION_COMMAND == '' &&
+          contains(github.event.pull_request.labels.*.name, '+semver:major')
+        run: |
+          echo "NPM_VERSION_COMMAND=major" >> $GITHUB_ENV
+          echo "VERSION_INCREMENTED=true" >> $GITHUB_ENV
+
+      - name: Should we bump the MINOR version?
+        if: |
+          env.NPM_VERSION_COMMAND == '' &&
+          contains(github.event.pull_request.labels.*.name, '+semver:minor')
+        run: |
+          echo "NPM_VERSION_COMMAND=minor" >> $GITHUB_ENV
+          echo "VERSION_INCREMENTED=true" >> $GITHUB_ENV
+
+      - name: Should we bump the PATCH version?
+        if: |
+          env.NPM_VERSION_COMMAND == '' &&
+          (
+            inputs.always_increment_patch_version == true ||
+            contains(github.event.pull_request.labels.*.name, '+semver:patch')
+          )
+        run: |
+          echo "NPM_VERSION_COMMAND=patch" >> $GITHUB_ENV
+          echo "VERSION_INCREMENTED=true" >> $GITHUB_ENV
+
+      - name: npm version config
+        run: |
+          npm config set allow-same-version=false
+          npm config set git-tag-version=false
+          npm config set preid=${{ env.VERSION_SUFFIX }}
+          npm config set sign-git-tag=false
+
+      - name: Check version in ${{ inputs.package_filename }} (BEFORE)
+        run: jq -r '.version' "$PACKAGEFILENAME"
+
+      # Note the use of '--ignore-scripts' here to prevent 'npm version' from running any scripts in the package.json
+      - name: npm version ${{ env.NPM_VERSION_COMMAND }}
+        if: ${{ env.NPM_VERSION_COMMAND != '' }}
+        run: |
+          npm version --ignore-scripts ${{ env.NPM_VERSION_COMMAND }}
+
+      - name: Check version in ${{ inputs.package_filename }} (AFTER)
+        run: jq -r '.version' "$PACKAGEFILENAME"
+
+      - name: Capture version in ${{ inputs.package_filename }} to PKGJSONVER
+        run: |
+          PKGJSONVER="$(jq -r '.version' "$PACKAGEFILENAME")"
+          echo "PKGJSONVER=$PKGJSONVER"
+          echo "PKGJSONVER=$PKGJSONVER" >> $GITHUB_ENV
+
+      - name: Capture RAWVERSION from PKGJSONVER
+        run: |
+          RAWVERSION=$(echo "$PKGJSONVER" | grep -o -E '${{ env.version_number_pattern }}')
+          echo RAWVERSION=$RAWVERSION
+          echo "RAWVERSION=$RAWVERSION" >> $GITHUB_ENV
+
+      - name: Capture MAJOR_MINOR_VERSION from RAWVERSION
+        run: |
+          MAJOR_MINOR_VERSION=$(echo "$RAWVERSION" | grep -o -E '${{ env.major_minor_version_number_pattern }}')
+          echo $MAJOR_MINOR_VERSION
+          echo "MAJOR_MINOR_VERSION=$MAJOR_MINOR_VERSION" >> $GITHUB_ENV
+
+      - name: Capture PATCH_VERSION from RAWVERSION
+        run: |
+          PATCH_VERSION=$(echo "$RAWVERSION" | grep -o -E '${{ env.patch_version_number_pattern }}')
+          echo $PATCH_VERSION
+          echo "PATCH_VERSION=$PATCH_VERSION" >> $GITHUB_ENV
+
+      - name: Calculate VERSION from RAWVERSION + VERSION_SUFFIX
+        id: calculations
+        run: |
+          VERSION=${RAWVERSION}${VERSION_SUFFIX}
+          echo VERSION=$VERSION
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Calculate git hashes
+        run: |
+          PULL_REQUEST_HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          GH_SHA_CALC="${PULL_REQUEST_HEAD_SHA:-${GITHUB_SHA:-ERROR}}"
+          echo "GH_SHA_CALC=$GH_SHA_CALC"
+          echo "GH_SHA_CALC=$GH_SHA_CALC" >> $GITHUB_ENV
+          GH_SHORT_SHA_CALC=$(echo $GH_SHA_CALC | cut -c1-8)
+          echo "GH_SHORT_SHA_CALC=$GH_SHORT_SHA_CALC"
+          echo "GH_SHORT_SHA_CALC=$GH_SHORT_SHA_CALC" >> $GITHUB_ENV
+
+      - name: Set outputs
+        id: set-outputs
+        run: |
+          echo "git_hash=${GH_SHA_CALC}" >> $GITHUB_OUTPUT
+          echo "short_git_hash=${GH_SHORT_SHA_CALC}" >> $GITHUB_OUTPUT
+          echo "version_suffix=${VERSION_SUFFIX}" >> $GITHUB_OUTPUT
+          echo "major_minor_version=${MAJOR_MINOR_VERSION}" >> $GITHUB_OUTPUT
+          echo "patch_version=$PATCH_VERSION" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "informational_version=$VERSION+${GH_SHORT_SHA_CALC}" >> $GITHUB_OUTPUT
+          echo "version_incremented=$VERSION_INCREMENTED" >> $GITHUB_OUTPUT
+
+      - name: Echo Output Variables
+        run: |
+          echo "informational_version=${{ steps.set-outputs.outputs.informational_version }}"
+          echo "major_minor_version=${{ steps.set-outputs.outputs.major_minor_version }}"
+          echo "patch_version=${{ steps.set-outputs.outputs.patch_version }}"
+          echo "version_suffix=${{ steps.set-outputs.outputs.version_suffix }}"
+          echo "version=${{ steps.set-outputs.outputs.version }}"
+          echo "git_hash=${{ steps.set-outputs.outputs.git_hash }}"
+          echo "short_git_hash=${{ steps.set-outputs.outputs.short_git_hash }}"
+          echo "version_incremented=${{ steps.set-outputs.outputs.version_incremented }}"
