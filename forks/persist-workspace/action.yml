@@ -4,38 +4,105 @@ author: bissolli
 branding:
   icon: 'box'  
   color: 'green'
+
 inputs:
+
   action:
+    default: persist
     required: false
+    type: choice
     options:
       - retrieve
       - persist
-  artifactName:
+
+  artifact_name:
+    default: 
     required: false
 
-    
+  retention_days:
+    type: number
+    default: 3
+    required: false
+    description: >
+      Duration after which artifact will expire in days. 0 means using default retention.
+
+      Default 3 days.
+      Minimum 1 day.
+      Maximum 90 days unless changed from the repository settings page.
+
+outputs:
+
+  artifact_name: 
+    description: Name of the artifact which contains the persisted workspace directory.
+    value: ${{ steps.set-outputs.outputs.artifact_name }}
+
+env:
+  ARTIFACTNAME: 
+  TGZFILENAME: workspace.tar.gz
+
 runs:
   using: "composite"
   steps:
-    - name: Create the workspace artifact
-      if: ${{ inputs.action != 'retrieve' }}
+
+    - name: Calculate ARTIFACTNAME
       shell: bash
-      run: tar -cf workspace.tar --exclude=workspace.tar .
+      env:
+        INPUTARTIFACTNAME: ${{ inputs.artifact_name }}
+      run: |
+        GITHUBRUNID=${{ github.run_id }}
+        ARTIFACTNAME=${INPUTARTIFACTNAME:-persisted-workspace-$GITHUBRUNID}
+        echo "ARTIFACTNAME=${ARTIFACTNAME}"
+        echo "ARTIFACTNAME=${ARTIFACTNAME}" >> $GITHUB_ENV
+
+    - name: Validate inputs.artifact_name
+      shell: bash
+      run: |
+        echo "${ARTIFACTNAME}" | grep -E '^[A-Za-z0-9\.-]{10,60}'
+
+    - name: Set TGZFILENAME from ARTIFACTNAME
+      shell: bash
+      run: |
+        echo TGZFILENAME="${ARTIFACTNAME}.tgz"
+        echo TGZFILENAME="${ARTIFACTNAME}.tgz" >> $GITHUB_ENV
+
+    - name: Create artifact folder
+      if: ${{ inputs.action == 'persist' }}
+      shell: bash
+      run: mkdir tmp-persisted-workspace
+
+    - name: Create the workspace artifact
+      if: ${{ inputs.action == 'persist' }}
+      shell: bash
+      run: |
+        tar -czf "tmp-persisted-workspace/${TGZFILENAME}" \
+          --exclude=.git \
+          --exclude=tmp-persisted-workspace \
+          .
+        ls -l tmp-persisted-workspace/
+
     - name: Upload the workspace artifact
       if: ${{ inputs.action == 'persist' }}
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ inputs.artifactName || 'persisted-artifact' }}
-        path: workspace.tar
+        name: ${{ env.ARTIFACTNAME }}
+        path: tmp-persisted-workspace/${{ env.TGZFILENAME }}
+        retention-days: ${{ inputs.retention_days }}
         if-no-files-found: error
+
+    - name: Set output variables
+      id: set-outputs
+      shell: bash
+      run: |
+        echo "artifact_name=${ARTIFACTNAME}"
+        echo "artifact_name=${ARTIFACTNAME}" >> $GITHUB_OUTPUT
+
     - name: Retrieve workspace
       if: ${{ inputs.action == 'retrieve' }}
       uses: actions/download-artifact@v3
       with:
-        name: ${{ inputs.artifactName || 'persisted-artifact' }}
+        name: ${{ env.ARTIFACTNAME }}
+
     - name: Extract workspace
       if: ${{ inputs.action == 'retrieve' }}
       shell: bash
-      run: |
-        ls -lah
-        tar -xf workspace.tar
+      run: tar -xzf "${TGZFILENAME}"
