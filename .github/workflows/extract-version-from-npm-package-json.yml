@@ -1,0 +1,162 @@
+name: Extract NPM Package Version
+
+# Extracts the version from the package.json file and use it.
+# Version numbers in the package.json like "1.2.3-suffix" should work.  Probably.
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      project_directory:
+        description: Location of the package.json file for the NPM package.
+        required: false
+        type: string
+        default: ./
+
+      package_filename:
+        description: Name of the 'package.json' file if not the default name.
+        required: false
+        type: string
+        default: package.json
+
+    outputs:
+
+      short_git_hash:
+        description: The first 8 digits of the full git hash.
+        value: ${{ jobs.version.outputs.short_git_hash }}
+
+      git_hash:
+        description: The full git hash.
+        value: ${{ jobs.version.outputs.git_hash }}
+
+      major_minor_version:
+        description: The major/minor version, e.g. "10.1".
+        value: ${{ jobs.version.outputs.major_minor_version }}
+
+      patch_version:
+        description: The value for the patch position in the version number.
+        value: ${{ jobs.version.outputs.patch_version }}
+
+      version:
+        description: The version number to be used in most cases.  Usually "10.1.2750" or "10.1.2750-SUFFIX".
+        value: ${{ jobs.version.outputs.version }}
+
+      informational_version:
+        description: The informational version number which includes additional information after a plus sign.  Usually followed by the git short hash, e.g. "10.1.2750+abcd1234".
+        value: ${{ jobs.version.outputs.informational_version }}
+
+      version_suffix:
+        description: The version suffix (e.g. "-pr123" or "-alpha1342") which was passed in.
+        value: ${{ jobs.version.outputs.version_suffix }}
+
+env:
+  major_minor_patch_version_number_pattern: '^[0-9]{1,5}\.[0-9]{1,5}\.[0-9]{1,5}'
+  major_minor_version_number_pattern: '^[0-9]{1,5}\.[0-9]{1,5}'
+  patch_version_number_pattern: '[0-9]{1,5}$'
+  version_suffix_pattern: '\-[a-zA-Z0-9\.\-]{1,20}$'
+
+jobs:
+
+  version:
+    name: Version from package.json
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.project_directory }}
+
+    env:
+      PACKAGEFILENAME: ${{ inputs.package_filename }}
+      PROJECTDIRECTORY: ${{ inputs.project_directory }}
+      VERSION: 0.0.0
+      RAWVERSION: 0.0.0
+      MAJOR_MINOR_VERSION: 0.0
+      VERSION_SUFFIX:
+      GH_SHA_CALC: 0000000000000000000000000000000000000000
+      GH_SHORT_SHA_CALC: 00000000
+
+    outputs:
+      short_git_hash: ${{ steps.set-outputs.outputs.short_git_hash }}
+      git_hash: ${{ steps.set-outputs.outputs.git_hash }}
+      major_minor_version: ${{ steps.set-outputs.outputs.major_minor_version }}
+      patch_version: ${{ steps.set-outputs.outputs.patch_version }}
+      version: ${{ steps.set-outputs.outputs.version }}
+      informational_version: ${{ steps.set-outputs.outputs.informational_version }}
+      version_suffix: ${{ steps.set-outputs.outputs.version_suffix }}
+
+    steps:
+
+      - name: Validate inputs.package_filename
+        run: |
+          echo "${PACKAGEFILENAME}" | grep -E '^[A-Za-z0-9\-\.]{3,50}'
+
+      - name: Validate inputs.project_directory
+        run: |
+          echo "${PROJECTDIRECTORY}" | grep -E '^[A-Za-z0-9\-\.]{1,50}\/$'
+
+      - name: Checkout Project
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Capture VERSION from ${{ inputs.package_filename }}
+        run: |
+          VERSION=$(cat "$PACKAGEFILENAME" | jq '.version' | tr -d '"')
+          echo "VERSION=$VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Capture VERSION_SUFFIX from VERSION
+        run: |
+          VERSION_SUFFIX=$(echo "$VERSION" | grep -o -E '${{ env.version_suffix_pattern }}' || exit 0)
+          echo VERSION_SUFFIX=$VERSION_SUFFIX
+          echo "VERSION_SUFFIX=$VERSION_SUFFIX" >> $GITHUB_ENV
+
+      - name: Capture MAJOR_MINOR_PATCH_VERSION from VERSION
+        run: |
+          MAJOR_MINOR_PATCH_VERSION=$(echo "$VERSION" | grep -o -E '${{ env.major_minor_patch_version_number_pattern }}')
+          echo MAJOR_MINOR_PATCH_VERSION=$MAJOR_MINOR_PATCH_VERSION
+          echo "MAJOR_MINOR_PATCH_VERSION=$MAJOR_MINOR_PATCH_VERSION" >> $GITHUB_ENV
+
+      - name: Capture MAJOR_MINOR_VERSION from MAJOR_MINOR_PATCH_VERSION
+        run: |
+          MAJOR_MINOR_VERSION=$(echo "$MAJOR_MINOR_PATCH_VERSION" | grep -o -E '${{ env.major_minor_version_number_pattern }}')
+          echo $MAJOR_MINOR_VERSION
+          echo "MAJOR_MINOR_VERSION=$MAJOR_MINOR_VERSION" >> $GITHUB_ENV
+
+      - name: Capture PATCH_VERSION from MAJOR_MINOR_PATCH_VERSION
+        run: |
+          PATCH_VERSION=$(echo "$MAJOR_MINOR_PATCH_VERSION" | grep -o -E '${{ env.patch_version_number_pattern }}')
+          echo $PATCH_VERSION
+          echo "PATCH_VERSION=$PATCH_VERSION" >> $GITHUB_ENV
+
+      - name: Calculate git hashes
+        run: |
+          PULL_REQUEST_HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          GH_SHA_CALC="${PULL_REQUEST_HEAD_SHA:-${GITHUB_SHA:-ERROR}}"
+          echo "GH_SHA_CALC=$GH_SHA_CALC"
+          echo "GH_SHA_CALC=$GH_SHA_CALC" >> $GITHUB_ENV
+          GH_SHORT_SHA_CALC=$(echo $GH_SHA_CALC | cut -c1-8)
+          echo "GH_SHORT_SHA_CALC=$GH_SHORT_SHA_CALC"
+          echo "GH_SHORT_SHA_CALC=$GH_SHORT_SHA_CALC" >> $GITHUB_ENV
+
+      - name: Set outputs
+        id: set-outputs
+        run: |
+          echo "git_hash=$GH_SHA_CALC" >> $GITHUB_OUTPUT
+          echo "short_git_hash=$GH_SHORT_SHA_CALC" >> $GITHUB_OUTPUT
+          echo "version_suffix=$VERSION_SUFFIX" >> $GITHUB_OUTPUT
+          echo "major_minor_version=$MAJOR_MINOR_VERSION" >> $GITHUB_OUTPUT
+          echo "patch_version=$PATCH_VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "informational_version=$VERSION+$GH_SHORT_SHA_CALC" >> $GITHUB_OUTPUT
+
+      - name: Echo Version Variables
+        run: |
+          echo "informational_version=${{ steps.set-outputs.outputs.informational_version }}"
+          echo "major_minor_version=${{ steps.set-outputs.outputs.major_minor_version }}"
+          echo "patch_version=${{ steps.set-outputs.outputs.patch_version }}"
+          echo "version_suffix=${{ steps.set-outputs.outputs.version_suffix }}"
+          echo "version=${{ steps.set-outputs.outputs.version }}"
+          echo "git_hash=${{ steps.set-outputs.outputs.git_hash }}"
+          echo "short_git_hash=${{ steps.set-outputs.outputs.short_git_hash }}"
