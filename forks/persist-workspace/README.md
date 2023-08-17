@@ -1,7 +1,8 @@
-# gh-action-persist-workspace
+# persist-workspace
 
-This action will help you to persist your workspace from job to job on your workflow!
-With that you will be able to split your jobs and parallelize them without the need to re-do that basic steps needed for all the jobs.
+This action will help you to persist your workspace from job to job on your workflow! With that you will be able to split your jobs and parallelize them without the need to re-do that basic steps needed for all the jobs.
+
+NOTE: The '.git' folder is excluded from the tarball because the '.git/config' file can contain sensistive information.
 
 ## Usage
 
@@ -23,7 +24,7 @@ jobs:
       - uses: actions/setup-node@v3
       - name: Install dependencies
         run: npm install
-      - uses: bissolli/gh-action-persist-workspace@v1
+      - uses: ritterim/forks/persist-workspace@v1
         with:
           action: persist
 ```
@@ -44,7 +45,7 @@ jobs:
       - uses: actions/setup-node@v3
       - name: Install dependencies
         run: npm install
-      - uses: bissolli/gh-action-persist-workspace@v1
+      - uses: ritterim/forks/persist-workspace@v1
         with:
           action: persist
 
@@ -53,9 +54,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-node@v3
-      - uses: chatfood/gh-action-persist-workspace@master
+      - uses: ritterim/forks/persist-workspace@v1
         with:
           action: retrieve
+          artifact_name: ${{ needs.init.outputs.artifact_name }}
       - name: Build the project
         run: npm run build
 ```
@@ -77,7 +79,7 @@ jobs:
       - uses: actions/setup-node@v3
       - name: Install dependencies
         run: npm install
-      - uses: bissolli/gh-action-persist-workspace@v1
+      - uses: ritterim/forks/persist-workspace@v1
         with:
           action: persist
 
@@ -86,9 +88,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-node@v3
-      - uses: bissolli/gh-action-persist-workspace@v1
+      - uses: ritterim/forks/persist-workspace@v1
         with:
           action: retrieve
+          artifact_name: ${{ needs.init.outputs.artifact_name }}
       - name: Run unit tests
         run: npm run test
 
@@ -97,9 +100,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-node@v3
-      - uses: bissolli/gh-action-persist-workspace@v1
+      - uses: ritterim/forks/persist-workspace@v1
         with:
           action: retrieve
+          artifact_name: ${{ needs.init.outputs.artifact_name }}
       - name: Build the project
         run: npm run build
 ```
@@ -109,4 +113,5 @@ jobs:
 | Input | Type | Default | Description |
 | --- | --- | --- | --- |
 | action | `persist` or `retrieve` | `persist` | Whether you would like to persist or retrieve the workspace. |
-| artifactName | `string` | persisted-artifact | Name of the generated artifact |
+| artifact_name | `string` | persisted-artifact | Name of the generated artifact. |
+| retention_days | `number` | 3 | Number of days to keep the artifact. |
