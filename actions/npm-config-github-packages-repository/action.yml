@@ -1,0 +1,53 @@
+name: npm-config-github-packages-repository
+description: Configure the '.npmrc' file correctly to authenticate to GitHub Packages.
+author: ritterim
+branding:
+  icon: 'download-cloud'  
+  color: 'gray-dark'
+
+# https://dev.to/github/the-githubtoken-in-github-actions-how-it-works-change-permissions-customizations-3cgp
+
+inputs:
+
+  github_token:
+    description: A GitHub Token that can be used to access the GitHub Packages repository.
+    type: string
+    required: true
+
+  npm_scope:
+    description: The NPM 'scope' value to use.  Default is 'ritterim' as it needs to match the GitHub organization value.
+    type: string
+    required: false
+    default: ritterim
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - name: Validate inputs.npm_scope
+      shell: bash
+      env: 
+        NPMSCOPE: ${{ inputs.npm_scope }}
+      run: |
+        echo "${NPMSCOPE}" | grep -E '^[a-z0-9\.-]{5,60}$'
+
+    - name: Validate inputs.github_token
+      shell: bash
+      env: 
+        GHTOKEN: ${{ inputs.github_token }}
+      run: |
+        echo "${GHTOKEN}" | grep -E '^(gh[pousr]_[A-Za-z0-9_]{36,251}|github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59}|v[0-9]\.[0-9a-f]{40})$'
+
+    - name: Verify current NPM config
+      shell: bash
+      run: npm config list
+
+    - name: Configure .npmrc GitHub Packages registry
+      shell: bash
+      env:
+        GHTOKEN: ${{ inputs.github_token }}
+        NPMSCOPE: ${{ inputs.npm_scope }}
+      run: |
+        npm config set "@${NPMSCOPE}:registry=https://npm.pkg.github.com"
+        npm config set "//npm.pkg.github.com/:_authToken=${GHTOKEN}"

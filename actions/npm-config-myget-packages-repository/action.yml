@@ -1,0 +1,51 @@
+name: npm-config-myget-packages-repository
+description: Configure the '.npmrc' file correctly to authenticate to MyGet.
+author: ritterim
+branding:
+  icon: 'download-cloud'  
+  color: 'gray-dark'
+
+inputs:
+
+  myget_api_key:
+    description: The secret API key needed in order to access the MyGet API.  These are formatted as GUIDs.
+    type: string
+    required: true
+
+  npm_scope:
+    description: The NPM 'scope' value to use.  Default is 'ritterim'.
+    type: string
+    required: false
+    default: ritterim
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - name: Validate inputs.npm_scope
+      shell: bash
+      env: 
+        NPMSCOPE: ${{ inputs.npm_scope }}
+      run: |
+        echo "${NPMSCOPE}" | grep -E '^[a-z0-9\.-]{5,60}$'
+
+    - name: Validate inputs.myget_api_key
+      shell: bash
+      env: 
+        MYGETAPIKEY: ${{ inputs.myget_api_key }}
+      run: |
+        echo "${MYGETAPIKEY}" | grep -E '^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$'
+
+    - name: Verify current NPM config
+      shell: bash
+      run: npm config list
+
+    - name: Configure .npmrc MyGet registry
+      shell: bash
+      env:
+        MYGETAPIKEY: ${{ inputs.myget_api_key }}
+        NPMSCOPE: ${{ inputs.npm_scope }}
+      run: |
+        npm config set "@${NPMSCOPE}:registry=https://ritterim.myget.org/F/npm/npm/"
+        npm config set "//ritterim.myget.org/F/npm/npm/:_authToken=${MYGETAPIKEY}"
