@@ -7,43 +7,51 @@ import isBase64 from "is-base64";
 import { fetchInstallationToken } from "./fetch-installation-token.js";
 
 try {
-  const appId = getInput("app_id", { required: true });
+    const appId = getInput("app_id", { required: true });
 
-  const installationIdInput = getInput("installation_id");
-  const installationId = installationIdInput
-    ? Number(installationIdInput)
-    : undefined;
+    const installationIdInput = getInput("installation_id");
+    const installationId = installationIdInput
+        ? Number(installationIdInput)
+        : undefined;
 
-  const permissionsInput = getInput("permissions");
-  const permissions = permissionsInput
-    ? (JSON.parse(permissionsInput) as Record<string, string>)
-    : undefined;
+    const permissionsInput = getInput("permissions");
+    const permissions = permissionsInput
+        ? (JSON.parse(permissionsInput) as Record<string, string>)
+        : undefined;
+    
+    info(`Parsed permissions=${JSON.stringify(permissions)}`);
 
-  const privateKeyInput = getInput("private_key", { required: true });
-  const privateKey = isBase64(privateKeyInput)
-    ? Buffer.from(privateKeyInput, "base64").toString("utf8")
-    : privateKeyInput;
+    const privateKeyInput = getInput("private_key", { required: true });
+    const privateKey = isBase64(privateKeyInput)
+        ? Buffer.from(privateKeyInput, "base64").toString("utf8")
+        : privateKeyInput;
 
-  const repositoryInput = getInput("repository", { required: true });
-  const [owner, repo] = repositoryInput.split("/");
+    const repositoryInput = getInput("repository", { required: true });
+    const [owner, repo] = repositoryInput.split("/");
 
-  const githubApiUrlInput = getInput("github_api_url", { required: true });
-  const githubApiUrl = new URL(githubApiUrlInput);
+    const githubApiUrlInput = getInput("github_api_url", { required: true });
+    const githubApiUrl = new URL(githubApiUrlInput);
 
-  const installationToken = await fetchInstallationToken({
-    appId,
-    githubApiUrl,
-    installationId,
-    owner,
-    permissions,
-    privateKey,
-    repo,
-  });
+    const installationToken = await fetchInstallationToken({
+        appId,
+        githubApiUrl,
+        installationId,
+        owner,
+        permissions,
+        privateKey,
+        repo,
+    });
 
-  setSecret(installationToken);
-  setOutput("token", installationToken);
-  info("Token generated successfully!");
+    setSecret(installationToken.token);
+    setOutput("token", installationToken.token);
+
+    info("Token generated successfully!");
+    info(`Expires at: ${installationToken.expires_at}`);
+    info(`Repositories: ${JSON.stringify(installationToken.repositories)}`);
+    info(`Permissions: ${JSON.stringify(installationToken.permissions)}`);
+    info(`Installation ID: ${installationToken.installationId}`);
+
 } catch (_error: unknown) {
-  const error = ensureError(_error);
-  setFailed(error);
+    const error = ensureError(_error);
+    setFailed(error);
 }

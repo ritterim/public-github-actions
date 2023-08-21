@@ -1,5 +1,14 @@
 # GitHub App Token
 
+The current code is based on [v1.8.0](https://github.com/tibdex/github-app-token/tree/releases/v1.8.0) of `tibdex/github-app-token`.  Additions have been made in order to make debugging of GitHub workflows easier when using this action.
+
+- [GitHub App Token](#github-app-token)
+- [Notes](#notes)
+- [Example Workflow](#example-workflow)
+- [References](#references)
+
+# Notes
+
 This [JavaScript GitHub Action](https://help.github.com/en/actions/building-actions/about-actions#javascript-actions) can be used to impersonate a GitHub App when `secrets.GITHUB_TOKEN`'s limitations are too restrictive and a personal access token is not suitable.
 
 For instance, from [GitHub Actions' docs](https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow):
@@ -47,4 +56,8 @@ jobs:
           echo "The generated token is masked: ${TOKEN}"
 ```
 
-[Another use case for this action can (or could) be found in GitHub's own docs](https://web.archive.org/web/20230115194214/https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/automating-projects-using-actions#example-workflow-authenticating-with-a-github-app).
+# References
+
+- [tibdex/github-app-token](https://github.com/tibdex/github-app-token) -- MIT license
+- [jnwng/github-app-installation-token-action](https://github.com/jnwng/github-app-installation-token-action) -- MIT license
+- [Create a JavaScript Action using TypeScript](https://github.com/actions/typescript-action)

@@ -1,5 +1,5 @@
 name: GitHub App token
-author: Thibault Derousseaux <tibdex@gmail.com>
+author: RIMdev <RIMdev@RitterIM.com>
 description: Run a GitHub Action as a GitHub App instead of using secrets.GITHUB_TOKEN or a personal access token.
 inputs:
   app_id:
@@ -22,8 +22,8 @@ outputs:
   token:
     description: An installation token for the GitHub App on the requested repository.
 runs:
-  using: node16
-  main: dist/index.js
+  using: 'node16'
+  main: 'dist/index.js'
 branding:
   icon: unlock
   color: gray-dark
