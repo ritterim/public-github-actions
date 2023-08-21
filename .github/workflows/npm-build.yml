@@ -1,0 +1,100 @@
+name: Build (NPM)
+
+permissions:
+  contents: read
+  packages: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      node_version:
+        description: The node version to install such as '18.x'.  It is best to stick to LTS releases of nodejs to avoid slow build times.
+        required: false
+        type: string
+        default: '18.x'
+
+      package_lock_filename:
+        description: Name of the 'package-lock.json' file if not the default name.
+        required: false
+        type: string
+        default: package-lock.json
+
+      project_directory:
+        description: Location of the package.json file for the NPM package.
+        required: false
+        type: string
+        default: ./
+
+    outputs:
+
+      persisted_workspace_artifact_name:
+        description: Name of the artifact which contains the persisted workspace directory.
+        value: ${{ jobs.build.outputs.persisted_workspace_artifact_name }}
+
+      project_directory:
+        value: ${{ inputs.project_directory }}
+
+jobs:
+
+  build:
+    name: Build (NPM)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+          working-directory: ${{ inputs.project_directory }}
+
+    outputs:
+      persisted_workspace_artifact_name: ${{ steps.persist-workspace.outputs.artifact_name }}
+
+    env:
+      PACKAGELOCKFILENAME: ${{ inputs.package_lock_filename }}
+      PROJECTDIRECTORY: ${{ inputs.project_directory }}
+
+    steps:
+
+      - name: Validate inputs.package_lock_filename
+        run: |
+          echo "${PACKAGELOCKFILENAME}" | grep -E '^[A-Za-z0-9\-\.]{3,50}'
+
+      - name: Validate inputs.project_directory
+        run: |
+          echo "${PROJECTDIRECTORY}" | grep -E '^[A-Za-z0-9\-\.]{1,50}\/$'
+
+      - name: git ref debug information
+        run: |
+          echo "github.base_ref=${{ github.base_ref }}"
+          echo "github.head_ref=${{ github.head_ref }}"
+          echo "github.ref=${{ github.ref }}"
+
+      - name: Checkout Project
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      # See this for why setup-node can be slow: https://github.com/actions/setup-node/issues/726#issuecomment-1527198808
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: 'npm'
+          cache-dependency-path: ${{ inputs.project_directory }}/${{ inputs.package_lock_filename }}
+
+      - run: git rev-parse --verify HEAD
+
+      - name: npm-config-github-packages-repository
+        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@e6927c38dd221d33d66c39a18c8d8304cebf48e0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - run: ls -la
+
+      - name: Persist Workspace
+        id: persist-workspace
+        uses: ritterim/public-github-actions/forks/persist-workspace@115bd1ac3852475dd11d04f8ea3422bed04d5391

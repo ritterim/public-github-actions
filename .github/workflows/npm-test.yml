@@ -1,0 +1,61 @@
+name: Test (NPM)
+
+permissions:
+  contents: read
+  packages: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      persisted_workspace_artifact_name:
+        description: Name of the artifact which contains the persisted workspace directory.
+        required: false
+        type: string
+        default:
+
+      project_directory:
+        description: Location of the package.json file for the NPM package.
+        required: false
+        type: string
+        default: ./
+
+      run_tests:
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+
+  test:
+    name: Test (NPM)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+          working-directory: ${{ inputs.project_directory }}
+
+    env:
+      PROJECTDIRECTORY: ${{ inputs.project_directory }}
+
+    steps:
+
+      - name: Validate inputs.project_directory
+        run: |
+          echo "${PROJECTDIRECTORY}" | grep -E '^[A-Za-z0-9\-\.]{1,50}\/$'
+
+      - name: Bypass Tests
+        if: inputs.run_tests != true
+        run: echo "The 'inputs.run_tests' value is FALSE, skipping tests!"
+
+      - name: Restore Workspace
+        uses: ritterim/public-github-actions/forks/persist-workspace@115bd1ac3852475dd11d04f8ea3422bed04d5391
+        if: inputs.run_tests == true
+        with:
+          action: retrieve
+          artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
+
+      - name: npm run test
+        if: inputs.run_tests == true
+        run: npm run test

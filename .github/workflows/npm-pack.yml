@@ -1,0 +1,150 @@
+name: Pack (NPM)
+
+permissions:
+  contents: read
+  packages: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      npm_scope:
+        description: The NPM 'scope' value to use.  Default is 'ritterim' as it needs to match the GitHub organization value.
+        type: string
+        required: false
+        default: ritterim
+
+      npm_package_name:
+        description: The package name such as 'content-search-component' or 'submissions-form'.
+        required: true
+        type: string
+
+      persisted_workspace_artifact_name:
+        description: Name of the artifact which contains the persisted workspace directory.
+        required: false
+        type: string
+        default:
+
+      project_directory:
+        description: Location of the package.json file for the NPM package.
+        required: false
+        type: string
+        default: ./
+
+      package_filename:
+        description: Name of the 'package.json' file if not the default name.
+        required: false
+        type: string
+        default: package.json
+
+      version:
+        required: true
+        type: string
+
+    outputs:
+
+      artifact_name:
+        value: ${{ jobs.pack.outputs.artifact_name }}
+
+      artifact_file_path:
+        value: ${{ jobs.pack.outputs.artifact_file_path }}
+
+jobs:
+
+  pack:
+    name: Pack (NPM)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+          working-directory: ${{ inputs.project_directory }}
+
+    outputs:
+      artifact_name: ${{ steps.set-outputs.outputs.artifact_name }}
+      artifact_file_path: ${{ steps.set-outputs.outputs.artifact_file_path }}
+
+    env:
+      NPMPACKAGENAME: ${{ inputs.npm_package_name }}
+      NPMSCOPE: ${{ inputs.npm_scope }}
+      NPMVERSION: ${{ inputs.version }}
+      PACKAGEFILENAME: ${{ inputs.package_filename }}
+      PKGJSONVER: 0.0.0
+      PROJECTDIRECTORY: ${{ inputs.project_directory }}
+
+    steps:
+
+      - name: Validate inputs.npm_scope
+        run: |
+          echo "${NPMSCOPE}" | grep -E '^[a-z0-9\-]{5,25}$'
+
+      - name: Validate inputs.npm_package_name
+        run: |
+          echo "${NPMPACKAGENAME}" | grep -E '^[a-z0-9\-]{5,40}'
+
+      - name: Validate inputs.package_filename
+        run: |
+          echo "${PACKAGEFILENAME}" | grep -E '^[A-Za-z0-9\-\.]{3,50}'
+
+      - name: Validate inputs.project_directory
+        run: |
+          echo "${PROJECTDIRECTORY}" | grep -E '^[A-Za-z0-9\-\.]{1,50}\/$'
+
+      - name: Validate inputs.version
+        run: |
+          echo "${NPMVERSION}" | grep -E '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9A-Za-z-][0-9A-Za-z-]*)(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
+
+      - name: Restore Workspace
+        uses: ritterim/public-github-actions/forks/persist-workspace@115bd1ac3852475dd11d04f8ea3422bed04d5391
+        with:
+          action: retrieve
+          artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
+
+      - name: Verify package name in ${{ inputs.package_filename }}
+        run: |
+          NPMJSONPACKAGENAME=$(jq -r '.name' "${PACKAGEFILENAME}")
+          echo "NPMJSONPACKAGENAME=${NPMJSONPACKAGENAME}"
+          echo "${NPMJSONPACKAGENAME}" | grep "@${NPMSCOPE}/${NPMPACKAGENAME}"
+
+      - name: Check version in ${{ inputs.package_filename }}
+        run: jq -r '.version' "${PACKAGEFILENAME}"
+
+      - name: npm version config
+        run: |
+          npm config set allow-same-version=true
+          npm config set git-tag-version=false
+          npm config set sign-git-tag=false
+
+      # Note the use of '--ignore-scripts' here to prevent 'npm version' from running any scripts in the package.json
+      - run: npm version --ignore-scripts "${NPMVERSION}"
+
+      - name: Check version in ${{ inputs.package_filename }}
+        run: |
+          PKGJSONVER="$(jq -r '.version' "${PACKAGEFILENAME}")"
+          echo "PKGJSONVER=$PKGJSONVER"
+          echo "PKGJSONVER=$PKGJSONVER" >> $GITHUB_ENV
+
+      - run: ls -la
+
+      - name: npm pack
+        run: npm pack
+
+      - run: ls -la
+
+      - name: Set Outputs
+        id: set-outputs
+        run: |
+          ARTIFACTNAME="${NPMSCOPE}-${NPMPACKAGENAME}-${PKGJSONVER}"
+          echo "artifact_name=${ARTIFACTNAME}"
+          echo "artifact_name=${ARTIFACTNAME}" >> $GITHUB_OUTPUT
+          ARTIFACTFILEPATH="${NPMSCOPE}-${NPMPACKAGENAME}-${PKGJSONVER}.tgz"
+          echo "artifact_file_path=${ARTIFACTFILEPATH}"
+          echo "artifact_file_path=${ARTIFACTFILEPATH}" >> $GITHUB_OUTPUT
+
+      - name: Upload Artifact
+        id: upload-artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.set-outputs.outputs.artifact_name }}
+          path: ${{ steps.set-outputs.outputs.artifact_file_path }}
+          if-no-files-found: error
