@@ -56,7 +56,7 @@ jobs:
 
       - name: Generate GH Token from GH App
         id: generate_token
-        uses: ritterim/public-github-actions/forks/github-app-token@2bfff72c2fa2c4d7cb799c71bad870b2873565f9
+        uses: ritterim/public-github-actions/forks/github-app-token@96c9af2848265111ee717cf84afcb8409d8cd5a9
         with:
           app_id: ${{ inputs.gh_app_id }}
           private_key: ${{ secrets.gh_app_private_key }}
