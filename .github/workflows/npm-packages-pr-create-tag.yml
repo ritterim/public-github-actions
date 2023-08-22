@@ -92,8 +92,8 @@ jobs:
       gh_app_private_key: ${{ secrets.gh_app_private_key }}
 
   npm-create-release-tag:
-    #uses: ritterim/github-actions/.github/workflows/npm-create-version-tag@v1.2023.803
-    uses: ./.github/workflows/npm-create-version-tag.yml
+    uses: ritterim/public-github-actions/.github/workflows/npm-create-version-tag.yml@3e774408666f7442b14885efce9e9025f066567c
+    #uses: ./.github/workflows/npm-create-version-tag.yml
     needs: [ generate-token, version ]
     if: |
       needs.version.outputs.version_incremented == 'true'
