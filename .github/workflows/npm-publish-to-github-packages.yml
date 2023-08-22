@@ -1,0 +1,52 @@
+name: GitHub Packages Publish (NPM)
+
+permissions:
+  contents: read
+  id-token: write
+  packages: write
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      artifact_name:
+        description: The GitHub artifact name which contains the '*.tgz' file produced earlier.  The assumption is that the file is ready for publishing.
+        required: true
+        type: string
+
+      project_directory:
+        description: Location of the package.json or package .tgz file.
+        required: false
+        type: string
+        default: ./
+
+jobs:
+
+  publish:
+    name: GitHub Packages Publish (NPM)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+          working-directory: ${{ inputs.project_directory }}
+
+    env:
+      ARTIFACTNAME: ${{ inputs.artifact_name }}
+
+    steps:
+
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.artifact_name }}
+
+      - name: npm-config-github-packages-repository
+        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@43b3029a81bafd1fd7d3c5e46091a8b8c7469d2b
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - run: ls -la
+
+      - name: Publish NPM Package File to GitHub Packages
+        run: npm publish "${ARTIFACTNAME}.tgz"

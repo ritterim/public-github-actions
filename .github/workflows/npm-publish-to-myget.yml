@@ -1,0 +1,57 @@
+name: MyGet Publish (NPM)
+
+permissions:
+  contents: read
+  id-token: write
+  packages: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      artifact_name:
+        description: The GitHub artifact name which contains the '*.tgz' file produced earlier.  The assumption is that the file is ready for publishing.
+        required: true
+        type: string
+
+      project_directory:
+        description: Location of the package.json or package .tgz file.
+        required: false
+        type: string
+        default: ./
+
+    secrets:
+
+      myget_api_key:
+        description: Please pass in the 'secrets.MYGET_DEPLOY_API_KEY_SECRET' value.
+        required: true
+
+jobs:
+
+  publish:
+    name: MyGet Publish (NPM)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+          working-directory: ${{ inputs.project_directory }}
+    env:
+      ARTIFACTNAME: ${{ inputs.artifact_name }}
+
+    steps:
+
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.artifact_name }}
+
+      - name: npm-config-myget-packages-repository
+        uses: ritterim/public-github-actions/actions/npm-config-myget-packages-repository@43b3029a81bafd1fd7d3c5e46091a8b8c7469d2b
+        with:
+          myget_api_key: ${{ secrets.myget_api_key }}
+
+      - run: ls -la
+
+      - name: Publish NPM Package File to MyGet
+        run: npm publish "${ARTIFACTNAME}.tgz"
