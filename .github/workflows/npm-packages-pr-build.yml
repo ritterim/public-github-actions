@@ -1,0 +1,90 @@
+name: NPM Package PR Build
+
+permissions:
+  contents: read
+  packages: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      always_increment_patch_version:
+        description: Do we always bump the patch value?  Even if there is no such label on the PR?
+        required: true
+        type: boolean
+
+      node_version:
+        required: false
+        type: string
+        default: '18.x'
+
+      npm_package_name:
+        required: true
+        type: string
+
+      package_filename:
+        description: Name of the 'package.json' file if not the default name.
+        required: false
+        type: string
+        default: package.json
+
+      project_directory:
+        description: Location of the package.json file for the NPM package.
+        required: false
+        type: string
+        default: ./
+
+      run_tests:
+        required: false
+        type: boolean
+        default: true
+
+    outputs:
+
+      artifact_name:
+        value: ${{ jobs.npm-pack.outputs.artifact_name }}
+
+      artifact_file_path:
+        value: ${{ jobs.npm-pack.outputs.artifact_file_path }}
+
+      version:
+        value: ${{ jobs.version.outputs.version }}
+
+jobs:
+
+  version:
+    uses: ritterim/public-github-actions/.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml@384aec4638e797a402db892c9382b5ad440f5811
+    #uses: ./.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml
+    with:
+      always_increment_patch_version: ${{ inputs.always_increment_patch_version }}
+      package_filename: ${{ inputs.package_filename }}
+      project_directory: ${{ inputs.project_directory }}
+      version_suffix: "-pr${{ github.event.number }}.${{ github.run_number }}"
+
+  npm-build:
+    uses: ritterim/public-github-actions/.github/workflows/npm-build.yml@2e0bccefaac35e990f13765abb37830d4ae41ccd
+    #uses: ./.github/workflows/npm-build.yml
+    with:
+      node_version: ${{ inputs.node_version }}
+      project_directory: ${{ inputs.project_directory }}
+
+  npm-test:
+    uses: ritterim/public-github-actions/.github/workflows/npm-test.yml@2e0bccefaac35e990f13765abb37830d4ae41ccd
+    #uses: ./.github/workflows/npm-test.yml
+    needs: [ npm-build ]
+    with:
+      persisted_workspace_artifact_name: ${{ needs.npm-build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.npm-build.outputs.project_directory }}
+      run_tests: ${{ inputs.run_tests }}
+
+  npm-pack:
+    uses: ritterim/public-github-actions/.github/workflows/npm-pack.yml@2e0bccefaac35e990f13765abb37830d4ae41ccd
+    #uses: ./.github/workflows/npm-pack.yml
+    needs: [ npm-build, npm-test, version ]
+    with:
+      npm_package_name: ${{ inputs.npm_package_name }}
+      persisted_workspace_artifact_name: ${{ needs.npm-build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.npm-build.outputs.project_directory }}
+      version: ${{ needs.version.outputs.version }}

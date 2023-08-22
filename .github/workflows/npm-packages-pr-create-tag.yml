@@ -1,0 +1,107 @@
+name: NPM Package PR Tag
+
+# Runs 'npm version' to create a commit and tag in the repo.
+
+permissions:
+  contents: read # later on we use a GH App to generate the token needed to push (and bypass a Ruleset that protects the default branch)
+  id-token: write
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      always_increment_patch_version:
+        description: Do we always bump the patch value?  Even if there is no such label on the PR?
+        required: true
+        type: boolean
+
+      gh_app_id:
+        description: The GitHub Application ID.
+        type: string
+        required: true
+
+      node_version:
+        required: false
+        type: string
+        default: '18.x'
+
+      npm_package_name:
+        required: true
+        type: string
+
+      package_filename:
+        description: Name of the 'package.json' file if not the default name.
+        required: false
+        type: string
+        default: package.json
+
+      project_directory:
+        description: Location of the package.json file for the NPM package.
+        required: false
+        type: string
+        default: ./
+
+      run_tests:
+        required: false
+        type: boolean
+        default: true
+
+      title:
+        description: Title for the commit.
+        required: false
+        type: string
+        default: Release
+
+    secrets:
+
+      gh_actions_secret_passing_passphrase:
+        description: The random password (usually secrets.ACTIONS_SECRET_PASSING_PASSPHRASE) used to encrypt values to be passed between job steps.
+        required: true
+
+      gh_app_private_key:
+        description: The private secret generated after creation of the GitHub Application.  It is generated in the "Private keys" section of the settings page for the application.
+        required: true
+
+jobs:
+
+  version:
+    uses: ritterim/public-github-actions/.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml@384aec4638e797a402db892c9382b5ad440f5811
+    #uses: ./.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml
+    with:
+      always_increment_patch_version: ${{ inputs.always_increment_patch_version }}
+      package_filename: ${{ inputs.package_filename }}
+      project_directory: ${{ inputs.project_directory }}
+
+# TODO: This spot will be good for adding enhanced security checks
+# because this workflow will have access to secrets.
+
+  # If the version was incremented, we should create a new annotated tag.
+
+  generate-token:
+    uses: ritterim/public-github-actions/.github/workflows/generate-github-token-from-github-app.yml@be109fab5ac2ca0938a67a4601e3e5d7900292f7
+    #uses: ./.github/workflows/generate-github-token-from-github-app.yml
+    needs: [ version ]
+    if: |
+      needs.version.outputs.version_incremented == 'true'
+    with:
+      gh_app_id: ${{ inputs.gh_app_id }}
+    secrets:
+      gh_actions_secret_passing_passphrase: ${{ secrets.gh_actions_secret_passing_passphrase }}
+      gh_app_private_key: ${{ secrets.gh_app_private_key }}
+
+  npm-create-release-tag:
+    #uses: ritterim/github-actions/.github/workflows/npm-create-version-tag@v1.2023.803
+    uses: ./.github/workflows/npm-create-version-tag.yml
+    needs: [ generate-token, version ]
+    if: |
+      needs.version.outputs.version_incremented == 'true'
+    secrets:
+      gh_actions_secret_passing_passphrase: ${{ secrets.gh_actions_secret_passing_passphrase }}
+      gh_encrypted_token: ${{ needs.generate-token.outputs.gh_encrypted_token }}
+    with:
+      npm_package_name: ${{ inputs.npm_package_name }}
+      project_directory: ${{ inputs.project_directory }}
+      head_commit_message: ${{ github.event.workflow_run.head_commit.message }}
+      version: ${{ needs.version.outputs.version }}
