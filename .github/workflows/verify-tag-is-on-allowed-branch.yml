@@ -1,0 +1,189 @@
+name: Verify Tag on Allowed Branch
+
+# Given a list of branch names, verifies that the tag exists on one or more
+# of those branch names.  This helps guard against someone pushing a tag
+# to another branch on the repo in cases where you can't restrict who can
+# push tags.  Or you just want to guard against someone pushing a version
+# tag to the wrong branch.
+
+permissions:
+  contents: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      allowed_branches:
+        description: A list of branches on which the tag is allowed to appear.
+        required: true
+        type: string
+
+      ref:
+        required: false
+        type: string
+        default: ${{ github.ref }}
+
+      tag_name:
+        required: false
+        type: string
+        default: ${{ github.ref_name }}
+
+jobs:
+
+  verify:
+    runs-on: ubuntu-latest
+
+    env:
+      GH_REF: ${{ inputs.ref }}
+      GH_TAG_NAME: ${{ inputs.tag_name }}
+      GH_REF_TYPE: ${{ github.ref_type }}
+      ALLOWEDBRANCHESINPUT: ${{ inputs.allowed_branches }}
+      ALLOWEDBRANCHES:
+
+    steps:
+
+      - name: git ref debug information
+        run: |
+          echo "github.base_ref=${{ github.base_ref }}"
+          echo "github.head_ref=${{ github.head_ref }}"
+          echo "github.ref=${{ github.ref }}"
+          echo "github.ref_name=${{ github.ref_name }}"
+          echo "github.ref_protected=${{ github.ref_protected }}"
+          echo "github.ref_type=${{ github.ref_type }}"
+
+      - run: env | sort
+
+      - name: Look at github.event object
+        env:
+          EVENTOBJECT: ${{ toJSON(github.event) }}
+        run: echo "github.event=\n$EVENTOBJECT"
+
+      - name: Validate github.ref_type equals 'tag'
+        run: |
+          echo "${GH_REF_TYPE}" | grep -E '^tag$'
+
+      - name: Validate inputs.ref looks like a tag
+        run: |
+          echo "${GH_REF}" | grep -E '^refs/tags/'
+
+      - name: Validate inputs.tag_name
+        run: |
+          echo "${GH_TAG_NAME}" | grep -E '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9A-Za-z-][0-9A-Za-z-]*)(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
+
+      - name: Create ALLOWEDBRANCHES array
+        run: |
+          readarray -t ALLOWEDBRANCHES <<< $(echo "$ALLOWEDBRANCHESINPUT")
+
+          echo "ALLOWEDBRANCHES={"
+          printf '  [%s]\n' "${ALLOWEDBRANCHES[@]}"
+          echo "}"
+
+          echo "Trim leading/trailing whitespace from array elements."
+          shopt -s extglob
+          ALLOWEDBRANCHES=( "${ALLOWEDBRANCHES[@]/#+([[:blank:]])/}" )
+          ALLOWEDBRANCHES=( "${ALLOWEDBRANCHES[@]/%+([[:blank:]])/}" )
+
+          echo "ALLOWEDBRANCHES={"
+          printf '  [%s]\n' "${ALLOWEDBRANCHES[@]}"
+          echo "}"
+
+          echo "Test each element against a grep pattern for validity."
+          for branch in "${ALLOWEDBRANCHES[@]}"
+          do
+            echo "  Validate [$branch]"
+            echo "$branch" | grep -E '^[A-Za-z0-9\.-]{3,50}$' > /dev/null
+          done
+
+          echo "ALLOWEDBRANCHES=${ALLOWEDBRANCHES[@]}" >> $GITHUB_ENV
+
+      - name: Print ALLOWEDBRANCHES as bash array
+        run: |
+          echo "ALLOWEDBRANCHES={"
+          printf '  [%s]\n' "${ALLOWEDBRANCHES[@]}"
+          echo "}"
+
+          echo "Convert ALLOWEDBRANCHES back to an array."
+          ALLOWEDBRANCHES=( $ALLOWEDBRANCHES )
+
+          echo "ALLOWEDBRANCHES={"
+          printf '  [%s]\n' "${ALLOWEDBRANCHES[@]}"
+          echo "}"
+
+      - name: Checkout Project
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.ref }}
+
+      - run: git remote -v
+
+      - name: Verify that 'origin' exists as a remote.
+        # We're making assumptions later that the list of branches will look
+        # like 'remotes/origin/XYZ' (where XYZ is the branch name).
+        run: git remote | grep '^origin$'
+
+      - name: Fetch branches and tags
+        # By default, a detached head doesn't know about the origin's branches and tags.
+        run: git fetch --all --tags
+
+      - run: git show --name-status --format=short --no-notes "$GH_TAG_NAME"
+
+      - run: git branch --all --contains "$GH_TAG_NAME"
+
+      - run: git log -1 --format='%D' "$GH_TAG_NAME"
+
+      - name: Search branches for '${{ env.GH_TAG_NAME }}' in allowed branches.
+        run: |
+          readarray -t TAGGEDBRANCHES <<< $(git branch --all --contains "$GH_TAG_NAME")
+
+          echo "TAGGEDBRANCHES={"
+          printf '  [%s]\n' "${TAGGEDBRANCHES[@]}"
+          echo "}"
+
+          echo "Trim leading/trailing whitespace from array elements."
+          shopt -s extglob
+          TAGGEDBRANCHES=( "${TAGGEDBRANCHES[@]/#+([[:blank:]])/}" )
+          TAGGEDBRANCHES=( "${TAGGEDBRANCHES[@]/%+([[:blank:]])/}" )
+
+          echo "TAGGEDBRANCHES={"
+          printf '  [%s]\n' "${TAGGEDBRANCHES[@]}"
+          echo "}"
+
+          echo "Drop branch entries that do not match the pattern."
+          echo "The branch name must be 'remotes/origin/XYZ' where 'XYZ' is the simple branch name."
+          IFS=$'\n' readarray -t TAGGEDBRANCHES < <(printf "%s\n" ${TAGGEDBRANCHES[@]} | grep -E '^remotes/origin/[A-Za-z0-9\.-]{3,50}$')
+
+          echo "TAGGEDBRANCHES={"
+          printf '  [%s]\n' "${TAGGEDBRANCHES[@]}"
+          echo "}"
+
+          ALLOWEDBRANCHES=( $ALLOWEDBRANCHES )
+          #ALLOWEDBRANCHES=("${ALLOWEDBRANCHES[@]/#/\/}")
+          echo "ALLOWEDBRANCHES={"
+          printf '  [%s]\n' "${ALLOWEDBRANCHES[@]}"
+          echo "}"
+
+          echo "Check tagged branches against allowed branches."
+
+          FOUNDCOUNT=0
+          for branch in "${ALLOWEDBRANCHES[@]}"
+          do
+            echo "  Check agaisnt [$branch]"
+            if [[ "${TAGGEDBRANCHES[@]}" =~ "remotes/origin/$branch" ]]
+            then
+              echo "    Value [$branch] found!"
+              let "FOUNDCOUNT=FOUNDCOUNT+1"
+            else
+              echo "    Value [$branch] not found."
+            fi
+          done
+          echo "FOUNDCOUNT=$FOUNDCOUNT"
+
+          if (( FOUNDCOUNT < 1 ));
+          then
+            echo "The tag $GH_TAG_NAME does not exist on any of the allowed branches!"
+            exit 1
+          else
+            echo "The tag $GH_TAG_NAME was found on $FOUNDCOUNT of the allowed branches!"
+          fi
