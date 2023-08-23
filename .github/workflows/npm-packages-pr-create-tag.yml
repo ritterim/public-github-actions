@@ -1,10 +1,11 @@
 name: NPM Package PR Tag
 
-# Runs 'npm version' to create a commit and tag in the repo.
+# Runs 'npm version' to create a commit and tag in the repo after running a fresh build.
 
 permissions:
   contents: read # later on we use a GH App to generate the token needed to push (and bypass a Ruleset that protects the default branch)
   id-token: write
+  packages: read
 
 on:
 
@@ -66,6 +67,16 @@ on:
 
 jobs:
 
+  # debug:
+  #   if: true
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - run: env | sort
+  #     - name: Look at github.event object
+  #       env:
+  #         EVENTOBJECT: ${{ toJSON(github.event) }}
+  #       run: echo "EVENTOBJECT=$EVENTOBJECT"
+
   version:
     uses: ritterim/public-github-actions/.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml@384aec4638e797a402db892c9382b5ad440f5811
     #uses: ./.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml
@@ -74,15 +85,41 @@ jobs:
       package_filename: ${{ inputs.package_filename }}
       project_directory: ${{ inputs.project_directory }}
 
-# TODO: This spot will be good for adding enhanced security checks
-# because this workflow will have access to secrets.
+  npm-build:
+    uses: ritterim/public-github-actions/.github/workflows/npm-build.yml@2e0bccefaac35e990f13765abb37830d4ae41ccd
+    #uses: ./.github/workflows/npm-build.yml
+    with:
+      node_version: ${{ inputs.node_version }}
+      project_directory: ${{ inputs.project_directory }}
+
+  # TODO: This spot will be good for adding enhanced security checks
+  # because this workflow will have access to secrets.
+
+  npm-test:
+    uses: ritterim/public-github-actions/.github/workflows/npm-test.yml@2e0bccefaac35e990f13765abb37830d4ae41ccd
+    #uses: ./.github/workflows/npm-test.yml
+    needs: [ npm-build ]
+    with:
+      persisted_workspace_artifact_name: ${{ needs.npm-build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.npm-build.outputs.project_directory }}
+      run_tests: ${{ inputs.run_tests }}
+
+  npm-pack:
+    uses: ritterim/public-github-actions/.github/workflows/npm-pack.yml@2e0bccefaac35e990f13765abb37830d4ae41ccd
+    #uses: ./.github/workflows/npm-pack.yml
+    needs: [ npm-build, npm-test, version ]
+    with:
+      npm_package_name: ${{ inputs.npm_package_name }}
+      persisted_workspace_artifact_name: ${{ needs.npm-build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.npm-build.outputs.project_directory }}
+      version: ${{ needs.version.outputs.version }}
 
   # If the version was incremented, we should create a new annotated tag.
 
   generate-token:
     uses: ritterim/public-github-actions/.github/workflows/generate-github-token-from-github-app.yml@be109fab5ac2ca0938a67a4601e3e5d7900292f7
     #uses: ./.github/workflows/generate-github-token-from-github-app.yml
-    needs: [ version ]
+    needs: [ version, npm-pack ]
     if: |
       needs.version.outputs.version_incremented == 'true'
     with:
@@ -103,5 +140,5 @@ jobs:
     with:
       npm_package_name: ${{ inputs.npm_package_name }}
       project_directory: ${{ inputs.project_directory }}
-      head_commit_message: ${{ github.event.workflow_run.head_commit.message }}
+      head_commit_message: ${{ github.event.pull_request.title }}
       version: ${{ needs.version.outputs.version }}
