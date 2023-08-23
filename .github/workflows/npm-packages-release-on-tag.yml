@@ -1,0 +1,130 @@
+name: NPM Package Release
+
+# Builds and releases the NPM package.  The version number is pulled
+# from the package.json file (or the file specified by inputs.package_filename).
+
+# This is designed to be fired when a tag is pushed to the repo which matches the pattern.
+# The checkout command looks like:
+#   /usr/bin/git checkout --progress --force refs/tags/v2.4.24
+# Which puts us into a "detached HEAD" status.
+# The remote is named 'origin' and points at the main GitHub repo.
+
+permissions:
+  contents: read
+  id-token: write
+  packages: write
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      allowed_branches:
+        description: A list of branches on which the tag is allowed to appear.
+        required: true
+        type: string
+
+      node_version:
+        required: false
+        type: string
+        default: '18.x'
+
+      npm_package_name:
+        required: true
+        type: string
+
+      package_filename:
+        description: Name of the 'package.json' file if not the default name.
+        required: false
+        type: string
+        default: package.json
+
+      project_directory:
+        description: Location of the package.json file for the NPM package.
+        required: false
+        type: string
+        default: ./
+
+      publish_to_github:
+        description: Whether the artifact should be published to the GitHub Package registry.
+        required: false
+        type: boolean
+        default: true
+
+      publish_to_myget:
+        description: Whether the artifact should be published to the MyGet Package registry.
+        required: false
+        type: boolean
+        default: true
+
+      run_tests:
+        required: false
+        type: boolean
+        default: true
+
+    secrets:
+
+      myget_api_key:
+        description: Please pass in the 'secrets.MYGET_DEPLOY_API_KEY_SECRET' value.
+        required: true
+
+jobs:
+
+  verify-tag-branch:
+    uses: ritterim/public-github-actions/.github/workflows/verify-tag-is-on-allowed-branch.yml@718f146701b20c62bed849fb5b1566a2136db2f7
+    #uses: ./.github/workflows/verify-tag-is-on-allowed-branch.yml
+    with:
+      allowed_branches: ${{ inputs.allowed_branches }}
+
+  version:
+    uses: ritterim/public-github-actions/.github/workflows/extract-version-from-npm-package-json.yml@43b3029a81bafd1fd7d3c5e46091a8b8c7469d2b
+    #uses: ./.github/workflows/extract-version-from-npm-package-json.yml
+    needs: [ verify-tag-branch ]
+    with:
+      package_filename: ${{ inputs.package_filename }}
+      project_directory: ${{ inputs.project_directory }}
+
+  npm-build:
+    uses: ritterim/public-github-actions/.github/workflows/npm-build.yml@43b3029a81bafd1fd7d3c5e46091a8b8c7469d2b
+    #uses: ./.github/workflows/npm-build.yml
+    with:
+      node_version: ${{ inputs.node_version }}
+      project_directory: ${{ inputs.project_directory }}
+
+  npm-test:
+    uses: ritterim/public-github-actions/.github/workflows/npm-test.yml@43b3029a81bafd1fd7d3c5e46091a8b8c7469d2b
+    #uses: ./.github/workflows/npm-test.yml
+    needs: [ npm-build ]
+    with:
+      persisted_workspace_artifact_name: ${{ needs.npm-build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.npm-build.outputs.project_directory }}
+      run_tests: ${{ inputs.run_tests }}
+
+  npm-pack:
+    uses: ritterim/public-github-actions/.github/workflows/npm-pack.yml@43b3029a81bafd1fd7d3c5e46091a8b8c7469d2b
+    #uses: ./.github/workflows/npm-pack.yml
+    needs: [ npm-build, npm-test, version ]
+    with:
+      npm_package_name: ${{ inputs.npm_package_name }}
+      persisted_workspace_artifact_name: ${{ needs.npm-build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.npm-build.outputs.project_directory }}
+      version: ${{ needs.version.outputs.version }}
+
+  npm-publish-to-github-packages:
+    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-github-packages.yml@44936a13581a34ab93a2617cd8c146731a72890a
+    #uses: ./.github/workflows/npm-publish-to-github-packages.yml
+    if: inputs.publish_to_github == true
+    needs: [ npm-pack ]
+    with:
+      artifact_name: ${{ needs.npm-pack.outputs.artifact_name }}
+
+  npm-publish-to-myget:
+    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-myget.yml@44936a13581a34ab93a2617cd8c146731a72890a
+    #uses: ./.github/workflows/npm-publish-to-myget.yml
+    needs: [ npm-pack ]
+    if: inputs.publish_to_myget == true
+    secrets:
+      myget_api_key: ${{ secrets.myget_api_key }}
+    with:
+      artifact_name: ${{ needs.npm-pack.outputs.artifact_name }}
