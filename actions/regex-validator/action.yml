@@ -1,0 +1,28 @@
+name: Regex Validator
+author: RIMdev <RIMdev@RitterIM.com>
+description: Validates Input Based on Regex Passed in
+inputs:
+  value:
+    description: The value (string) to be checked against the regex pattern.
+    required: false
+    default:
+  regex_pattern:
+    description: The regex pattern to match against.  Uses the TypeScript/JavaScript RegExp.test() function.
+    required: true
+  required:
+    description: Whether the value must not be a null or empty string.  Set this to false if you want to allow empty/null strings.
+    required: false
+    default: true
+  error_if_not_valid:
+    description: By default the action will cause an error if the input is not valid.  Set this to true to disable that behavior.
+    required: false
+    default: true
+outputs:
+  matched:
+    description: 'Return if the input value if valid'
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
+branding:
+  icon: check-square
+  color: blue
