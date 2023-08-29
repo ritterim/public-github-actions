@@ -1,0 +1,23 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "types": ["node", "jest"],
+    "useDefineForClassFields": true,
+    "module": "node16",
+    "lib": ["ES2022"],
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "moduleResolution": "Node16",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "**/*.test.ts"]
+}
