@@ -1,0 +1,32 @@
+name: path-name-validator
+description: Validate that the path name value matches a regex pattern. The regex pattern for this validator is strict. Length of 1-70 characters. Only alphanumeric, dashes, periods, and plus-signs allowed. No spaces or other special characters allowed. The value must end in a forward slash ('/').
+author: RIMdev <RIMdev@RitterIM.com>
+branding:
+  icon: 'check-square'  
+  color: 'blue'
+
+inputs:
+
+  path_name:
+    required: true
+
+  required:
+    required: false
+    default: true
+
+  error_if_not_valid:
+    required: false
+    default: true
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - name: Validate
+      uses: ritterim/public-github-actions/actions/regex-validator@v1.1.0
+      with:
+        value: ${{ inputs.path_name }}
+        regex_pattern: '^[A-Za-z0-9\.\+\/-]{1,70}\/$'
+        required: ${{ inputs.required }}
+        error_if_not_valid: ${{ inputs.error_if_not_valid }}
