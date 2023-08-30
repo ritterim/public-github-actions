@@ -1,7 +1,10 @@
 name: Calculate NPM Version (PR Labels)
 
-# Calculates the version using 'npm version'.
-# We look at labels on the PR to determine how we want to bump.
+# Calculate the version by starting with an NPM package.json file and then 
+# looking at labels applied to the pull request (PR).  Once the version is 
+# calculated this workflow returns ouput variables that can be used in 
+# later jobs.  There is support for package.json files that are named 
+# otherwise or do not exist at the root of the repository.
 
 on:
 

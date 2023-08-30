@@ -3,6 +3,8 @@ name: NPM Package Release
 # Builds and releases the NPM package.  The version number is pulled
 # from the package.json file (or the file specified by inputs.package_filename).
 
+# Tags which are not created on the correct branch will result in workflow failure.
+
 # This is designed to be fired when a tag is pushed to the repo which matches the pattern.
 # The checkout command looks like:
 #   /usr/bin/git checkout --progress --force refs/tags/v2.4.24
@@ -88,6 +90,7 @@ jobs:
   npm-build:
     uses: ritterim/public-github-actions/.github/workflows/npm-build.yml@43b3029a81bafd1fd7d3c5e46091a8b8c7469d2b
     #uses: ./.github/workflows/npm-build.yml
+    needs: [ verify-tag-branch ]
     with:
       node_version: ${{ inputs.node_version }}
       project_directory: ${{ inputs.project_directory }}

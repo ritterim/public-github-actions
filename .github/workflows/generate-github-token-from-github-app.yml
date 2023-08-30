@@ -1,7 +1,18 @@
 name: Generate GitHub Token from GitHub App
 
-# Notes:
-# - As late as Aug 2023, GitHub App tokens can NOT be used to access GitHub Packages.
+# Generates a GITHUB_TOKEN from a GitHub Application registered for the 
+# organization.  The list of requested permissions can be customized.
+#
+# Notes: 
+# 
+# - Because of how GitHub takes efforts to protect GitHub Tokens from being 
+# passed between jobs, we have to encrypt/obfuscate the token.  Doing this 
+# in a separate job is still useful because it limits exposure of the GitHub 
+# App's private key to just this job runner.  The other job steps which 
+# consume the token have no way to request a higher level set of permissions.
+# 
+# - As late as Aug 2023, GitHub App tokens can NOT be used to access 
+# GitHub Packages.
 
 permissions:
   id-token: write

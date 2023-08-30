@@ -1,5 +1,7 @@
 name: NPM Package PR Build
 
+# Designed to be called when a PR is opened against a branch in the repository.  This operates with a read-only GitHub Token for safety.
+
 permissions:
   contents: read
   packages: read

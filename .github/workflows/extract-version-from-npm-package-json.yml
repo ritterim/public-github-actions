@@ -1,7 +1,9 @@
 name: Extract NPM Package Version
 
-# Extracts the version from the package.json file and use it.
-# Version numbers in the package.json like "1.2.3-suffix" should work.  Probably.
+# Extract the version from the NPM package.json file.  Once the version 
+# is extracted this workflow returns ouput variables that can be used in 
+# later jobs.  There is support for package.json files that are named 
+# otherwise or do not exist at the root of the repository.
 
 on:
 

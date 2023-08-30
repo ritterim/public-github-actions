@@ -1,5 +1,18 @@
 name: Build (NPM)
 
+# Execute '`npm run build`' against the package.json file.  There is 
+# support for package.json files that are named otherwise or do not exist 
+# at the root of the repository.  This workflow *only* runs the build script.
+# 
+# At the end of the job, it bundles up the entire workspace into a `.tgz` 
+# file for use in later jobs.  This reduces the amount of time needed to 
+# run tests, security scans, or the 'npm pack' command later on.
+#
+# The disadvantage of separate jobs is cost.  You are billed a minimum of 
+# one minute of runtime for every job in a workflow.  But the advantage is 
+# the ability to perform job steps in parallel (such as tests) and process 
+# isolation.
+
 permissions:
   contents: read
   packages: read
