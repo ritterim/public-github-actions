@@ -49,8 +49,9 @@ jobs:
     steps:
 
       - name: Validate inputs.project_directory
-        run: |
-          echo "${PROJECTDIRECTORY}" | grep -E '^[A-Za-z0-9\-\.]{1,50}\/$'
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.1.1
+        with:
+          path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: Bypass Tests
         if: inputs.run_tests != true
