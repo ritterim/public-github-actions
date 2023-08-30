@@ -20,6 +20,10 @@ Because this repo contains multiple GitHub actions and reusable workflow files, 
 
 Breaking changes will be mentioned in the [BREAKING_CHANGES.md](BREAKING_CHANGES.md) file.  Breaking changes should be rare, but there are no guarantees.
 
+You can use the 'git' command line to look at changes for a specific path / file.
+
+    git diff refs/tags/v1.0.0 refs/tags/v1.1.1 -- .github/workflows/
+
 # Reusable Workflows
 
 Reusable GitHub Actions workflows. See [ReusableWorkflows.md](ReusableWorkflows.md) for the list and documentation.
