@@ -17,7 +17,7 @@ on:
         type: string
         default: ./
 
-      package_filename:
+      package_json_filename:
         description: Name of the 'package.json' file if not the default name.
         required: false
         type: string
@@ -69,7 +69,7 @@ jobs:
         working-directory: ${{ inputs.project_directory }}
 
     env:
-      PACKAGEFILENAME: ${{ inputs.package_filename }}
+      PACKAGEJSONFILENAME: ${{ inputs.package_json_filename }}
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
       VERSION: 0.0.0
       RAWVERSION: 0.0.0
@@ -89,9 +89,9 @@ jobs:
 
     steps:
 
-      - name: Validate inputs.package_filename
+      - name: Validate inputs.package_json_filename
         run: |
-          echo "${PACKAGEFILENAME}" | grep -E '^[A-Za-z0-9\-\.]{3,50}'
+          echo "${PACKAGEJSONFILENAME}" | grep -E '^[A-Za-z0-9\-\.]{3,50}'
 
       - name: Validate inputs.project_directory
         run: |
@@ -102,9 +102,9 @@ jobs:
         with:
           ref: ${{ github.ref }}
 
-      - name: Capture VERSION from ${{ inputs.package_filename }}
+      - name: Capture VERSION from ${{ inputs.package_json_filename }}
         run: |
-          VERSION=$(cat "$PACKAGEFILENAME" | jq '.version' | tr -d '"')
+          VERSION=$(cat "$PACKAGEJSONFILENAME" | jq '.version' | tr -d '"')
           echo "VERSION=$VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 

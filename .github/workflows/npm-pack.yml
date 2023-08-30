@@ -41,7 +41,7 @@ on:
         type: string
         default: ./
 
-      package_filename:
+      package_json_filename:
         description: Name of the 'package.json' file if not the default name.
         required: false
         type: string
@@ -76,7 +76,7 @@ jobs:
       NPMPACKAGENAME: ${{ inputs.npm_package_name }}
       NPMSCOPE: ${{ inputs.npm_scope }}
       NPMVERSION: ${{ inputs.version }}
-      PACKAGEFILENAME: ${{ inputs.package_filename }}
+      PACKAGEJSONFILENAME: ${{ inputs.package_json_filename }}
       PKGJSONVER: 0.0.0
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
 
@@ -90,9 +90,9 @@ jobs:
         run: |
           echo "${NPMPACKAGENAME}" | grep -E '^[a-z0-9\-]{5,40}'
 
-      - name: Validate inputs.package_filename
+      - name: Validate inputs.package_json_filename
         run: |
-          echo "${PACKAGEFILENAME}" | grep -E '^[A-Za-z0-9\-\.]{3,50}'
+          echo "${PACKAGEJSONFILENAME}" | grep -E '^[A-Za-z0-9\-\.]{3,50}'
 
       - name: Validate inputs.project_directory
         run: |
@@ -108,14 +108,14 @@ jobs:
           action: retrieve
           artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
 
-      - name: Verify package name in ${{ inputs.package_filename }}
+      - name: Verify package name in ${{ inputs.package_json_filename }}
         run: |
-          NPMJSONPACKAGENAME=$(jq -r '.name' "${PACKAGEFILENAME}")
+          NPMJSONPACKAGENAME=$(jq -r '.name' "${PACKAGEJSONFILENAME}")
           echo "NPMJSONPACKAGENAME=${NPMJSONPACKAGENAME}"
           echo "${NPMJSONPACKAGENAME}" | grep "@${NPMSCOPE}/${NPMPACKAGENAME}"
 
-      - name: Check version in ${{ inputs.package_filename }}
-        run: jq -r '.version' "${PACKAGEFILENAME}"
+      - name: Check version in ${{ inputs.package_json_filename }}
+        run: jq -r '.version' "${PACKAGEJSONFILENAME}"
 
       - name: npm version config
         run: |
@@ -126,9 +126,9 @@ jobs:
       # Note the use of '--ignore-scripts' here to prevent 'npm version' from running any scripts in the package.json
       - run: npm version --ignore-scripts "${NPMVERSION}"
 
-      - name: Check version in ${{ inputs.package_filename }}
+      - name: Check version in ${{ inputs.package_json_filename }}
         run: |
-          PKGJSONVER="$(jq -r '.version' "${PACKAGEFILENAME}")"
+          PKGJSONVER="$(jq -r '.version' "${PACKAGEJSONFILENAME}")"
           echo "PKGJSONVER=$PKGJSONVER"
           echo "PKGJSONVER=$PKGJSONVER" >> $GITHUB_ENV
 

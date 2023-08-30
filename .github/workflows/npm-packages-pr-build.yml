@@ -26,7 +26,7 @@ on:
         required: true
         type: string
 
-      package_filename:
+      package_json_filename:
         description: Name of the 'package.json' file if not the default name.
         required: false
         type: string
@@ -57,23 +57,23 @@ on:
 jobs:
 
   version:
-    uses: ritterim/public-github-actions/.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml@384aec4638e797a402db892c9382b5ad440f5811
+    uses: ritterim/public-github-actions/.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml@v1.2.0
     #uses: ./.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml
     with:
       always_increment_patch_version: ${{ inputs.always_increment_patch_version }}
-      package_filename: ${{ inputs.package_filename }}
+      package_json_filename: ${{ inputs.package_json_filename }}
       project_directory: ${{ inputs.project_directory }}
       version_suffix: "-pr${{ github.event.number }}.${{ github.run_number }}"
 
   npm-build:
-    uses: ritterim/public-github-actions/.github/workflows/npm-build.yml@2e0bccefaac35e990f13765abb37830d4ae41ccd
+    uses: ritterim/public-github-actions/.github/workflows/npm-build.yml@v1.2.0
     #uses: ./.github/workflows/npm-build.yml
     with:
       node_version: ${{ inputs.node_version }}
       project_directory: ${{ inputs.project_directory }}
 
   npm-test:
-    uses: ritterim/public-github-actions/.github/workflows/npm-test.yml@2e0bccefaac35e990f13765abb37830d4ae41ccd
+    uses: ritterim/public-github-actions/.github/workflows/npm-test.yml@v1.2.0
     #uses: ./.github/workflows/npm-test.yml
     needs: [ npm-build ]
     with:
@@ -82,7 +82,7 @@ jobs:
       run_tests: ${{ inputs.run_tests }}
 
   npm-pack:
-    uses: ritterim/public-github-actions/.github/workflows/npm-pack.yml@2e0bccefaac35e990f13765abb37830d4ae41ccd
+    uses: ritterim/public-github-actions/.github/workflows/npm-pack.yml@v1.2.0
     #uses: ./.github/workflows/npm-pack.yml
     needs: [ npm-build, npm-test, version ]
     with:
