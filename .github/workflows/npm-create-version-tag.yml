@@ -36,7 +36,7 @@ on:
         required: true
         type: string
 
-      package_filename:
+      package_json_filename:
         description: Name of the 'package.json' file if not the default name.
         required: false
         type: string
@@ -80,7 +80,7 @@ jobs:
       NPMPACKAGENAME: ${{ inputs.npm_package_name }}
       NPMVERSION: ${{ inputs.version }}
       NPMSCOPE: ${{ inputs.npm_scope }}
-      PACKAGEFILENAME: ${{ inputs.package_filename }}
+      PACKAGEJSONFILENAME: ${{ inputs.package_json_filename }}
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
       PKGJSONVER: '0.0.0'
 
@@ -94,9 +94,9 @@ jobs:
         run: |
           echo "${NPMPACKAGENAME}" | grep -E '^[a-z0-9\-]{5,40}'
 
-      - name: Validate inputs.package_filename
+      - name: Validate inputs.package_json_filename
         run: |
-          echo "${PACKAGEFILENAME}" | grep -E '^[A-Za-z0-9\-\.]{3,50}'
+          echo "${PACKAGEJSONFILENAME}" | grep -E '^[A-Za-z0-9\-\.]{3,50}'
 
       - name: Validate inputs.project_directory
         run: |
@@ -160,14 +160,14 @@ jobs:
           git config --global user.email "rimdev@rimdev.io"
           git config --global user.name "GitHub Actions Runner"
 
-      - name: Verify package name in ${{ inputs.package_filename }}
+      - name: Verify package name in ${{ inputs.package_json_filename }}
         run: |
-          NPMJSONPACKAGENAME=$(jq -r '.name' "${PACKAGEFILENAME}")
+          NPMJSONPACKAGENAME=$(jq -r '.name' "${PACKAGEJSONFILENAME}")
           echo "NPMJSONPACKAGENAME=${NPMJSONPACKAGENAME}"
           echo "${NPMJSONPACKAGENAME}" | grep "@${NPMSCOPE}/${NPMPACKAGENAME}"
 
-      - name: Check version in ${{ inputs.package_filename }}
-        run: jq -r '.version' "${PACKAGEFILENAME}"
+      - name: Check version in ${{ inputs.package_json_filename }}
+        run: jq -r '.version' "${PACKAGEJSONFILENAME}"
 
       - name: npm version config
         run: |
@@ -182,9 +182,9 @@ jobs:
           echo NPMVERSIONOUTPUT=$NPMVERSIONOUTPUT
           echo NPMVERSIONOUTPUT=$NPMVERSIONOUTPUT >> $GITHUB_ENV
 
-      - name: Check version in ${{ inputs.package_filename }}
+      - name: Check version in ${{ inputs.package_json_filename }}
         run: |
-          PKGJSONVER="$(jq -r '.version' "${PACKAGEFILENAME}")"
+          PKGJSONVER="$(jq -r '.version' "${PACKAGEJSONFILENAME}")"
           echo "PKGJSONVER=$PKGJSONVER"
           echo "PKGJSONVER=$PKGJSONVER" >> $GITHUB_ENV
 

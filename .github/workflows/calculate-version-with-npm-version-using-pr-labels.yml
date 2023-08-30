@@ -23,7 +23,7 @@ on:
         type: string
         default: ./
 
-      package_filename:
+      package_json_filename:
         description: Name of the 'package.json' file if not the default name.
         required: false
         type: string
@@ -91,7 +91,7 @@ jobs:
       GH_SHORT_SHA_CALC: 00000000
       NPM_VERSION_COMMAND:
       VERSION_INCREMENTED: false
-      PACKAGEFILENAME: ${{ inputs.package_filename }}
+      PACKAGEJSONFILENAME: ${{ inputs.package_json_filename }}
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
 
     outputs:
@@ -106,9 +106,9 @@ jobs:
 
     steps:
 
-      - name: Validate inputs.package_filename
+      - name: Validate inputs.package_json_filename
         run: |
-          echo "${PACKAGEFILENAME}" | grep -E '^[A-Za-z0-9\-\.]{3,50}'
+          echo "${PACKAGEJSONFILENAME}" | grep -E '^[A-Za-z0-9\-\.]{3,50}'
 
       - name: Validate inputs.project_directory
         run: |
@@ -167,8 +167,8 @@ jobs:
           npm config set preid=${{ env.VERSION_SUFFIX }}
           npm config set sign-git-tag=false
 
-      - name: Check version in ${{ inputs.package_filename }} (BEFORE)
-        run: jq -r '.version' "$PACKAGEFILENAME"
+      - name: Check version in ${{ inputs.package_json_filename }} (BEFORE)
+        run: jq -r '.version' "$PACKAGEJSONFILENAME"
 
       # Note the use of '--ignore-scripts' here to prevent 'npm version' from running any scripts in the package.json
       - name: npm version ${{ env.NPM_VERSION_COMMAND }}
@@ -176,12 +176,12 @@ jobs:
         run: |
           npm version --ignore-scripts ${{ env.NPM_VERSION_COMMAND }}
 
-      - name: Check version in ${{ inputs.package_filename }} (AFTER)
-        run: jq -r '.version' "$PACKAGEFILENAME"
+      - name: Check version in ${{ inputs.package_json_filename }} (AFTER)
+        run: jq -r '.version' "$PACKAGEJSONFILENAME"
 
-      - name: Capture version in ${{ inputs.package_filename }} to PKGJSONVER
+      - name: Capture version in ${{ inputs.package_json_filename }} to PKGJSONVER
         run: |
-          PKGJSONVER="$(jq -r '.version' "$PACKAGEFILENAME")"
+          PKGJSONVER="$(jq -r '.version' "$PACKAGEJSONFILENAME")"
           echo "PKGJSONVER=$PKGJSONVER"
           echo "PKGJSONVER=$PKGJSONVER" >> $GITHUB_ENV
 

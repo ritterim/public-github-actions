@@ -29,11 +29,11 @@ on:
         type: string
         default: '18.x'
 
-      package_lock_filename:
-        description: Name of the 'package-lock.json' file if not the default name.
+      package_json_filename:
+        description: Name of the 'package.json' file if not the default name.
         required: false
         type: string
-        default: package-lock.json
+        default: package.json
 
       project_directory:
         description: Location of the package.json file for the NPM package.
@@ -63,14 +63,14 @@ jobs:
       persisted_workspace_artifact_name: ${{ steps.persist-workspace.outputs.artifact_name }}
 
     env:
-      PACKAGELOCKFILENAME: ${{ inputs.package_lock_filename }}
+      PACKAGEJSONFILENAME: ${{ inputs.package_json_filename }}
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
 
     steps:
 
       - name: Validate inputs.package_lock_filename
         run: |
-          echo "${PACKAGELOCKFILENAME}" | grep -E '^[A-Za-z0-9\-\.]{3,50}'
+          echo "${PACKAGEJSONFILENAME}" | grep -E '^[A-Za-z0-9\-\.]{3,50}'
 
       - name: Validate inputs.project_directory
         run: |
@@ -93,7 +93,7 @@ jobs:
         with:
           node-version: ${{ inputs.node_version }}
           cache: 'npm'
-          cache-dependency-path: ${{ inputs.project_directory }}/${{ inputs.package_lock_filename }}
+          cache-dependency-path: ${{ inputs.project_directory }}/${{ inputs.package_json_filename }}
 
       - run: git rev-parse --verify HEAD
 

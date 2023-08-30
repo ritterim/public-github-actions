@@ -32,7 +32,7 @@ on:
         required: true
         type: string
 
-      package_filename:
+      package_json_filename:
         description: Name of the 'package.json' file if not the default name.
         required: false
         type: string
@@ -78,15 +78,15 @@ jobs:
   #       run: echo "EVENTOBJECT=$EVENTOBJECT"
 
   version:
-    uses: ritterim/public-github-actions/.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml@384aec4638e797a402db892c9382b5ad440f5811
+    uses: ritterim/public-github-actions/.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml@v1.2.0
     #uses: ./.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml
     with:
       always_increment_patch_version: ${{ inputs.always_increment_patch_version }}
-      package_filename: ${{ inputs.package_filename }}
+      package_json_filename: ${{ inputs.package_json_filename }}
       project_directory: ${{ inputs.project_directory }}
 
   npm-build:
-    uses: ritterim/public-github-actions/.github/workflows/npm-build.yml@2e0bccefaac35e990f13765abb37830d4ae41ccd
+    uses: ritterim/public-github-actions/.github/workflows/npm-build.yml@v1.2.0
     #uses: ./.github/workflows/npm-build.yml
     with:
       node_version: ${{ inputs.node_version }}
@@ -96,7 +96,7 @@ jobs:
   # because this workflow will have access to secrets.
 
   npm-test:
-    uses: ritterim/public-github-actions/.github/workflows/npm-test.yml@2e0bccefaac35e990f13765abb37830d4ae41ccd
+    uses: ritterim/public-github-actions/.github/workflows/npm-test.yml@v1.2.0
     #uses: ./.github/workflows/npm-test.yml
     needs: [ npm-build ]
     with:
@@ -105,7 +105,7 @@ jobs:
       run_tests: ${{ inputs.run_tests }}
 
   npm-pack:
-    uses: ritterim/public-github-actions/.github/workflows/npm-pack.yml@2e0bccefaac35e990f13765abb37830d4ae41ccd
+    uses: ritterim/public-github-actions/.github/workflows/npm-pack.yml@v1.2.0
     #uses: ./.github/workflows/npm-pack.yml
     needs: [ npm-build, npm-test, version ]
     with:
@@ -117,7 +117,7 @@ jobs:
   # If the version was incremented, we should create a new annotated tag.
 
   generate-token:
-    uses: ritterim/public-github-actions/.github/workflows/generate-github-token-from-github-app.yml@be109fab5ac2ca0938a67a4601e3e5d7900292f7
+    uses: ritterim/public-github-actions/.github/workflows/generate-github-token-from-github-app.yml@v1.2.0
     #uses: ./.github/workflows/generate-github-token-from-github-app.yml
     needs: [ version, npm-pack ]
     if: |
@@ -129,7 +129,7 @@ jobs:
       gh_app_private_key: ${{ secrets.gh_app_private_key }}
 
   npm-create-release-tag:
-    uses: ritterim/public-github-actions/.github/workflows/npm-create-version-tag.yml@3e774408666f7442b14885efce9e9025f066567c
+    uses: ritterim/public-github-actions/.github/workflows/npm-create-version-tag.yml@v1.2.0
     #uses: ./.github/workflows/npm-create-version-tag.yml
     needs: [ generate-token, version ]
     if: |

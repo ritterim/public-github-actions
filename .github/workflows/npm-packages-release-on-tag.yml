@@ -1,7 +1,7 @@
 name: NPM Package Release
 
 # Builds and releases the NPM package.  The version number is pulled
-# from the package.json file (or the file specified by inputs.package_filename).
+# from the package.json file (or the file specified by inputs.package_json_filename).
 
 # Tags which are not created on the correct branch will result in workflow failure.
 
@@ -36,7 +36,7 @@ on:
         required: true
         type: string
 
-      package_filename:
+      package_json_filename:
         description: Name of the 'package.json' file if not the default name.
         required: false
         type: string
@@ -74,21 +74,21 @@ on:
 jobs:
 
   verify-tag-branch:
-    uses: ritterim/public-github-actions/.github/workflows/verify-tag-is-on-allowed-branch.yml@718f146701b20c62bed849fb5b1566a2136db2f7
+    uses: ritterim/public-github-actions/.github/workflows/verify-tag-is-on-allowed-branch.yml@v1.2.0
     #uses: ./.github/workflows/verify-tag-is-on-allowed-branch.yml
     with:
       allowed_branches: ${{ inputs.allowed_branches }}
 
   version:
-    uses: ritterim/public-github-actions/.github/workflows/extract-version-from-npm-package-json.yml@43b3029a81bafd1fd7d3c5e46091a8b8c7469d2b
+    uses: ritterim/public-github-actions/.github/workflows/extract-version-from-npm-package-json.yml@v1.2.0
     #uses: ./.github/workflows/extract-version-from-npm-package-json.yml
     needs: [ verify-tag-branch ]
     with:
-      package_filename: ${{ inputs.package_filename }}
+      package_json_filename: ${{ inputs.package_json_filename }}
       project_directory: ${{ inputs.project_directory }}
 
   npm-build:
-    uses: ritterim/public-github-actions/.github/workflows/npm-build.yml@43b3029a81bafd1fd7d3c5e46091a8b8c7469d2b
+    uses: ritterim/public-github-actions/.github/workflows/npm-build.yml@v1.2.0
     #uses: ./.github/workflows/npm-build.yml
     needs: [ verify-tag-branch ]
     with:
@@ -96,7 +96,7 @@ jobs:
       project_directory: ${{ inputs.project_directory }}
 
   npm-test:
-    uses: ritterim/public-github-actions/.github/workflows/npm-test.yml@43b3029a81bafd1fd7d3c5e46091a8b8c7469d2b
+    uses: ritterim/public-github-actions/.github/workflows/npm-test.yml@v1.2.0
     #uses: ./.github/workflows/npm-test.yml
     needs: [ npm-build ]
     with:
@@ -105,7 +105,7 @@ jobs:
       run_tests: ${{ inputs.run_tests }}
 
   npm-pack:
-    uses: ritterim/public-github-actions/.github/workflows/npm-pack.yml@43b3029a81bafd1fd7d3c5e46091a8b8c7469d2b
+    uses: ritterim/public-github-actions/.github/workflows/npm-pack.yml@v1.2.0
     #uses: ./.github/workflows/npm-pack.yml
     needs: [ npm-build, npm-test, version ]
     with:
@@ -115,7 +115,7 @@ jobs:
       version: ${{ needs.version.outputs.version }}
 
   npm-publish-to-github-packages:
-    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-github-packages.yml@44936a13581a34ab93a2617cd8c146731a72890a
+    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-github-packages.yml@v1.2.0
     #uses: ./.github/workflows/npm-publish-to-github-packages.yml
     if: inputs.publish_to_github == true
     needs: [ npm-pack ]
@@ -123,7 +123,7 @@ jobs:
       artifact_name: ${{ needs.npm-pack.outputs.artifact_name }}
 
   npm-publish-to-myget:
-    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-myget.yml@44936a13581a34ab93a2617cd8c146731a72890a
+    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-myget.yml@v1.2.0
     #uses: ./.github/workflows/npm-publish-to-myget.yml
     needs: [ npm-pack ]
     if: inputs.publish_to_myget == true
