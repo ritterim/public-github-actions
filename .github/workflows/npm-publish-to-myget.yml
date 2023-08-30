@@ -1,5 +1,8 @@
 name: MyGet Publish (NPM)
 
+# Publish the NPM package to the MyGet NPM registry.  
+# The artifact (`.tgz`) file is pulled from the artifacts on the workflow run.
+
 permissions:
   contents: read
   id-token: write

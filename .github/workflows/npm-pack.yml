@@ -1,5 +1,13 @@
 name: Pack (NPM)
 
+# Execute `npm pack` against the package.json file. There is support for 
+# package.json files that are named otherwise or do not exist at the root 
+# of the repository.  This workflow *only* runs the pack command.
+
+# The resulting artifact (a `.tgz` file) will be uploaded to the workflow 
+# run and output variables provide information on the archive name 
+# (`artifact_name`) and file path (`artifact_file_path`).
+
 permissions:
   contents: read
   packages: read

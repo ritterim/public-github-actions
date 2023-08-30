@@ -1,5 +1,12 @@
 name: Test (NPM)
 
+# Execute '`npm run test`' against the package.json file.  There is support 
+# for package.json files that are named otherwise or do not exist at the 
+# root of the repository.  This workflow *only* runs the build script.
+# 
+# Note: This restores the workspace created in the npm-build.yml job 
+# before executing the test script.
+
 permissions:
   contents: read
   packages: read

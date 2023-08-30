@@ -3,6 +3,12 @@ name: Create Version Tag (NPM)
 # Executes 'npm version' in a way that creates a git commit and also tags that commit.
 # The only file that should change during this step is the 'package.json' file.
 # The commit and tag are then pushed to the main git repo for future use by other PRs.
+#
+# There is support for package.json files that are named otherwise or do not exist at 
+# the root of the repository.
+# 
+# Requires the use of a GitHub App token in order to perform the push.  This is because 
+# we need to bypass any branch protection and/or rulesets on the branch.
 
 permissions:
   contents: read

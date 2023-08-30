@@ -1,6 +1,6 @@
 name: NPM Package PR Tag
 
-# Runs 'npm version' to create a commit and tag in the repo after running a fresh build.
+# Designed to be called when a PR is merged against a branch in the repository. It creates a new commit and tag using the a GitHub App token upon completion.
 
 permissions:
   contents: read # later on we use a GH App to generate the token needed to push (and bypass a Ruleset that protects the default branch)
