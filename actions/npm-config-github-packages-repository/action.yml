@@ -26,11 +26,9 @@ runs:
   steps:
 
     - name: Validate inputs.npm_scope
-      shell: bash
-      env: 
-        NPMSCOPE: ${{ inputs.npm_scope }}
-      run: |
-        echo "${NPMSCOPE}" | grep -E '^[a-z0-9\.-]{5,60}$'
+      uses: ritterim/public-github-actions/actions/npm-package-scope-validator@v1.1.1
+      with:
+        npm_scope: ${{ env.NPMSCOPE }}
 
     - name: Validate inputs.github_token
       shell: bash

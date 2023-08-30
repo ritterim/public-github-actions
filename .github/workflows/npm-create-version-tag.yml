@@ -87,24 +87,29 @@ jobs:
     steps:
 
       - name: Validate inputs.npm_scope
-        run: |
-          echo "${NPMSCOPE}" | grep -E '^[a-z0-9\-]{5,25}$'
+        uses: ritterim/public-github-actions/actions/npm-package-scope-validator@v1.1.1
+        with:
+          npm_scope: ${{ env.NPMSCOPE }}
 
       - name: Validate inputs.npm_package_name
-        run: |
-          echo "${NPMPACKAGENAME}" | grep -E '^[a-z0-9\-]{5,40}'
+        uses: ritterim/public-github-actions/actions/npm-package-name-validator@v1.1.1
+        with:
+          package_name: ${{ env.NPMPACKAGENAME }}
 
       - name: Validate inputs.package_json_filename
-        run: |
-          echo "${PACKAGEJSONFILENAME}" | grep -E '^[A-Za-z0-9\-\.]{3,50}'
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.1.1
+        with:
+          file_name: ${{ env.PACKAGEJSONFILENAME }}
 
       - name: Validate inputs.project_directory
-        run: |
-          echo "${PROJECTDIRECTORY}" | grep -E '^[A-Za-z0-9\-\.]{1,50}\/$'
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.1.1
+        with:
+          path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: Validate inputs.version
-        run: |
-          echo "${NPMVERSION}" | grep -E '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9A-Za-z-][0-9A-Za-z-]*)(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.1.1
+        with:
+          version: ${{ env.NPMVERSION }}
 
       - name: Fetch first line of HEADCOMMITMESSAGE
         run: |

@@ -90,12 +90,14 @@ jobs:
     steps:
 
       - name: Validate inputs.package_json_filename
-        run: |
-          echo "${PACKAGEJSONFILENAME}" | grep -E '^[A-Za-z0-9\-\.]{3,50}'
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.1.1
+        with:
+          file_name: ${{ env.PACKAGEJSONFILENAME }}
 
       - name: Validate inputs.project_directory
-        run: |
-          echo "${PROJECTDIRECTORY}" | grep -E '^[A-Za-z0-9\-\.]{1,50}\/$'
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.1.1
+        with:
+          path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: Checkout Project
         uses: actions/checkout@v3
