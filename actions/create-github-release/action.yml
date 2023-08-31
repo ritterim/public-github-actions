@@ -1,0 +1,67 @@
+name: create-github-release
+description: Create a GitHub Release from an existing tag.
+author: RIMdev <RIMdev@RitterIM.com>
+branding:
+  icon: 'file-text'  
+  color: 'blue'
+
+inputs:
+
+  release_title:
+    description: The release title.  Limited to 75 characters.
+    required: false
+
+  github_repository:
+    description: The GitHub repository name in the format of "{org}/{name}".  Usually sourced from the "GITHUB_REPOSITORY" environment variable.
+    required: true
+
+  github_token:
+    description: A GitHub Token that has the "contents write" permission.
+    required: true
+
+  version_tag:
+    description: The version tag for the release. It should be in the format of a valid version number with a 'v' prefix.
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - name: Validate inputs.github_repository
+      uses: ritterim/github-actions/github-org-repository-validator@e037bcab7aa20ccc9b93c1ac8eae43ffae50a00f
+      env:
+        GH_REPOSITORY: ${{ inputs.github_repository }}
+      with:
+        github_repository: ${{ env.GH_REPOSITORY }}
+
+    - name: Validate inputs.github_token
+      uses: ritterim/github-actions/github-token-validator@e037bcab7aa20ccc9b93c1ac8eae43ffae50a00f
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      with:
+        github_token: ${{ env.GH_TOKEN }}
+
+    - name: Validate inputs.version_tag
+      uses: ritterim/public-github-actions/actions/version-number-validator@v1.2.0
+      env:
+        VERSIONTAG: ${{ inputs.version_tag }}
+      with:
+        version: ${{ env.VERSIONTAG }}
+        allow_v_prefix: true
+
+    - name: Create GitHub Release
+      shell: bash
+      env:
+        GH_REPOSITORY: ${{ inputs.github_repository }}
+        GH_TOKEN: ${{ inputs.github_token }}
+        RELEASETITLE: ${{ inputs.release_title }}
+        VERSIONTAG: ${{ inputs.version_tag }}
+      run: |
+        RELEASETITLE=${RELEASETITLE:-Release $VERSIONTAG}
+        RELEASETITLE=$(echo "${RELEASETITLE:0:75}" | head -n 1)
+        echo "RELEASETITLE=${RELEASETITLE}"
+        gh release create "${VERSIONTAG}" \
+          --repo="${GH_REPOSITORY}" \
+          --title="${RELEASETITLE}" \
+          --verify-tag \
+          --generate-notes
