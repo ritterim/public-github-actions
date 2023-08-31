@@ -6,6 +6,7 @@ A repository to contain RIMdev's public GitHub Actions and reusuable workflow (Y
 - [Versioning](#versioning)
 - [Reusable Workflows](#reusable-workflows)
 - [GitHub Actions](#github-actions)
+  - [GitHub](#github)
   - [NPM Registry Configuration](#npm-registry-configuration)
   - [Validators](#validators)
 - [Forked GitHub Actions](#forked-github-actions)
@@ -31,6 +32,11 @@ Reusable GitHub Actions workflows. See [ReusableWorkflows.md](ReusableWorkflows.
 # GitHub Actions
 
 GitHub Actions authored by RIMdev.
+
+## GitHub
+
+- [attach-artifact-to-release](actions/attach-artifact-to-release/)
+- [create-github-release](actions/create-github-release/)
 
 ## NPM Registry Configuration
 
