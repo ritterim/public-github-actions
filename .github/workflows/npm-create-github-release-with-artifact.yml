@@ -1,0 +1,53 @@
+name: Create GitHub Release with Artifact File
+
+# Create a GitHub release using an existing tag, then attach a file
+# from the runner artifact to the release.
+# This only supports a single artifact file.
+
+permissions:
+  contents: write
+  id-token: write
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      artifact_name:
+        description: The GitHub artifact name which contains the file produced earlier.
+        required: true
+        type: string
+
+      artifact_file_path:
+        description: The filename within the run artifact.
+        required: true
+        type: string
+
+jobs:
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+
+    env:
+      GH_REF_NAME: ${{ github.ref_name }}
+
+    steps:
+
+      - name: Create GitHub Release
+        uses: ritterim/public-github-actions/actions/create-github-release@v1.2.0
+        with:
+          github_repository: ${{ github.repository }}
+          github_token: ${{ github.token }}
+          release_title: ${{ github.event.head_commit.message }}
+          version_tag: ${{ env.GH_REF_NAME }}
+
+      - name: Attach Artifact to GitHub Release
+        uses: ritterim/public-github-actions/actions/attach-artifact-to-release@v1.2.0
+        with:
+          artifact_name: ${{ inputs.artifact_name }}
+          artifact_file_path: ${{ inputs.artifact_file_path }}
+          github_repository: ${{ github.repository }}
+          github_token: ${{ github.token }}
+          version_tag: ${{ env.GH_REF_NAME }}

@@ -4,6 +4,7 @@ Unless noted in the YAML, these are all licensed under the root folder's MIT lic
 
 - [Reusable GitHub Actions Workflows](#reusable-github-actions-workflows)
 - [GitHub Actions](#github-actions)
+  - [npm-create-github-release-with-artifact.yml](#npm-create-github-release-with-artifactyml)
   - [verify-tag-is-on-allowed-branch.yml](#verify-tag-is-on-allowed-branchyml)
 - [GitHub Tokens](#github-tokens)
   - [generate-github-token-from-github-app.yml](#generate-github-token-from-github-appyml)
@@ -25,6 +26,10 @@ Unless noted in the YAML, these are all licensed under the root folder's MIT lic
   - [npm-test.yml](#npm-testyml)
 
 # GitHub Actions
+
+## npm-create-github-release-with-artifact.yml
+
+Create a GitHub release using an existing tag, then attach a file from the runner artifact to the release.  This only supports a single artifact file.
 
 ## verify-tag-is-on-allowed-branch.yml
 
