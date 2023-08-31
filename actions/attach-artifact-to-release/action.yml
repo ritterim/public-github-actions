@@ -1,0 +1,99 @@
+name: attach-artifact-to-release
+description: Attach artifact from the workflow run to a GitHub Release.
+author: RIMdev <RIMdev@RitterIM.com>
+branding:
+  icon: 'file-plus'  
+  color: 'blue'
+
+inputs:
+
+  artifact_name:
+    description: The artifact name on the workflow run which contains the file.
+    required: true
+
+  artifact_file_path:
+    description: The filename within the run artifact.
+    required: true
+
+  github_repository:
+    description: The GitHub repository name in the format of "{org}/{name}".  Usually sourced from the "GITHUB_REPOSITORY" environment variable.
+    required: true
+
+  github_token:
+    description: A GitHub Token that has the "contents write" permission.
+    required: true
+
+  version_tag:
+    description: The version tag for the release. It should be in the format of a valid version number with a 'v' prefix.
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - name: Validate inputs.artifact_name
+      uses: ritterim/public-github-actions/actions/file-name-validator@v1.2.0
+      env:
+        ARTIFACTNAME: ${{ inputs.artifact_name }}
+      with:
+        file_name: ${{ env.ARTIFACTNAME }}
+
+    - name: Validate inputs.artifact_file_path
+      uses: ritterim/public-github-actions/actions/file-name-validator@v1.2.0
+      env:
+        ARTIFACTFILEPATH: ${{ inputs.artifact_file_path }}
+      with:
+        file_name: ${{ env.ARTIFACTFILEPATH }}
+
+    - name: Validate inputs.github_repository
+      uses: ritterim/github-actions/github-org-repository-validator@e037bcab7aa20ccc9b93c1ac8eae43ffae50a00f
+      env:
+        GH_REPOSITORY: ${{ inputs.github_repository }}
+      with:
+        github_repository: ${{ env.GH_REPOSITORY }}
+
+    - name: Validate inputs.github_token
+      uses: ritterim/github-actions/github-token-validator@e037bcab7aa20ccc9b93c1ac8eae43ffae50a00f
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      with:
+        github_token: ${{ env.GH_TOKEN }}
+
+    - name: Validate inputs.version_tag
+      uses: ritterim/public-github-actions/actions/version-number-validator@v1.2.0
+      env:
+        VERSIONTAG: ${{ inputs.version_tag }}
+      with:
+        version: ${{ env.VERSIONTAG }}
+        allow_v_prefix: true
+
+    - name: ls -la
+      shell: bash
+      run: ls -la
+
+    # If you specify a specific path (file) to download then the file
+    # gets put into a subdirectory.  But if you just download everything
+    # it all ends up in the root of the working folder.  Given that
+    # there is usually only a single file in the 'artifact_name' along
+    # with artifacts being fairly small, we should be okay to just download
+    # all of the files.
+    - name: Download artifacts from build job
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{ inputs.artifact_name }}
+
+    - name: ls -la
+      shell: bash
+      run: ls -la
+
+    - name: Attach artifact to GitHub Release
+      shell: bash
+      env:
+        ARTIFACTFILEPATH: ${{ inputs.artifact_file_path }}
+        GH_REPOSITORY: ${{ inputs.github_repository }}
+        GH_TOKEN: ${{ inputs.github_token }}
+        VERSIONTAG: ${{ inputs.version_tag }}
+      run: |
+        gh release upload "${VERSIONTAG}" \
+          --repo="${GH_REPOSITORY}" \
+          "${ARTIFACTFILEPATH}"
