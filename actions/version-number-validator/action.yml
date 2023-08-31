@@ -11,6 +11,7 @@ inputs:
     required: true
 
   allow_v_prefix:
+    description: Whether 'v' is allowed at the start of the version value.  Note that you must pass in "true" as 'true' (a lowercase string) for this to work.
     required: false
     default: false
 
@@ -29,7 +30,7 @@ runs:
 
     - name: Validate with 'v' prefix
       uses: ritterim/public-github-actions/actions/regex-validator@v1.1.0
-      if: inputs.allow_v_prefix == true
+      if: inputs.allow_v_prefix == 'true'
       with:
         value: ${{ inputs.version }}
         regex_pattern: '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9A-Za-z-][0-9A-Za-z-]*)(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
@@ -38,7 +39,7 @@ runs:
 
     - name: Validate without 'v' prefix
       uses: ritterim/public-github-actions/actions/regex-validator@v1.1.0
-      if: inputs.allow_v_prefix != true
+      if: inputs.allow_v_prefix != 'true'
       with:
         value: ${{ inputs.version }}
         regex_pattern: '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9A-Za-z-][0-9A-Za-z-]*)(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
