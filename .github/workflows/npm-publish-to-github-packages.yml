@@ -45,7 +45,7 @@ jobs:
           name: ${{ inputs.artifact_name }}
 
       - name: npm-config-github-packages-repository
-        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@43b3029a81bafd1fd7d3c5e46091a8b8c7469d2b
+        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@v1.2.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 

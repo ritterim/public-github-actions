@@ -23,7 +23,7 @@ You must have requested `packages: read` (or `packages:write` to publish) in you
 
 ```
       - name: npm-config-github-packages-repository
-        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@v1.0.1
+        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@v1.2.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
