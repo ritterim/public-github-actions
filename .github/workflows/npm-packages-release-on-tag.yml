@@ -1,4 +1,4 @@
-name: NPM Package Release
+name: NPM Package Release on Tag
 
 # Builds and releases the NPM package.  The version number is pulled
 # from the package.json file (or the file specified by inputs.package_json_filename).
@@ -12,7 +12,7 @@ name: NPM Package Release
 # The remote is named 'origin' and points at the main GitHub repo.
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
   packages: write
 
@@ -131,3 +131,11 @@ jobs:
       myget_api_key: ${{ secrets.myget_api_key }}
     with:
       artifact_name: ${{ needs.npm-pack.outputs.artifact_name }}
+
+  create-github-release:
+    uses: ritterim/public-github-actions/.github/workflows/npm-create-github-release-with-artifact.yml@v1.2.0
+    #uses: ./.github/workflows/npm-create-github-release-with-artifact.yml
+    needs: [ npm-pack ]
+    with:
+      artifact_name: ${{ needs.npm-pack.outputs.artifact_name }}
+      artifact_file_path: ${{ needs.npm-pack.outputs.artifact_file_path }}
