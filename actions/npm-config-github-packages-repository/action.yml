@@ -28,7 +28,7 @@ runs:
     - name: Validate inputs.npm_scope
       uses: ritterim/public-github-actions/actions/npm-package-scope-validator@v1.2.0
       with:
-        npm_scope: ${{ env.NPMSCOPE }}
+        npm_scope: ${{ inputs.npm_scope }}
 
     - name: Validate inputs.github_token
       shell: bash
