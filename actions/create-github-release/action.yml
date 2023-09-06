@@ -42,7 +42,7 @@ runs:
         github_token: ${{ env.GH_TOKEN }}
 
     - name: Validate inputs.version_tag
-      uses: ritterim/public-github-actions/actions/version-number-validator@v1.2.0
+      uses: ritterim/public-github-actions/actions/version-number-validator@v1.3.0
       env:
         VERSIONTAG: ${{ inputs.version_tag }}
       with:
