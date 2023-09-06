@@ -74,13 +74,13 @@ on:
 jobs:
 
   verify-tag-branch:
-    uses: ritterim/public-github-actions/.github/workflows/verify-tag-is-on-allowed-branch.yml@v1.2.0
+    uses: ritterim/public-github-actions/.github/workflows/verify-tag-is-on-allowed-branch.yml@v1.3.0
     #uses: ./.github/workflows/verify-tag-is-on-allowed-branch.yml
     with:
       allowed_branches: ${{ inputs.allowed_branches }}
 
   version:
-    uses: ritterim/public-github-actions/.github/workflows/extract-version-from-npm-package-json.yml@v1.2.0
+    uses: ritterim/public-github-actions/.github/workflows/extract-version-from-npm-package-json.yml@v1.3.0
     #uses: ./.github/workflows/extract-version-from-npm-package-json.yml
     needs: [ verify-tag-branch ]
     with:
@@ -88,7 +88,7 @@ jobs:
       project_directory: ${{ inputs.project_directory }}
 
   npm-build:
-    uses: ritterim/public-github-actions/.github/workflows/npm-build.yml@v1.2.0
+    uses: ritterim/public-github-actions/.github/workflows/npm-build.yml@v1.3.0
     #uses: ./.github/workflows/npm-build.yml
     needs: [ verify-tag-branch ]
     with:
@@ -96,7 +96,7 @@ jobs:
       project_directory: ${{ inputs.project_directory }}
 
   npm-test:
-    uses: ritterim/public-github-actions/.github/workflows/npm-test.yml@v1.2.0
+    uses: ritterim/public-github-actions/.github/workflows/npm-test.yml@v1.3.0
     #uses: ./.github/workflows/npm-test.yml
     needs: [ npm-build ]
     with:
@@ -105,7 +105,7 @@ jobs:
       run_tests: ${{ inputs.run_tests }}
 
   npm-pack:
-    uses: ritterim/public-github-actions/.github/workflows/npm-pack.yml@v1.2.0
+    uses: ritterim/public-github-actions/.github/workflows/npm-pack.yml@v1.3.0
     #uses: ./.github/workflows/npm-pack.yml
     needs: [ npm-build, npm-test, version ]
     with:
@@ -133,7 +133,7 @@ jobs:
       artifact_name: ${{ needs.npm-pack.outputs.artifact_name }}
 
   create-github-release:
-    uses: ritterim/public-github-actions/.github/workflows/npm-create-github-release-with-artifact.yml@v1.2.0
+    uses: ritterim/public-github-actions/.github/workflows/npm-create-github-release-with-artifact.yml@v1.3.0
     #uses: ./.github/workflows/npm-create-github-release-with-artifact.yml
     needs: [ npm-pack ]
     with:
