@@ -33,3 +33,6 @@ runs:
         error_if_not_valid: ${{ inputs.error_if_not_valid }}
 
 # As of 2023, we think the npm tokens have 36 letters/numbers (base-62) after the underscore.
+# GitLeaks: https://github.com/search?q=org%3Agitleaks%20npm-access-token&type=code
+# - (Go) generateUniqueTokenRegex(`npm_[a-z0-9]{36}`, true)
+# - (TOML) regex = '''(?i)\b(npm_[a-z0-9]{36})(?:['|\"|\n|\r|\s|\x60|;]|$)'''
