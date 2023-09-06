@@ -121,6 +121,7 @@ jobs:
     needs: [ npm-pack ]
     with:
       artifact_name: ${{ needs.npm-pack.outputs.artifact_name }}
+      artifact_file_path: ${{ needs.npm-pack.outputs.artifact_file_path }}
 
   npm-publish-to-myget:
     uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-myget.yml@v1.3.0
@@ -131,6 +132,7 @@ jobs:
       myget_api_key: ${{ secrets.myget_api_key }}
     with:
       artifact_name: ${{ needs.npm-pack.outputs.artifact_name }}
+      artifact_file_path: ${{ needs.npm-pack.outputs.artifact_file_path }}
 
   create-github-release:
     uses: ritterim/public-github-actions/.github/workflows/npm-create-github-release-with-artifact.yml@v1.2.0
