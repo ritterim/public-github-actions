@@ -1,0 +1,35 @@
+name: npmjs-access-token-validator
+description: Validate that the token looks like the new style npmjs.org access token.
+# https://github.blog/2021-09-23-announcing-npms-new-access-token-format/
+author: RIMdev <RIMdev@RitterIM.com>
+branding:
+  icon: 'check-square'  
+  color: 'blue'
+
+inputs:
+
+  token:
+    required: true
+
+  required:
+    required: false
+    default: true
+
+  error_if_not_valid:
+    required: false
+    default: true
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - name: Validate
+      uses: ritterim/public-github-actions/actions/regex-validator@v1.2.0
+      with:
+        value: ${{ inputs.token }}
+        regex_pattern: '^(npm_[A-Za-z0-9]{36})$'
+        required: ${{ inputs.required }}
+        error_if_not_valid: ${{ inputs.error_if_not_valid }}
+
+# As of 2023, we think the npm tokens have 36 letters/numbers (base-62) after the underscore.
