@@ -75,11 +75,11 @@ jobs:
 
       - name: Publish NPM Package (PUBLIC)
         if: inputs.access_public == true
-        run: npm publish --dry-run --provenance --access=public "${ARTIFACTFILEPATH}"
+        run: npm publish --provenance --access=public "${ARTIFACTFILEPATH}"
 
       - name: Publish NPM Package (RESTRICTED)
         if: inputs.access_public != true
-        run: npm publish --dry-run --provenance --access=restricted "${ARTIFACTFILEPATH}"
+        run: npm publish --provenance --access=restricted "${ARTIFACTFILEPATH}"
 
 # REFS
 
