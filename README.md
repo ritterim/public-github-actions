@@ -13,7 +13,7 @@ A repository to contain RIMdev's public GitHub Actions and reusuable workflow (Y
 
 # Versioning
 
-Because this repo contains multiple GitHub actions and reusable workflow files, SemVer rules will be difficult to apply meaningfully or consistently.  
+Because this repo contains multiple GitHub actions and reusable workflow files, SemVer rules will be difficult to apply meaningfully or consistently.  See the [releases page](https://github.com/ritterim/public-github-actions/releases) for a list of current versions and the change logs.
 
 - The major (1st) position will probably never change.
 - The minor (2nd) position will bump frequently as we add new actions/workflows, remove old code or make a breaking change.
@@ -51,8 +51,10 @@ These actions help configure your `.npmrc` file to authenticate against differen
 Actions which can be used to validate input values to workflows against RegEx patterns.  While not guaranteed, these can help reduce the risk of command-line injection vulnerabilities or guard against simple mistakes.
 
 - [file-name-validator](actions/file-name-validator/)
+- [github-token-validator](actions/github-token-validator/)
 - [npm-package-name-validator](actions/npm-package-name-validator/)
-- [npm-package-scope-validator](actions/npm-package-scope-validator)
+- [npm-package-scope-validator](actions/npm-package-scope-validator/)
+- [npmjs-access-token-validator](actions/npmjs-access-token-validator/)
 - [path-name-validator](actions/path-name-validator/)
 - [regex-validator](actions/regex-validator/)
 - [version-number-validator](actions/version-number-validator/)
