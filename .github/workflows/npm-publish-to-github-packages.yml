@@ -24,25 +24,15 @@ on:
         required: true
         type: string
 
-      project_directory:
-        description: Location of the package.json or package .tgz file.
-        required: false
-        type: string
-        default: ./
-
 jobs:
 
   publish:
     name: GitHub Packages Publish (NPM)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-          working-directory: ${{ inputs.project_directory }}
 
     env:
       ARTIFACTNAME: ${{ inputs.artifact_name }}
       ARTIFACTFILEPATH: ${{ inputs.artifact_file_path }}
-      PROJECTDIRECTORY: ${{ inputs.project_directory }}
 
     steps:
 
@@ -56,11 +46,6 @@ jobs:
         with:
           file_name: ${{ env.ARTIFACTFILEPATH }}          
 
-      - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.3.0
-        with:
-          path_name: ${{ env.PROJECTDIRECTORY }}
-          
       - name: Download artifact from build job
         uses: actions/download-artifact@v3
         with:
