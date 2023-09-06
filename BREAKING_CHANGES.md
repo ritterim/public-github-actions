@@ -1,6 +1,8 @@
 # Breaking Changes
 
-Nothing to see here yet.
+## 1.3.0 (Sep 2023)
+
+- The NPM publish workflows will now require `artifact_file_path` to be passed in instead of assuming that the filename to publish is the `artifact_name` plus a `.tgz` suffix.
 
 ## 1.2.0 (Aug 30, 2023)
 

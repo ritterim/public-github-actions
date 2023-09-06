@@ -1,7 +1,7 @@
 name: MyGet Publish (NPM)
 
 # Publish the NPM package to the MyGet NPM registry.  
-# The artifact (`.tgz`) file is pulled from the artifacts on the workflow run.
+# The artifact file is pulled from the artifacts on the workflow run.
 
 permissions:
   contents: read
@@ -15,7 +15,12 @@ on:
     inputs:
 
       artifact_name:
-        description: The GitHub artifact name which contains the '*.tgz' file produced earlier.  The assumption is that the file is ready for publishing.
+        description: The GitHub artifact name which contains the package file.  The assumption is that the file is ready for publishing.
+        required: true
+        type: string
+
+      artifact_file_path:
+        description: The filename within the run artifact to be published.
         required: true
         type: string
 
@@ -41,19 +46,23 @@ jobs:
           working-directory: ${{ inputs.project_directory }}
     env:
       ARTIFACTNAME: ${{ inputs.artifact_name }}
+      ARTIFACTFILEPATH: ${{ inputs.artifact_file_path }}
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
 
     steps:
 
       - name: Validate inputs.artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.2.0
-        env:
-          ARTIFACTNAME: ${{ inputs.artifact_name }}
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.3.0
         with:
           file_name: ${{ env.ARTIFACTNAME }}
 
+      - name: Validate inputs.artifact_file_path
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.3.0
+        with:
+          file_name: ${{ env.ARTIFACTFILEPATH }} 
+
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.2.0
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.3.0
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
@@ -63,11 +72,11 @@ jobs:
           name: ${{ inputs.artifact_name }}
 
       - name: npm-config-myget-packages-repository
-        uses: ritterim/public-github-actions/actions/npm-config-myget-packages-repository@v1.2.0
+        uses: ritterim/public-github-actions/actions/npm-config-myget-packages-repository@v1.3.0
         with:
           myget_api_key: ${{ secrets.myget_api_key }}
 
       - run: ls -la
 
       - name: Publish NPM Package File to MyGet
-        run: npm publish "${ARTIFACTNAME}.tgz"
+        run: npm publish "${ARTIFACTFILEPATH}"
