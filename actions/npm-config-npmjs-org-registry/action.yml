@@ -1,0 +1,47 @@
+name: npm-config-npmjs-org-registry
+description: Configure the '.npmrc' file correctly to authenticate to the NPM (npmjs.org) registry.
+author: ritterim
+branding:
+  icon: 'download-cloud'  
+  color: 'gray-dark'
+
+inputs:
+
+  npmjs_api_key:
+    description: The secret API key needed in order to access the NPM (npmjs.org) registry.
+    type: string
+    required: true
+
+  npm_scope:
+    description: The NPM 'scope' value to use.  Default is 'ritterim'.
+    type: string
+    required: false
+    default: ritterim
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - name: Validate inputs.npm_scope
+      uses: ritterim/public-github-actions/actions/npm-package-scope-validator@v1.2.0
+      with:
+        npm_scope: ${{ inputs.npm_scope }}
+
+    - name: Validate inputs.npmjs_api_key
+      uses: ritterim/public-github-actions/actions/npmjs-access-token-validator@v1.3.0
+      with:
+        token: ${{ inputs.npmjs_api_key }}
+
+    - name: Verify current NPM config
+      shell: bash
+      run: npm config list
+
+    - name: Configure .npmrc
+      shell: bash
+      env:
+        NPMJSAPIKEY: ${{ inputs.npmjs_api_key }}
+        NPMSCOPE: ${{ inputs.npm_scope }}
+      run: |
+        npm config set "@${NPMSCOPE}:registry=https://registry.npmjs.org/"
+        npm config set "//registry.npmjs.org/:_authToken=${NPMJSAPIKEY}"

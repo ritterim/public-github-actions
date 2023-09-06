@@ -44,6 +44,7 @@ These actions help configure your `.npmrc` file to authenticate against differen
 
 - [npm-config-github-packages-repository](actions/npm-config-github-packages-repository/)
 - [npm-config-myget-packages-repository](actions/npm-config-myget-packages-repository/)
+- [npm-config-npmjs-org-registry](actions/npm-config-npmjs-org-registry)
 
 ## Validators
 
