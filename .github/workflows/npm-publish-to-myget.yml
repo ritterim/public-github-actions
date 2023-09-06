@@ -27,7 +27,7 @@ on:
     secrets:
 
       myget_api_key:
-        description: Please pass in the 'secrets.MYGET_DEPLOY_API_KEY_SECRET' value.
+        description: The secret API key needed in order to access the MyGet API.  These are formatted as GUIDs.
         required: true
 
 jobs:
