@@ -1,0 +1,86 @@
+name: NPM Publish (npmjs.org)
+
+# Publish the NPM package to theNPM registry (npmjs.org).  
+# The artifact file is pulled from the artifacts on the workflow run.
+
+permissions:
+  contents: read
+  id-token: write
+  packages: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      artifact_name:
+        description: The GitHub artifact name which contains the package file.  The assumption is that the file is ready for publishing.
+        required: true
+        type: string
+
+      artifact_file_path:
+        description: The filename within the run artifact to be published.
+        required: true
+        type: string
+
+      access_public:
+        description: Whether to publish as '--access=public' (true) or '--access=restricted' (false).
+        type: boolean
+        required: true
+        default: true
+
+    secrets:
+
+      npmjs_api_key:
+        description: The secret API key needed in order to access the NPM (npmjs.org) registry.
+        required: true
+
+jobs:
+
+  publish:
+    name: NPM Publish (npmjs.org)
+    runs-on: ubuntu-latest
+    env:
+      ARTIFACTNAME: ${{ inputs.artifact_name }}
+      ARTIFACTFILEPATH: ${{ inputs.artifact_file_path }}
+
+    steps:
+
+      - name: Validate inputs.artifact_name
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.3.0
+        with:
+          file_name: ${{ env.ARTIFACTNAME }}
+
+      - name: Validate inputs.artifact_file_path
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.3.0
+        with:
+          file_name: ${{ env.ARTIFACTFILEPATH }} 
+
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.artifact_name }}
+
+      - name: npm-config-npmjs-org-registry
+        uses: ritterim/public-github-actions/actions/npm-config-npmjs-org-registry@v1.3.0
+        with:
+          npmjs_api_key: ${{ secrets.npmjs_api_key }}
+
+# NOTE: We may switch to this in the publish step over using npm-config-npmjs-org-registry
+#   env:
+#     NODE_AUTH_TOKEN: ${{ secrets.npmjs_api_key }}
+
+      - run: ls -la
+
+      - name: Publish NPM Package (PUBLIC)
+        if: inputs.access_public == true
+        run: npm publish --dry-run --provenance --access=public "${ARTIFACTFILEPATH}"
+
+      - name: Publish NPM Package (RESTRICTED)
+        if: inputs.access_public != true
+        run: npm publish --dry-run --provenance --access=restricted "${ARTIFACTFILEPATH}"
+
+# REFS
+
+# https://docs.npmjs.com/generating-provenance-statements
