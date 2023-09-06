@@ -1,6 +1,6 @@
 name: NPM Publish (npmjs.org)
 
-# Publish the NPM package to theNPM registry (npmjs.org).  
+# Publish the NPM package to the NPM registry (npmjs.org).  
 # The artifact file is pulled from the artifacts on the workflow run.
 
 permissions:
@@ -32,7 +32,7 @@ on:
 
     secrets:
 
-      npmjs_api_key:
+      npmjs_org_api_key:
         description: The secret API key needed in order to access the NPM (npmjs.org) registry.
         required: true
 
@@ -65,11 +65,11 @@ jobs:
       - name: npm-config-npmjs-org-registry
         uses: ritterim/public-github-actions/actions/npm-config-npmjs-org-registry@v1.3.0
         with:
-          npmjs_api_key: ${{ secrets.npmjs_api_key }}
+          npmjs_org_api_key: ${{ secrets.npmjs_org_api_key }}
 
 # NOTE: We may switch to this in the publish step over using npm-config-npmjs-org-registry
 #   env:
-#     NODE_AUTH_TOKEN: ${{ secrets.npmjs_api_key }}
+#     NODE_AUTH_TOKEN: ${{ secrets.npmjs_org_api_key }}
 
       - run: ls -la
 

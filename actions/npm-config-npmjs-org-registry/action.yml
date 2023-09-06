@@ -7,7 +7,7 @@ branding:
 
 inputs:
 
-  npmjs_api_key:
+  npmjs_org_api_key:
     description: The secret API key needed in order to access the NPM (npmjs.org) registry.
     type: string
     required: true
@@ -28,10 +28,10 @@ runs:
       with:
         npm_scope: ${{ inputs.npm_scope }}
 
-    - name: Validate inputs.npmjs_api_key
+    - name: Validate inputs.npmjs_org_api_key
       uses: ritterim/public-github-actions/actions/npmjs-access-token-validator@v1.3.0
       with:
-        token: ${{ inputs.npmjs_api_key }}
+        token: ${{ inputs.npmjs_org_api_key }}
 
     - name: Verify current NPM config
       shell: bash
@@ -40,8 +40,8 @@ runs:
     - name: Configure .npmrc
       shell: bash
       env:
-        NPMJSAPIKEY: ${{ inputs.npmjs_api_key }}
+        NPMJSORGAPIKEY: ${{ inputs.npmjs_org_api_key }}
         NPMSCOPE: ${{ inputs.npm_scope }}
       run: |
         npm config set "@${NPMSCOPE}:registry=https://registry.npmjs.org/"
-        npm config set "//registry.npmjs.org/:_authToken=${NPMJSAPIKEY}"
+        npm config set "//registry.npmjs.org/:_authToken=${NPMJSORGAPIKEY}"
