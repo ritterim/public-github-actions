@@ -36,6 +36,12 @@ on:
         required: true
         type: string
 
+      npmjs_org_access_public:
+        description: Whether to publish to NPM registry (npmjs.org) as '--access=public' (true) or '--access=restricted' (false).
+        required: false
+        type: boolean
+        default: false
+
       package_json_filename:
         description: Name of the 'package.json' file if not the default name.
         required: false
@@ -60,6 +66,12 @@ on:
         type: boolean
         default: true
 
+      publish_to_npmjs_org:
+        description: Whether the artifact should be published to the NPM (npmjs.org) registry.
+        required: false
+        type: boolean
+        default: false
+
       run_tests:
         required: false
         type: boolean
@@ -70,6 +82,10 @@ on:
       myget_api_key:
         description: The secret API key needed in order to access the MyGet API.  These are formatted as GUIDs.
         required: false
+
+      npmjs_org_api_key:
+        description: The secret API key needed in order to access the NPM (npmjs.org) registry.
+        required: false        
 
 jobs:
 
@@ -133,6 +149,18 @@ jobs:
     with:
       artifact_name: ${{ needs.npm-pack.outputs.artifact_name }}
       artifact_file_path: ${{ needs.npm-pack.outputs.artifact_file_path }}
+
+  npm-publish-to-npmjs-org:
+    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-npmjs-org.yml@v1.3.0
+    #uses: ./.github/workflows/npm-publish-to-npmjs-org.yml
+    needs: [ npm-pack ]
+    if: inputs.publish_to_npmjs_org == true
+    secrets:
+      npmjs_org_api_key: ${{ secrets.npmjs_org_api_key }}
+    with:
+      artifact_name: ${{ needs.npm-pack.outputs.artifact_name }}
+      artifact_file_path: ${{ needs.npm-pack.outputs.artifact_file_path }}
+      access_public: ${{ inputs.npmjs_org_access_public }}
 
   create-github-release:
     uses: ritterim/public-github-actions/.github/workflows/npm-create-github-release-with-artifact.yml@v1.3.0
