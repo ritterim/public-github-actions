@@ -115,7 +115,7 @@ jobs:
       version: ${{ needs.version.outputs.version }}
 
   npm-publish-to-github-packages:
-    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-github-packages.yml@v1.2.0
+    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-github-packages.yml@v1.3.0
     #uses: ./.github/workflows/npm-publish-to-github-packages.yml
     if: inputs.publish_to_github == true
     needs: [ npm-pack ]
@@ -123,7 +123,7 @@ jobs:
       artifact_name: ${{ needs.npm-pack.outputs.artifact_name }}
 
   npm-publish-to-myget:
-    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-myget.yml@v1.2.0
+    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-myget.yml@v1.3.0
     #uses: ./.github/workflows/npm-publish-to-myget.yml
     needs: [ npm-pack ]
     if: inputs.publish_to_myget == true
