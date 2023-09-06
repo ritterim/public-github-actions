@@ -41,8 +41,21 @@ jobs:
           working-directory: ${{ inputs.project_directory }}
     env:
       ARTIFACTNAME: ${{ inputs.artifact_name }}
+      PROJECTDIRECTORY: ${{ inputs.project_directory }}
 
     steps:
+
+      - name: Validate inputs.artifact_name
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.2.0
+        env:
+          ARTIFACTNAME: ${{ inputs.artifact_name }}
+        with:
+          file_name: ${{ env.ARTIFACTNAME }}
+
+      - name: Validate inputs.project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.2.0
+        with:
+          path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: Download artifact from build job
         uses: actions/download-artifact@v3
