@@ -90,13 +90,13 @@ on:
 jobs:
 
   verify-tag-branch:
-    uses: ritterim/public-github-actions/.github/workflows/verify-tag-is-on-allowed-branch.yml@v1.3.0
+    uses: ritterim/public-github-actions/.github/workflows/verify-tag-is-on-allowed-branch.yml@v1.4.0
     #uses: ./.github/workflows/verify-tag-is-on-allowed-branch.yml
     with:
       allowed_branches: ${{ inputs.allowed_branches }}
 
   version:
-    uses: ritterim/public-github-actions/.github/workflows/extract-version-from-npm-package-json.yml@v1.3.0
+    uses: ritterim/public-github-actions/.github/workflows/extract-version-from-npm-package-json.yml@v1.4.0
     #uses: ./.github/workflows/extract-version-from-npm-package-json.yml
     needs: [ verify-tag-branch ]
     with:
@@ -104,7 +104,7 @@ jobs:
       project_directory: ${{ inputs.project_directory }}
 
   npm-build:
-    uses: ritterim/public-github-actions/.github/workflows/npm-build.yml@v1.3.0
+    uses: ritterim/public-github-actions/.github/workflows/npm-build.yml@v1.4.0
     #uses: ./.github/workflows/npm-build.yml
     needs: [ verify-tag-branch ]
     with:
@@ -112,7 +112,7 @@ jobs:
       project_directory: ${{ inputs.project_directory }}
 
   npm-test:
-    uses: ritterim/public-github-actions/.github/workflows/npm-test.yml@v1.3.0
+    uses: ritterim/public-github-actions/.github/workflows/npm-test.yml@v1.4.0
     #uses: ./.github/workflows/npm-test.yml
     needs: [ npm-build ]
     with:
@@ -121,7 +121,7 @@ jobs:
       run_tests: ${{ inputs.run_tests }}
 
   npm-pack:
-    uses: ritterim/public-github-actions/.github/workflows/npm-pack.yml@v1.3.0
+    uses: ritterim/public-github-actions/.github/workflows/npm-pack.yml@v1.4.0
     #uses: ./.github/workflows/npm-pack.yml
     needs: [ npm-build, npm-test, version ]
     with:
@@ -131,7 +131,7 @@ jobs:
       version: ${{ needs.version.outputs.version }}
 
   npm-publish-to-github-packages:
-    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-github-packages.yml@v1.3.0
+    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-github-packages.yml@v1.4.0
     #uses: ./.github/workflows/npm-publish-to-github-packages.yml
     if: inputs.publish_to_github == true
     needs: [ npm-pack ]
@@ -140,7 +140,7 @@ jobs:
       artifact_file_path: ${{ needs.npm-pack.outputs.artifact_file_path }}
 
   npm-publish-to-myget:
-    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-myget.yml@v1.3.0
+    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-myget.yml@v1.4.0
     #uses: ./.github/workflows/npm-publish-to-myget.yml
     needs: [ npm-pack ]
     if: inputs.publish_to_myget == true
@@ -151,7 +151,7 @@ jobs:
       artifact_file_path: ${{ needs.npm-pack.outputs.artifact_file_path }}
 
   npm-publish-to-npmjs-org:
-    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-npmjs-org.yml@v1.3.0
+    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-npmjs-org.yml@v1.4.0
     #uses: ./.github/workflows/npm-publish-to-npmjs-org.yml
     needs: [ npm-pack ]
     if: inputs.publish_to_npmjs_org == true
@@ -163,7 +163,7 @@ jobs:
       access_public: ${{ inputs.npmjs_org_access_public }}
 
   create-github-release:
-    uses: ritterim/public-github-actions/.github/workflows/npm-create-github-release-with-artifact.yml@v1.3.0
+    uses: ritterim/public-github-actions/.github/workflows/npm-create-github-release-with-artifact.yml@v1.4.0
     #uses: ./.github/workflows/npm-create-github-release-with-artifact.yml
     needs: [ npm-pack ]
     with:

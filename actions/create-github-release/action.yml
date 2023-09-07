@@ -33,12 +33,12 @@ runs:
         github_repository: ${{ inputs.github_repository }}
 
     - name: Validate inputs.github_token
-      uses: ritterim/github-actions/actions/github-token-validator@v1.3.0
+      uses: ritterim/github-actions/actions/github-token-validator@v1.4.0
       with:
         token: ${{ inputs.github_token }}
 
     - name: Validate inputs.version_tag
-      uses: ritterim/public-github-actions/actions/version-number-validator@v1.3.0
+      uses: ritterim/public-github-actions/actions/version-number-validator@v1.4.0
       env:
         VERSIONTAG: ${{ inputs.version_tag }}
       with:
