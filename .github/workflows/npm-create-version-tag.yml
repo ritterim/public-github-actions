@@ -74,6 +74,7 @@ jobs:
     env:
       ACTIONS_SECRET_PASSING_PASSPHRASE: ${{ secrets.gh_actions_secret_passing_passphrase }}
       DECRYPTED_GITHUB_TOKEN: not-yet-set
+      GITHUBREPOSITORY: ${{ github.repository }}
       HEADCOMMITMESSAGE: ${{ inputs.head_commit_message }}
       HEADCOMMITTITLE: Release
       NPMVERSIONOUTPUT: 'v0.0.0'
@@ -151,7 +152,7 @@ jobs:
       - run: git remote --verbose
 
       - name: git remote add upstream
-        run: git remote add upstream https://github.com/${{ github.repository }}
+        run: git remote add upstream "https://github.com/${GITHUBREPOSITORY}"
 
       - run: git config --list --show-origin
 
@@ -193,7 +194,7 @@ jobs:
           echo "PKGJSONVER=$PKGJSONVER"
           echo "PKGJSONVER=$PKGJSONVER" >> $GITHUB_ENV
 
-      - run: ls -la ${{ inputs.project_directory }}
+      - run: ls -la "${PROJECTDIRECTORY}"
 
       - run: git status
 
@@ -203,4 +204,4 @@ jobs:
 
       - run: git push upstream ${{ github.ref }}
 
-      - run: git push upstream "${{ env.NPMVERSIONOUTPUT }}"
+      - run: git push upstream "${NPMVERSIONOUTPUT}"
