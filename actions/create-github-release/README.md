@@ -9,7 +9,7 @@ A composite action which will create a GitHub Release using an existing tag in t
 
 ```
       - name: Create GitHub Release
-        uses: ritterim/public-github-actions/create-github-release@v1.3.0
+        uses: ritterim/public-github-actions/create-github-release@v1.4.0
         with:
           github_repository: ${{ github.repository }}
           github_token: ${{ github.token }}

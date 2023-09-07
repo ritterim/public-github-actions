@@ -32,14 +32,14 @@ runs:
   steps:
 
     - name: Validate inputs.artifact_name
-      uses: ritterim/public-github-actions/actions/file-name-validator@v1.3.0
+      uses: ritterim/public-github-actions/actions/file-name-validator@v1.4.0
       env:
         ARTIFACTNAME: ${{ inputs.artifact_name }}
       with:
         file_name: ${{ env.ARTIFACTNAME }}
 
     - name: Validate inputs.artifact_file_path
-      uses: ritterim/public-github-actions/actions/file-name-validator@v1.3.0
+      uses: ritterim/public-github-actions/actions/file-name-validator@v1.4.0
       env:
         ARTIFACTFILEPATH: ${{ inputs.artifact_file_path }}
       with:
@@ -51,12 +51,12 @@ runs:
         github_repository: ${{ inputs.github_repository }}
 
     - name: Validate inputs.github_token
-      uses: ritterim/github-actions/actions/github-token-validator@v1.3.0
+      uses: ritterim/github-actions/actions/github-token-validator@v1.4.0
       with:
         token: ${{ inputs.github_token }}
 
     - name: Validate inputs.version_tag
-      uses: ritterim/public-github-actions/actions/version-number-validator@v1.3.0
+      uses: ritterim/public-github-actions/actions/version-number-validator@v1.4.0
       env:
         VERSIONTAG: ${{ inputs.version_tag }}
       with:

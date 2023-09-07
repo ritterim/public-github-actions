@@ -29,7 +29,7 @@ runs:
   steps:
 
     - name: Validate with 'v' prefix
-      uses: ritterim/public-github-actions/actions/regex-validator@v1.3.0
+      uses: ritterim/public-github-actions/actions/regex-validator@v1.4.0
       if: inputs.allow_v_prefix == 'true'
       with:
         value: ${{ inputs.version }}
@@ -38,7 +38,7 @@ runs:
         error_if_not_valid: ${{ inputs.error_if_not_valid }}
 
     - name: Validate without 'v' prefix
-      uses: ritterim/public-github-actions/actions/regex-validator@v1.3.0
+      uses: ritterim/public-github-actions/actions/regex-validator@v1.4.0
       if: inputs.allow_v_prefix != 'true'
       with:
         value: ${{ inputs.version }}
