@@ -35,11 +35,9 @@ runs:
         github_repository: ${{ env.GH_REPOSITORY }}
 
     - name: Validate inputs.github_token
-      uses: ritterim/github-actions/github-token-validator@e037bcab7aa20ccc9b93c1ac8eae43ffae50a00f
-      env:
-        GH_TOKEN: ${{ inputs.github_token }}
+      uses: ritterim/github-actions/actions/github-token-validator@v1.3.0
       with:
-        github_token: ${{ env.GH_TOKEN }}
+        token: ${{ inputs.github_token }}
 
     - name: Validate inputs.version_tag
       uses: ritterim/public-github-actions/actions/version-number-validator@v1.3.0
