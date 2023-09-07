@@ -51,6 +51,7 @@ These actions help configure your `.npmrc` file to authenticate against differen
 Actions which can be used to validate input values to workflows against RegEx patterns.  While not guaranteed, these can help reduce the risk of command-line injection vulnerabilities or guard against simple mistakes.
 
 - [file-name-validator](actions/file-name-validator/)
+- [github-org-repository-validator](actions/github-org-repository-validator/)
 - [github-token-validator](actions/github-token-validator/)
 - [npm-package-name-validator](actions/npm-package-name-validator/)
 - [npm-package-scope-validator](actions/npm-package-scope-validator/)

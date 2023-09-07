@@ -1,0 +1,32 @@
+name: github-org-repository-validator
+description: Validate that the value looks like a GitHub repository in the format of "{org}/{name}".  It only allows alphanumeric names plus hyphens.
+author: RIMdev <RIMdev@RitterIM.com>
+branding:
+  icon: 'check-square'  
+  color: 'blue'
+
+inputs:
+
+  github_repository:
+    required: true
+
+  required:
+    required: false
+    default: true
+
+  error_if_not_valid:
+    required: false
+    default: true
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - name: Validate
+      uses: ritterim/public-github-actions/actions/regex-validator@v1.2.0
+      with:
+        value: ${{ inputs.github_repository }}
+        regex_pattern: '^[a-zA-Z0-9-]{1,25}\/[a-zA-Z0-9-]{1,50}$'
+        required: ${{ inputs.required }}
+        error_if_not_valid: ${{ inputs.error_if_not_valid }}

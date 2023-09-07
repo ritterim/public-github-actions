@@ -46,11 +46,9 @@ runs:
         file_name: ${{ env.ARTIFACTFILEPATH }}
 
     - name: Validate inputs.github_repository
-      uses: ritterim/github-actions/github-org-repository-validator@e037bcab7aa20ccc9b93c1ac8eae43ffae50a00f
-      env:
-        GH_REPOSITORY: ${{ inputs.github_repository }}
+      uses: ritterim/public-github-actions/github-org-repository-validator@v1.4.0
       with:
-        github_repository: ${{ env.GH_REPOSITORY }}
+        github_repository: ${{ inputs.github_repository }}
 
     - name: Validate inputs.github_token
       uses: ritterim/github-actions/actions/github-token-validator@v1.3.0
