@@ -28,7 +28,7 @@ runs:
   steps:
 
     - name: Validate inputs.github_repository
-      uses: ritterim/public-github-actions/github-org-repository-validator@v1.4.0
+      uses: ritterim/public-github-actions/actions/github-org-repository-validator@v1.4.0
       with:
         github_repository: ${{ inputs.github_repository }}
 
