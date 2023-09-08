@@ -29,7 +29,7 @@ jobs:
     steps:
       - name: Generate token
         id: generate_token
-        uses: tibdex/github-app-token@v1
+        uses: ritterim/public-github-actions/forks/github-app-token@v1.4.0
         with:
           app_id: ${{ secrets.APP_ID }}
 
