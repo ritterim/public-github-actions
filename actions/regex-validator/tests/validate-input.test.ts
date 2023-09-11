@@ -1,7 +1,7 @@
-import { describe } from 'node:test';
+import {describe, expect, it} from '@jest/globals';
 import { ValidateInput } from '../src/validate';
 
-const regexExpression = "^[A-Za-z0-9 \.,]{1,80}$";
+const regexExpression = "^[A-Za-z0-9 .,]{1,80}$";
 const input = 'cdbbdbsbz';
 
 describe('Validate Input Required False', () => {
@@ -9,7 +9,6 @@ describe('Validate Input Required False', () => {
         var result = ValidateInput(input, regexExpression, false);
         expect(result.isValid).toBe(true)
     });
-
 
     it('returns false result if input is empty string', () => {
         const input = '';
@@ -65,4 +64,21 @@ describe('Error Message', () => {
         expect(result.isValid).toBe(false);
         expect(typeof result.error).toBe('string');
     })
+})
+
+describe('ValidateInput: Version RegEx', () => {
+    const versionRegex = String.raw`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9A-Za-z-][0-9A-Za-z-]*)(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$`
+    const cases = [
+        {value: '0.0.1-alpha3', expected: true},
+        {value: '0.900.85948-alpha3.2+abcdef', expected: true},
+        {value: '1.2.0', expected: true},
+        {value: '1.A.0', expected: false}
+    ];
+    it.each(cases)(
+        "Case: '$value' returns $expected",
+        ({value, expected}) => {
+          let result = ValidateInput(value, versionRegex, true);
+          expect(result.isMatched).toEqual(expected);
+        }
+      );
 })
