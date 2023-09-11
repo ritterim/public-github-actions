@@ -1,0 +1,32 @@
+name: file-path-name-validator
+description: Validate that the file's path matches a regex pattern. The regex pattern for this validator is strict, but allows for slashes to reference files in other directories. Length of 2-90 characters. Only alphanumeric, dashes, periods, plus-signs, and slashes allowed. No spaces or other special characters allowed.
+author: RIMdev <RIMdev@RitterIM.com>
+branding:
+  icon: 'check-square'  
+  color: 'blue'
+
+inputs:
+
+  file_path_name:
+    required: true
+
+  required:
+    required: false
+    default: true
+
+  error_if_not_valid:
+    required: false
+    default: true
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - name: Validate
+      uses: ritterim/public-github-actions/actions/regex-validator@v1.4.0
+      with:
+        value: ${{ inputs.file_name }}
+        regex_pattern: '^[A-Za-z0-9\.\+\/-]{2,90}$'
+        required: ${{ inputs.required }}
+        error_if_not_valid: ${{ inputs.error_if_not_valid }}
