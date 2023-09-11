@@ -57,7 +57,7 @@ runs:
     - name: Validate inputs.artifact_name
       shell: bash
       run: |
-        echo "${ARTIFACTNAME}" | grep -E '^[A-Za-z0-9\.-]{10,60}'
+        echo "${ARTIFACTNAME}" | grep -E '^[A-Za-z0-9_\.-]{10,60}'
 
     - name: Set TGZFILENAME from ARTIFACTNAME
       shell: bash
