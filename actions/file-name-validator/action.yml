@@ -24,7 +24,7 @@ runs:
   steps:
 
     - name: Validate
-      uses: ritterim/public-github-actions/actions/regex-validator@v1.4.0
+      uses: ritterim/public-github-actions/actions/regex-validator@v1.5.0
       with:
         value: ${{ inputs.file_name }}
         regex_pattern: '^[A-Za-z0-9_\.\+-]{3,70}$'
