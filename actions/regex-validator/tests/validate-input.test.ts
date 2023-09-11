@@ -58,8 +58,8 @@ describe('Validate Input Required True', () => {
 
 describe('Error Message', () => {
     it('displays error', () => {
-        const regexExpression = "^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
-        var result = ValidateInput(input, regexExpression, true);
+        const regexExpression = String.raw`!\\\\\\^!^!^(0|[1-9]\d*)$?`
+        var result = ValidateInput('cdbbdbsbz', regexExpression, true);
 
         expect(result.isValid).toBe(false);
         expect(typeof result.error).toBe('string');
