@@ -66,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-          working-directory: ${{ inputs.project_directory }}
+        working-directory: ${{ inputs.project_directory }}
 
     outputs:
       artifact_name: ${{ steps.set-outputs.outputs.artifact_name }}
