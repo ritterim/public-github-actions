@@ -1,0 +1,125 @@
+name: Build-Test (NPM)
+
+# Perform the 'npm run build' and 'npm run test' steps, then 
+# throw the result away by default.
+
+# There is support for package.json files that are named otherwise 
+# or do not exist at the root of the repository. 
+
+# Cannot be used to access private GitHub Packages.
+
+permissions:
+  contents: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      node_version:
+        description: The node version to install such as '18.x'.  It is best to stick to LTS releases of nodejs to avoid slow build times.
+        required: false
+        type: string
+        default: '18.x'
+
+      package_json_filename:
+        description: Name of the 'package.json' file if not the default name.
+        required: false
+        type: string
+        default: package.json
+
+      persist_workspace:
+        description: Whether we should package up the workspace into a tarball at the end.
+        required: false
+        type: boolean
+        default: false
+
+      project_directory:
+        description: Location of the package.json file for the NPM package.
+        required: false
+        type: string
+        default: ./
+
+      run_tests:
+        required: false
+        type: boolean
+        default: true
+
+    outputs:
+
+      persisted_workspace_artifact_name:
+        description: Name of the artifact which contains the persisted workspace directory.
+        value: ${{ jobs.build.outputs.persisted_workspace_artifact_name }}
+
+      project_directory:
+        value: ${{ inputs.project_directory }}
+
+jobs:
+
+  build-test:
+    name: Build-Test (NPM)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+          working-directory: ${{ inputs.project_directory }}
+
+    outputs:
+      persisted_workspace_artifact_name: ${{ steps.persist-workspace.outputs.artifact_name }}
+
+    env:
+      PACKAGEJSONFILENAME: ${{ inputs.package_json_filename }}
+      PROJECTDIRECTORY: ${{ inputs.project_directory }}
+
+    steps:
+
+      - name: Validate inputs.package_json_filename
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.5.0
+        with:
+          file_name: ${{ env.PACKAGEJSONFILENAME }}
+
+      - name: Validate inputs.project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.5.0
+        with:
+          path_name: ${{ env.PROJECTDIRECTORY }}
+
+      - name: git ref debug information
+        working-directory: ./
+        run: |
+          echo "github.base_ref=${{ github.base_ref }}"
+          echo "github.head_ref=${{ github.head_ref }}"
+          echo "github.ref=${{ github.ref }}"
+
+      - name: Checkout Project
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      # See this for why setup-node can be slow: https://github.com/actions/setup-node/issues/726#issuecomment-1527198808
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: 'npm'
+          cache-dependency-path: ${{ inputs.project_directory }}/${{ inputs.package_json_filename }}
+
+      - run: git rev-parse --verify HEAD
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - run: ls -la
+
+      - name: Bypass Tests
+        if: inputs.run_tests != true
+        run: echo "The 'inputs.run_tests' value is FALSE, skipping tests!"
+
+      - name: npm run test
+        if: inputs.run_tests == true
+        run: npm run test
+
+      - name: Persist Workspace
+        id: persist-workspace
+        if: inputs.persist_workspace == true
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.5.0
