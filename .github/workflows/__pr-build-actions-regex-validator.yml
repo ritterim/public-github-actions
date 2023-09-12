@@ -1,0 +1,22 @@
+name: PR Build (actions/regex-validator)
+
+permissions:
+  contents: read
+  packages: read
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - .github/workflows/__pr-build-actions-regex-validator.yml
+      - actions/regex-validator/**
+
+jobs:
+
+  pr-build:
+    uses: ritterim/public-github-actions/.github/workflows/npm-build-test.yml@v1.6.0
+    #uses: ./.github/workflows/npm-packages-pr-build.yml
+    with:
+      project_directory: actions/regex-validator/
+      run_tests: true
