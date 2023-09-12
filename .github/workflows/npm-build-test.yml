@@ -6,6 +6,8 @@ name: Build-Test (NPM)
 # There is support for package.json files that are named otherwise 
 # or do not exist at the root of the repository. 
 
+# It's opinionated around RIMdev needs.
+
 permissions:
   contents: read
   packages: read
@@ -15,6 +17,12 @@ on:
   workflow_call:
 
     inputs:
+
+      npm_scope:
+        description: The NPM 'scope' value to use if pulling from GitHub Packages.  Default is 'ritterim' as it needs to match the GitHub organization value.
+        type: string
+        required: false
+        default: ritterim
 
       node_version:
         description: The node version to install such as '18.x'.  It is best to stick to LTS releases of nodejs to avoid slow build times.
@@ -108,6 +116,7 @@ jobs:
         uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@v1.5.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          npm_scope: ${{ inputs.npm_scope }}
 
       - run: npm ci
 
