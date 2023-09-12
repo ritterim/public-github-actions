@@ -116,16 +116,17 @@ jobs:
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
-      - name: Checkout Project
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.ref }}
-
       - name: git ref debug information
+        working-directory: ./
         run: |
           echo "github.base_ref=${{ github.base_ref }}"
           echo "github.head_ref=${{ github.head_ref }}"
           echo "github.ref=${{ github.ref }}"
+
+      - name: Checkout Project
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
 
       - name: Examine PR labels
         env:

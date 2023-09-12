@@ -45,6 +45,7 @@ jobs:
     steps:
 
       - name: git ref debug information
+        working-directory: ./
         run: |
           echo "github.base_ref=${{ github.base_ref }}"
           echo "github.head_ref=${{ github.head_ref }}"

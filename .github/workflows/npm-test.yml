@@ -55,6 +55,7 @@ jobs:
 
       - name: Bypass Tests
         if: inputs.run_tests != true
+        working-directory: ./
         run: echo "The 'inputs.run_tests' value is FALSE, skipping tests!"
 
       - name: Restore Workspace
