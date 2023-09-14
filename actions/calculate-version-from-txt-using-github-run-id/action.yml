@@ -1,0 +1,143 @@
+name: Calculate Version
+description: Calculates the version using a version.txt file and GitHub "github.run_id" value.
+
+# Calculates the version using a version.txt file and GitHub "github.run_id" value.
+# This will increment the patch value roughly every 15 minutes.
+
+# The github.run_id is a value like 5268670002 or 5660026243.  As of mid-2023
+# the value increases by about 9-10 million per day.  Some build sytems limit
+# the patch value to 65535 which results in it rolling over about every 650 days
+# unless you bump the minor version and then change your 'github_run_id_baseline'.
+
+# The main advantage of doing it this way is that every build (if infrequent)
+# will automatically get a unique SemVer patch value.
+
+inputs:
+
+  version_suffix:
+    description: The version suffix (e.g. "-pr123" or "-alpha1342") for non-release builds.
+    required: false
+    type: string
+
+  github_run_id_baseline:
+    description: The zero point for calculating the patch value from the 'github.run_id' value.  Currently a ten digit integer value, but we'll allow up to twelve digits.
+    required: true
+    type: string
+
+outputs:
+
+  short_git_hash:
+    description: The first 8 digits of the full git hash.
+    value: ${{ steps.calculate.outputs.short_git_hash }}
+
+  git_hash:
+    description: The full git hash.
+    value: ${{ steps.calculate.outputs.git_hash }}
+
+  major_minor_version:
+    description: The major/minor version, e.g. "10.1".
+    value: ${{ steps.calculate.outputs.major_minor_version }}
+
+  patch_version:
+    description: The value for the patch position in the version number.
+    value: ${{ steps.calculate.outputs.patch_version }}
+
+  version:
+    description: The version number to be used in most cases.  Usually "10.1.2750" or "10.1.2750-SUFFIX".
+    value: ${{ steps.calculate.outputs.version }}
+
+  informational_version:
+    description: The informational version number which includes additional information after a plus sign.  Usually followed by the git short hash, e.g. "10.1.2750+abcd1234".
+    value: ${{ steps.calculate.outputs.informational_version }}
+
+  version_suffix:
+    description: The version suffix (e.g. "-pr123" or "-alpha1342") which was passed in.
+    value: ${{ steps.calculate.outputs.version_suffix }}
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - run: cat version.txt
+      shell: bash
+
+    - name: Validate inputs.github_run_id_baseline
+      uses: ritterim/public-github-actions/actions/regex-validator@v1.5.0
+      with:
+        value: ${{ inputs.github_run_id_baseline }}
+        regex_pattern: '^[0-9]{10,12}$'    
+
+    - name: Validate inputs.github_run_id_baseline against github.run_id
+      shell: bash
+      env:
+        GHRUNID: ${{ github.run_id }}
+        BASELINE: ${{ inputs.github_run_id_baseline }}
+      run: |
+        GHRUNID=$(("${GHRUNID}"))
+        BASELINE=$(("${BASELINE}"))
+        echo "GHRUNID=${GHRUNID}"
+        echo "BASELINE=${BASELINE}"
+        if (( "${BASELINE}" < 5200000000 || "${BASELINE}" > 10000000000 )); then
+          echo "The 'inputs.github_run_id_baseline' value was not within the acceptable range."
+          exit 1
+        fi
+        if (( "${BASELINE}" > "${GHRUNID}" )); then
+          echo "The 'inputs.github_run_id_baseline' value (${BASELINE}) is larger than the current github.run_id (${GHRUNID}) value!"
+          exit 1
+        fi
+
+    # Pull the major.minor values out of the first non-empty line in the version.txt file.
+    # Any patch values will be ignored.
+    # We then calculate the patch version and short git hash.
+
+    # https://stackoverflow.com/a/1188376
+    # The github.run_id is currently a 10-digit value, way over the 65535 value limit for major/minor/patch in .NET/Windows.
+    # So we need to drop the digits to get from 5199779292 down to a value like 102.
+    # This calculation may need to be reconsidered every few months.  We chose a starting value of 5200000000.
+    # 2023-06-05: 5177692715
+    # 2023-06-14: 5268670002 (+90977287 or +10108587 per day), we're already up to 1/10th of our limit after just 7 days
+    # So the 3rd digit increases by +1 per day.  That means we hit 65,000 after only 65-70 days, we need 650-700 days.
+    # See: https://github.com/ritterim/devops-notes for the full details.
+
+    # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request
+    # Note that GITHUB_SHA for this event is the last merge commit of the pull request merge branch.
+    # If you want to get the commit ID for the last commit to the head branch of the pull request,
+    # use github.event.pull_request.head.sha instead.
+
+    - name: Set Version Variables
+      id: calculate
+      shell: bash
+      env:
+        PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        GH_RUN_ID: ${{ github.run_id }}
+        GH_RUN_ID_BASELINE: ${{ inputs.github_run_id_baseline }}
+        GH_VER_SUFFIX: ${{ inputs.version_suffix }}
+
+      run: |
+        GH_RUN_ID=$(("${GH_RUN_ID}"))
+        GH_RUN_ID_BASELINE=$(("${GH_RUN_ID_BASELINE}"))
+        VER=$(grep -Eo '^[0-9]{1,5}\.[0-9]{1,5}' version.txt | head -n1)
+        PATCH_VER=$(((${GH_RUN_ID} - ${GH_RUN_ID_BASELINE}) / 100000))
+        PULL_REQUEST_HEAD_SHORT_SHA=$(echo ${PULL_REQUEST_HEAD_SHA} | cut -c1-8)
+        GH_SHA_CALC="${PULL_REQUEST_HEAD_SHA:-${GITHUB_SHA:-ERROR}}"
+        GH_SHORT_SHA_CALC=$(echo ${GH_SHA_CALC} | cut -c1-8)
+        GH_VER_PATCH_SUFFIX="$VER.$PATCH_VER$GH_VER_SUFFIX"
+        echo "git_hash=$GH_SHA_CALC" >> $GITHUB_OUTPUT
+        echo "short_git_hash=$GH_SHORT_SHA_CALC" >> $GITHUB_OUTPUT
+        echo "version_suffix=$GH_VER_SUFFIX" >> $GITHUB_OUTPUT
+        echo "major_minor_version=$VER" >> $GITHUB_OUTPUT
+        echo "patch_version=$PATCH_VER" >> $GITHUB_OUTPUT
+        echo "version=$GH_VER_PATCH_SUFFIX" >> $GITHUB_OUTPUT
+        echo "informational_version=$GH_VER_PATCH_SUFFIX+$GH_SHORT_SHA_CALC" >> $GITHUB_OUTPUT
+
+    - name: Echo Version Output Variables
+      shell: bash
+      run: |
+        echo "informational_version=${{ steps.calculate.outputs.informational_version }}"
+        echo "major_minor_version=${{ steps.calculate.outputs.major_minor_version }}"
+        echo "patch_version=${{ steps.calculate.outputs.patch_version }}"
+        echo "version_suffix=${{ steps.calculate.outputs.version_suffix }}"
+        echo "version=${{ steps.calculate.outputs.version }}"
+        echo "git_hash=${{ steps.calculate.outputs.git_hash }}" 
+        echo "short_git_hash=${{ steps.calculate.outputs.short_git_hash }}" 

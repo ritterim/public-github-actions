@@ -36,6 +36,7 @@ GitHub Actions authored by RIMdev.
 ## GitHub
 
 - [attach-artifact-to-release](actions/attach-artifact-to-release/)
+- [calculate-version-from-txt-using-github-run-id](actions/calculate-version-from-txt-using-github-run-id/)
 - [create-github-release](actions/create-github-release/)
 
 ## NPM Registry Configuration
