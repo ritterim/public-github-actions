@@ -1,0 +1,82 @@
+name: Calculate Version
+
+# Calculates the version using a version.txt file.  The patch value is
+# calculated by looking at the GitHub "github.run_id" value and doing
+# some math.
+#
+# See: ritterim/public-github-actions/actions/calculate-version-from-txt-using-github-run-id
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      github_run_id_baseline:
+        description: The zero point for calculating the patch value from the 'github.run_id' value.
+        required: true
+        type: string # has to be string, because the caller is often passing in a GitHub Actions variable.
+
+      version_suffix:
+        description: The version suffix (e.g. "-pr123" or "-alpha1342") for non-release builds.
+        required: false
+        type: string
+
+    outputs:
+
+      short_git_hash:
+        description: The first 8 digits of the full git hash.
+        value: ${{ jobs.version.outputs.short_git_hash }}
+
+      git_hash:
+        description: The full git hash.
+        value: ${{ jobs.version.outputs.git_hash }}
+
+      major_minor_version:
+        description: The major/minor version, e.g. "10.1".
+        value: ${{ jobs.version.outputs.major_minor_version }}
+
+      patch_version:
+        description: The value for the patch position in the version number.
+        value: ${{ jobs.version.outputs.patch_version }}
+
+      version:
+        description: The version number to be used in most cases.  Usually "10.1.2750" or "10.1.2750-SUFFIX".
+        value: ${{ jobs.version.outputs.version }}
+
+      informational_version:
+        description: The informational version number which includes additional information after a plus sign.  Usually followed by the git short hash, e.g. "10.1.2750+abcd1234".
+        value: ${{ jobs.version.outputs.informational_version }}
+
+      version_suffix:
+        description: The version suffix (e.g. "-pr123" or "-alpha1342") which was passed in.
+        value: ${{ jobs.version.outputs.version_suffix }}
+
+jobs:
+
+  version:
+    name: version.txt Calculation
+    runs-on: ubuntu-latest
+
+    outputs:
+      short_git_hash: ${{ steps.version.outputs.short_git_hash }}
+      git_hash: ${{ steps.version.outputs.git_hash }}
+      major_minor_version: ${{ steps.version.outputs.major_minor_version }}
+      patch_version: ${{ steps.version.outputs.patch_version }}
+      version: ${{ steps.version.outputs.version }}
+      informational_version: ${{ steps.version.outputs.informational_version }}
+      version_suffix: ${{ steps.version.outputs.version_suffix }}
+
+    steps:
+
+      - name: Checkout Project
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Calculate Version
+        id: version
+        uses: ritterim/public-github-actions/actions/calculate-version-from-txt-using-github-run-id@v1.7.0
+        with:
+          version_suffix: ${{ inputs.version_suffix }}
+          github_run_id_baseline: ${{ inputs.github_run_id_baseline }}

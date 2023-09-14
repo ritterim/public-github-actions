@@ -24,6 +24,8 @@ Unless noted in the YAML, these are all licensed under the root folder's MIT lic
   - [npm-publish-to-github-packages.yml](#npm-publish-to-github-packagesyml)
   - [npm-publish-to-myget.yml](#npm-publish-to-mygetyml)
   - [npm-test.yml](#npm-testyml)
+- [Versioning](#versioning)
+  - [calculate-version-from-txt-using-github-run-id.yml](#calculate-version-from-txt-using-github-run-idyml)
 
 # GitHub Actions
 
@@ -168,3 +170,9 @@ Publish the NPM package to the MyGet NPM registry.  The artifact (`.tgz`) file i
 Execute '`npm run test`' against the package.json file.  There is support for package.json files that are named otherwise or do not exist at the root of the repository.  This workflow *only* runs the test script.
 
 Note: This restores the workspace created in the [npm-build.yml](#npm-buildyml) job before executing the test script.
+
+# Versioning
+
+## calculate-version-from-txt-using-github-run-id.yml
+
+Calculates the version using a version.txt file and GitHub "github.run_id" value. This will increment the patch value roughly every 15 minutes.
