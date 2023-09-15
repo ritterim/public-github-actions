@@ -6,13 +6,13 @@ const input = 'cdbbdbsbz';
 
 describe('Validate Input Required False', () => {
     it('returns valid if required is false', () => {
-        var result = ValidateInput(input, regexExpression, false);
+        var result = ValidateInput(input, regexExpression, false, true);
         expect(result.isValid).toBe(true)
     });
 
     it('returns false result if input is empty string', () => {
         const input = '';
-        var result = ValidateInput(input, regexExpression, true);
+        var result = ValidateInput(input, regexExpression, true, true);
        
         expect(result.isValid).toBe(false)
         expect(result.isMatched).toBe(false)
@@ -20,14 +20,14 @@ describe('Validate Input Required False', () => {
 
     it('returns false result if input is empty string', () => {
         const input = '';
-        var result = ValidateInput(input, regexExpression, false);
+        var result = ValidateInput(input, regexExpression, false, true);
        
         expect(result.isMatched).toBe(true)
         expect(result.isValid).toBe(true)
     });
 
     it('returns invalid if require and input are empty', () => {
-        var result = ValidateInput('', regexExpression, true);
+        var result = ValidateInput('', regexExpression, true, true);
        
         expect(result.isValid).toBe(false)
         expect(result.match).toBe('')
@@ -37,20 +37,20 @@ describe('Validate Input Required False', () => {
 
 describe('Validate Input Required True', () => {
     it('matched returns true result', () => {
-        var result = ValidateInput(input, regexExpression, true);
+        var result = ValidateInput(input, regexExpression, true, true);
        
         expect(result.isMatched).toBe(true)
     });
 
     it('matched returns true result with case insensitive', () => {
         const input = 'cdBbdbsSbZ';
-        var result = ValidateInput(input, regexExpression, true);
+        var result = ValidateInput(input, regexExpression, true, true);
        
         expect(result.isMatched).toBe(true)
     });
 
     it('returns result string', () => {
-        var result = ValidateInput(input, regexExpression, true);
+        var result = ValidateInput(input, regexExpression, true, true);
        
         expect(result.match).toBe(input)
     });
@@ -59,7 +59,7 @@ describe('Validate Input Required True', () => {
 describe('Error Message', () => {
     it('displays error', () => {
         const regexExpression = String.raw`!\\\\\\^!^!^(0|[1-9]\d*)$?`
-        var result = ValidateInput('cdbbdbsbz', regexExpression, true);
+        var result = ValidateInput('cdbbdbsbz', regexExpression, true, true);
 
         expect(result.isValid).toBe(false);
         expect(typeof result.error).toBe('string');
@@ -77,7 +77,30 @@ describe('ValidateInput: Version RegEx', () => {
     it.each(cases)(
         "Case: '$value' returns $expected",
         ({value, expected}) => {
-          let result = ValidateInput(value, versionRegex, true);
+          let result = ValidateInput(value, versionRegex, true, true);
+          expect(result.isMatched).toEqual(expected);
+        }
+      );
+})
+
+describe('ValidateInput: Case-Insensitive RegEx', () => {
+    const versionRegex = String.raw`^release|debug$`
+    const cases = [
+        {value: 'release', expected: true},
+        {value: 'RELEASE', expected: true},
+        {value: 'Release', expected: true},
+        {value: 'rElEAse', expected: true},
+        {value: 'debug', expected: true},
+        {value: 'DEBUG', expected: true},
+        {value: 'Debug', expected: true},
+        {value: 'dEbUg', expected: true},
+        {value: 'debug!', expected: false},
+        {value: '!release', expected: false},
+    ];
+    it.each(cases)(
+        "Case: '$value' returns $expected",
+        ({value, expected}) => {
+          let result = ValidateInput(value, versionRegex, true, false);
           expect(result.isMatched).toEqual(expected);
         }
       );
