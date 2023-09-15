@@ -5,6 +5,8 @@ import ensureError from 'ensure-error';
 try {
     const input = getInput('value');
     info(`input.value: ${input}`)
+    const caseSensitive = getBooleanInput('case_sensitive');
+    info(`input.case_sensitive: ${caseSensitive}`)
     const required = getBooleanInput('required');
     info(`input.required: ${required}`)
     const regexPattern = getInput('regex_pattern');
@@ -12,7 +14,7 @@ try {
     const errorIfNotValid = getBooleanInput('error_if_not_valid');
     info(`input.error_if_not_valid: ${errorIfNotValid}`)
 
-    var result = ValidateInput(input, regexPattern, required);
+    var result = ValidateInput(input, regexPattern, required, caseSensitive);
 
     if (errorIfNotValid) {
         if(!result.isValid) {

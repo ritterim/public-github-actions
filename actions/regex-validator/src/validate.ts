@@ -8,14 +8,16 @@ interface Result {
 export function ValidateInput(
     input: string,
     regex_pattern: string,
-    required: boolean): Result {
+    required: boolean,
+    caseSensitive: boolean
+    ): Result {
     let result: Result = {
         isMatched: false,
         match: input,
         isValid: false,
         error: null
     };
-    var matchedPattern = matchRegexPattern(result, input, regex_pattern);
+    var matchedPattern = matchRegexPattern(result, input, regex_pattern, caseSensitive);
 
     if(required) {
         if(!input) {
@@ -41,9 +43,12 @@ export function ValidateInput(
 function matchRegexPattern (
     result: Result,
     input: string,
-    regexPattern: string): boolean {
+    regexPattern: string,
+    caseSensitive: boolean
+    ): boolean {
     try {
-        var re = new RegExp(regexPattern);
+        var caseSensitiveFlag = caseSensitive ? "" : "i";
+        var re = new RegExp(regexPattern, caseSensitiveFlag);
         var regexResult = re.test(input)
         return regexResult;
     } catch (error: any) {
