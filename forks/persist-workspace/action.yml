@@ -44,6 +44,12 @@ runs:
   using: "composite"
   steps:
 
+    - name: Validate inputs.artifact_name
+      uses: ritterim/public-github-actions/actions/file-name-validator@v1.7.0
+      with:
+        file_name: ${{ inputs.artifact_name }}
+        required: false
+
     - name: Calculate ARTIFACTNAME
       shell: bash
       env:
