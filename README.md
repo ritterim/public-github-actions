@@ -4,6 +4,7 @@ A repository to contain RIMdev's public GitHub Actions and reusuable workflow (Y
 
 - [public-github-actions](#public-github-actions)
 - [Versioning](#versioning)
+  - [Release Process](#release-process)
 - [Reusable Workflows](#reusable-workflows)
 - [GitHub Actions](#github-actions)
   - [GitHub](#github)
@@ -13,7 +14,7 @@ A repository to contain RIMdev's public GitHub Actions and reusuable workflow (Y
 
 # Versioning
 
-Because this repo contains multiple GitHub actions and reusable workflow files, SemVer rules will be difficult to apply meaningfully or consistently.  See the [releases page](https://github.com/ritterim/public-github-actions/releases) for a list of current versions and the change logs.
+Because this mono-repo contains multiple GitHub actions and reusable workflow files, SemVer rules will be difficult to apply meaningfully or consistently.  See the [releases page](https://github.com/ritterim/public-github-actions/releases) for a list of current versions and the change logs.
 
 - The major (1st) position will probably never change.
 - The minor (2nd) position will bump frequently as we add new actions/workflows, remove old code or make a breaking change.
@@ -24,6 +25,20 @@ Breaking changes will be mentioned in the [BREAKING_CHANGES.md](BREAKING_CHANGES
 You can use the 'git' command line to look at changes for a specific path / file.
 
     git diff refs/tags/v1.0.0 refs/tags/v1.1.1 -- .github/workflows/
+
+## Release Process
+
+Summary: Version tags which have [release notes published](https://github.com/ritterim/public-github-actions/releases) should be safe to use.  For upcoming releases, we recommend avoiding them until a release has been published.
+
+1. A new annotated tag will be pushed up to the repo.  This tag will have 'DRAFT' somewhere in the comment.
+
+2. The reusable workflows and actions will be updated to point at this new version tag.
+
+3. Changes are tested.
+
+4. The annotated tag is deleted, then recreated with a comment of "Release x.y.z".
+
+5. A GitHub Release is created from the annotated tag.
 
 # Reusable Workflows
 
