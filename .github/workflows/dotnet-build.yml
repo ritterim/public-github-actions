@@ -1,0 +1,115 @@
+name: Build (.NET)
+
+permissions:
+  contents: read
+  packages: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      configuration:
+        required: false
+        type: string
+        default: "Release"
+
+      dotnet_version:
+        required: false
+        type: string
+        default: "6.0"
+
+      project_directory:
+        description: Location of the solution file for the dotnet solution.  Defaults to the root directory.
+        required: false
+        type: string
+        default: ./
+
+    outputs:
+
+      configuration:
+        value: ${{ inputs.configuration }}
+
+      dotnet_version:
+        value: ${{ inputs.dotnet_version }}
+
+      persisted_workspace_artifact_name:
+        description: Name of the artifact which contains the persisted workspace directory.
+        value: ${{ jobs.build.outputs.persisted_workspace_artifact_name }}
+
+      project_directory:
+        value: ${{ inputs.project_directory }}
+
+jobs:
+
+  build:
+    name: Build (.NET)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.project_directory }}
+
+    outputs:
+      persisted_workspace_artifact_name: ${{ steps.persist-workspace.outputs.artifact_name }}
+
+    env:
+      CONFIGURATION: ${{ inputs.configuration }}
+      PROJECTDIRECTORY: ${{ inputs.project_directory }}
+
+    steps:
+
+      - name: Validate inputs.configuration
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.7.0
+        with:
+          case_sensitive: false
+          regex_pattern: "^debug|release$"
+          value: ${{ env.CONFIGURATION }}
+
+      - name: Validate inputs.project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.7.0
+        with:
+          path_name: ${{ env.PROJECTDIRECTORY }}
+
+      - name: git ref debug information
+        working-directory: ./
+        run: |
+          echo "github.base_ref=${{ github.base_ref }}"
+          echo "github.head_ref=${{ github.head_ref }}"
+          echo "github.ref=${{ github.ref }}"
+
+      - name: Checkout Project
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ inputs.dotnet_version }}
+          source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+        env:
+          NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Setup ~/.nuget/packages cache
+        uses: actions/cache@v3
+        with:
+          key: nuget-packages-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          path: |
+            ~/.nuget/packages
+
+      - name: dotnet build
+        run: dotnet build --configuration "${CONFIGURATION}"
+
+      - run: ls -la
+
+      - name: Persist Workspace
+        id: persist-workspace
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.7.0
+
+      - run: ls -la ~/.nuget
+
+      - run: du -chs ~/.nuget/*
+
+      - run: ls -la ~/.nuget/packages
+

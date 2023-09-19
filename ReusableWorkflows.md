@@ -8,6 +8,11 @@ Unless noted in the YAML, these are all licensed under the root folder's MIT lic
   - [verify-tag-is-on-allowed-branch.yml](#verify-tag-is-on-allowed-branchyml)
 - [GitHub Tokens](#github-tokens)
   - [generate-github-token-from-github-app.yml](#generate-github-token-from-github-appyml)
+- [.NET](#net)
+  - [dotnet-build.yml](#dotnet-buildyml)
+  - [dotnet-test.yml](#dotnet-testyml)
+  - [dotnet-pack.yml](#dotnet-packyml)
+  - [dotnet-publish.yml](#dotnet-publishyml)
 - [NPM](#npm)
   - [Sequence Diagrams](#sequence-diagrams)
     - [PR Build Sequence](#pr-build-sequence)
@@ -48,6 +53,24 @@ Notes:
 - Because of how GitHub takes efforts to protect GitHub Tokens from being passed between jobs, we have to encrypt/obfuscate the token.  Doing this in a separate job is still useful because it limits exposure of the GitHub App's private key to just this job runner.  The other job steps which consume the token have no way to request a higher level set of permissions.
 
 - As late as Aug 2023, GitHub App tokens can NOT be used to access GitHub Packages.
+
+# .NET
+
+## dotnet-build.yml
+
+Build the solution using `dotnet build`.  The workspace is then persisted into a short-lived artifact and the NuGet packages are cached for later build steps.
+
+## dotnet-test.yml
+
+Using the persisted workspace and cached packages from the build step, run `dotnet test` against the solution.  It produces a test results artifact in the 'trx' format.
+
+## dotnet-pack.yml
+
+Use `dotnet pack` to create `.[s]nupkg` files for all projects in the solution which have `<IsPackable>true</IsPackable>` (which is the default).  Projects that should not be packed should set that to `false` in the `.csproj` file.
+
+## dotnet-publish.yml
+
+Package up a single project directory into a ZIP file that an be deployed to Azure Web Apps.
 
 # NPM
 
