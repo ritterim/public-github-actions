@@ -1,0 +1,205 @@
+name: Test (.NET)
+
+permissions:
+  contents: read
+  packages: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      artifact_name:
+        required: true
+        type: string
+
+      configuration:
+        required: true
+        type: string
+
+      docker_azurite_image:
+        description: Supply an image/tag string if you need to startup the Azurite service for tests.  Leave this input blank if you do not need the service.  The service will be started on the standard 10000-10002 ports.
+        type: string
+        required: false
+        default: ''
+
+      docker_elasticsearch_image:
+        description: Supply an image/tag string if you need to startup the Elasticsearch service for tests.  Leave this input blank if you do not need the service.
+        type: string
+        required: false
+        default: ''
+
+      docker_elasticsearch_http_port:
+        description: The port on which the Elasticsearch service will listen for http.
+        required: false
+        default: 9206
+        type: number
+
+      docker_elasticsearch_transport_port:
+        description: The port on which the Elasticsearch service will listen for transport.
+        required: false
+        default: 9306
+        type: number
+
+      docker_mssql_image:
+        description: Supply an image/tag string if you need to startup the SQL for Docker service for tests.  Leave this input blank if you do not need the service.
+        type: string
+        required: false
+        default: ''
+
+      docker_mssql_port:
+        description: The port on which the SQL for Docker container will listen.
+        required: false
+        default: 11435
+        type: number
+
+      dotnet_version:
+        required: false
+        type: string
+        default: "6.0"
+
+      persisted_workspace_artifact_name:
+        description: Name of the artifact which contains the persisted workspace directory.
+        required: true
+        type: string
+
+      project_directory:
+        description: Location of the solution file for the dotnet solution.  Defaults to the root directory.
+        required: false
+        type: string
+        default: ./
+
+      run_tests:
+        required: false
+        type: boolean
+        default: true
+
+    secrets:
+
+      mssql_password:
+        description: The password to use for the MSSQL 'sa' account when the SQL for Docker container is created.  This is not very sensitive as it's only used for running tests.
+        required: false
+
+jobs:
+
+  tests:
+    name: Test (.NET)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+          working-directory: ${{ inputs.project_directory }}
+
+    env:
+      ARTIFACTNAME: ${{ inputs.artifact_name }}
+      CONFIGURATION: ${{ inputs.configuration }}
+      PROJECTDIRECTORY: ${{ inputs.project_directory }}
+      RIMDEVTESTS__ELASTICSEARCH__PORT: ${{ inputs.docker_elasticsearch_http_port }}
+      RIMDEVTESTS__ELASTICSEARCH__TRANSPORTPORT: ${{ inputs.docker_elasticsearch_transport_port }}
+      RIMDEVTESTS__SQL__PORT: ${{ inputs.docker_mssql_port }}
+      RIMDEVTESTS__SQL__PASSWORD: ${{ secrets.mssql_password }}
+      # Elasticsearch
+      discovery.type: single-node
+      ES_JAVA_OPTS: -Xms256m -Xmx256m
+
+    services:
+
+      azurite:
+        image: ${{ inputs.docker_azurite_image }}
+        ports:
+          - 10000:10000
+          - 10001:10001
+          - 10002:10002
+
+      elasticsearch:
+        image: ${{ inputs.docker_elasticsearch_image }}
+        ports:
+          - ${{ inputs.docker_elasticsearch_http_port }}:9200
+          - ${{ inputs.docker_elasticsearch_transport_port }}:9300
+
+      mssql:
+        image: ${{ inputs.docker_mssql_image }}
+        env:
+          SA_PASSWORD: ${{ secrets.mssql_password }}
+          ACCEPT_EULA: 'Y'
+        ports:
+          - ${{ inputs.docker_mssql_port }}:1433
+
+    steps:
+
+      - name: Validate inputs.artifact_name
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.5.0
+        with:
+          file_name: ${{ env.ARTIFACTNAME }}
+
+      - name: Validate inputs.configuration
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.7.0
+        with:
+          case_sensitive: false
+          regex_pattern: "^debug|release$"
+          value: ${{ env.CONFIGURATION }}
+
+      - name: Validate inputs.project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.7.0
+        with:
+          path_name: ${{ env.PROJECTDIRECTORY }}
+
+      - name: Validate secrets.mssql_password (must be 8-250 chars)
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.7.0
+        if: inputs.docker_mssql_image != ''
+        with:
+          value: ${{ secrets.mssql_password }}
+          regex_pattern: "^.{8,250}$"
+
+      - name: Bypass Tests
+        if: inputs.run_tests != true
+        working-directory: ./
+        run: echo "The 'inputs.run_tests' value is FALSE, skipping tests!"
+
+      - name: Restore Workspace
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.7.0
+        if: inputs.run_tests == true
+        with:
+          action: retrieve
+          artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        if: inputs.run_tests == true
+        with:
+          dotnet-version: ${{ inputs.dotnet_version }}
+          source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+        env:
+          NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Setup ~/.nuget/packages cache
+        uses: actions/cache@v3
+        if: inputs.run_tests == true
+        with:
+          key: nuget-packages-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          path: |
+            ~/.nuget/packages
+
+      # https://github.com/dotnet/core/issues/7412
+      # We can't feed in --no-build or --no-restore or else the test command will just fail silently
+      # instead of throwing an error when it fails to restore the dependencies.
+      - name: dotnet test
+        if: inputs.run_tests == true
+        run: |
+          dotnet test \
+            --logger "console;verbosity=normal" \
+            --logger "trx;logfilename=testResults.trx" \
+            --configuration "${CONFIGURATION}"
+
+      - name: Find .trx files
+        if: inputs.run_tests == true
+        run: find . -name '*.trx' -type f
+
+      - name: Upload Artifacts
+        id: upload-artifact
+        uses: actions/upload-artifact@v3
+        if: inputs.run_tests == true
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: "${{ inputs.project_directory }}**/*.trx"
+          if-no-files-found: error

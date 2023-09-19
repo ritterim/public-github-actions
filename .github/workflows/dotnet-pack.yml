@@ -1,0 +1,138 @@
+name: Pack (.NET)
+
+# Performs only the 'dotnet pack'.
+
+permissions:
+  contents: read
+  packages: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      artifact_name:
+        required: true
+        type: string
+
+      configuration:
+        required: false
+        type: string
+        default: "Release"
+
+      dotnet_version:
+        required: false
+        type: string
+        default: "6.0"
+
+      persisted_workspace_artifact_name:
+        description: Name of the artifact which contains the persisted workspace directory.
+        required: true
+        type: string
+
+      project_directory:
+        required: false
+        type: string
+        default: "./"
+
+      informational_version:
+        required: true
+        type: string
+
+      version:
+        required: true
+        type: string
+
+    outputs:
+
+      artifact_name:
+        value: ${{ inputs.artifact_name }}
+
+jobs:
+
+  pack:
+    name: Pack (.NET)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+          working-directory: ${{ inputs.project_directory }}
+
+    env:
+      ARTIFACTNAME: ${{ inputs.artifact_name }}
+      CONFIGURATION: ${{ inputs.configuration }}
+      PROJECTDIRECTORY: ${{ inputs.project_directory }}
+      INFORMATIONALVERSION: ${{ inputs.informational_version }}
+      VERSION: ${{ inputs.version }}
+
+    steps:
+
+      - name: Validate inputs.artifact_name
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.5.0
+        with:
+          file_name: ${{ env.ARTIFACTNAME }}
+
+      - name: Validate inputs.configuration
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.7.0
+        with:
+          case_sensitive: false
+          regex_pattern: "^debug|release$"
+          value: ${{ env.CONFIGURATION }}
+
+      - name: Validate inputs.project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.7.0
+        with:
+          path_name: ${{ env.PROJECTDIRECTORY }}
+
+      - name: Validate inputs.informational_version
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.7.0
+        with:
+          version: ${{ env.INFORMATIONALVERSION }}
+
+      - name: Validate inputs.version
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.7.0
+        with:
+          version: ${{ env.VERSION }}
+
+      - name: Restore Workspace
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.7.0
+        with:
+          action: retrieve
+          artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ inputs.dotnet_version }}
+          source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+        env:
+          NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Setup ~/.nuget/packages cache
+        uses: actions/cache@v3
+        with:
+          key: nuget-packages-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          path: |
+            ~/.nuget/packages
+
+      - run: mkdir -p 'artifacts'
+
+      - name: dotnet pack
+        run: |
+          dotnet pack \
+            --no-build \
+            --include-symbols \
+            --configuration "${CONFIGURATION}" \
+            -p:Version="${VERSION}" \
+            -p:InformationalVersion="${INFORMATIONALVERSION}" \
+            --output "artifacts"
+
+      - run: ls -l artifacts
+
+      - name: Upload Artifacts
+        id: upload-artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: "${{ inputs.project_directory }}artifacts/*.*nupkg"
+          if-no-files-found: error
