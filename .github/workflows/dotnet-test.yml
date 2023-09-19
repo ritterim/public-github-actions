@@ -54,6 +54,18 @@ on:
         default: 11435
         type: number
 
+      docker_redis_image:
+        description: Supply an image/tag string if you need to startup the Redis Docker service for tests.  Leave this input blank if you do not need the service.
+        type: string
+        required: false
+        default: ''
+
+      docker_redis_port:
+        description: The port on which the Redis Docker container will listen.
+        required: false
+        default: 6379
+        type: number
+
       dotnet_version:
         required: false
         type: string
@@ -124,6 +136,11 @@ jobs:
           ACCEPT_EULA: 'Y'
         ports:
           - ${{ inputs.docker_mssql_port }}:1433
+
+      redis:
+        image: ${{ inputs.docker_redis_image }}
+        ports:
+          - ${{ inputs.docker_redis_port }}:6379
 
     steps:
 
