@@ -8,12 +8,18 @@ Unless noted in the YAML, these are all licensed under the root folder's MIT lic
   - [verify-tag-is-on-allowed-branch.yml](#verify-tag-is-on-allowed-branchyml)
 - [GitHub Tokens](#github-tokens)
   - [generate-github-token-from-github-app.yml](#generate-github-token-from-github-appyml)
+- [Versioning](#versioning)
+  - [calculate-version-from-txt-using-github-run-id.yml](#calculate-version-from-txt-using-github-run-idyml)
 - [.NET](#net)
   - [dotnet-build.yml](#dotnet-buildyml)
   - [dotnet-test.yml](#dotnet-testyml)
   - [dotnet-pack.yml](#dotnet-packyml)
   - [dotnet-publish.yml](#dotnet-publishyml)
+- [.NET/NPM](#netnpm)
+  - [dotnet-npm-build.yml](#dotnet-npm-buildyml)
+  - [dotnet-npm-test.yml](#dotnet-npm-testyml)
 - [NPM](#npm)
+  - [Examples](#examples)
   - [Sequence Diagrams](#sequence-diagrams)
     - [PR Build Sequence](#pr-build-sequence)
     - [PR Merge Sequence](#pr-merge-sequence)
@@ -29,8 +35,6 @@ Unless noted in the YAML, these are all licensed under the root folder's MIT lic
   - [npm-publish-to-github-packages.yml](#npm-publish-to-github-packagesyml)
   - [npm-publish-to-myget.yml](#npm-publish-to-mygetyml)
   - [npm-test.yml](#npm-testyml)
-- [Versioning](#versioning)
-  - [calculate-version-from-txt-using-github-run-id.yml](#calculate-version-from-txt-using-github-run-idyml)
 
 # GitHub Actions
 
@@ -54,7 +58,17 @@ Notes:
 
 - As late as Aug 2023, GitHub App tokens can NOT be used to access GitHub Packages.
 
+# Versioning
+
+## calculate-version-from-txt-using-github-run-id.yml
+
+Calculates the version using a version.txt file and GitHub "github.run_id" value. This will increment the patch value roughly every 15 minutes.
+
 # .NET
+
+Scripts for executing the dotnet build / test / pack / publish cycle.  These workflows run in separate GitHub Action jobs.  Doing it this way will increase your GitHub Actions minutes consumption rate but provides the ability to do things in parallel and quickly see which part of the build failed.
+
+We may provide consolidated variants in the future which use fewer separate jobs.
 
 ## dotnet-build.yml
 
@@ -72,11 +86,30 @@ Use `dotnet pack` to create `.[s]nupkg` files for all projects in the solution w
 
 Package up a single project directory into a ZIP file that an be deployed to Azure Web Apps.
 
+# .NET/NPM
+
+Workflows that are useful when you have a .NET application with a JavaScript front-end that can be built/tested with `npm run build` / `npm run test` steps.
+
+## dotnet-npm-build.yml
+
+Build the solution using `dotnet build` against the solution and run `npm run build` in a single project folder.  The workspace is then persisted into a short-lived artifact and the NuGet/NPM packages are cached for later build steps.
+
+## dotnet-npm-test.yml
+
+Using the persisted workspace and cached packages from the build step, run `dotnet test` against the solution and run `npm run test` in a single project folder.  It produces a `dotnet test` results artifact in the 'trx' format.
+
+There is no way to skip test running.  If you have no NPM tests, and won't be adding any, set the 'test' script in package.json to the no-op "`exit 0`".
+
 # NPM
 
-Scripts for executing the NPM build / test / pack cycle.  These workflows are opinionated in that they run the cycle's parts in separate GitHub Action jobs.  Doing it this way will increase your GitHub Actions minutes consumption rate but provides the ability to do things in parallel and quickly see which part of the build failed.
+Scripts for executing the NPM build / test / pack cycle.  These workflows run in separate GitHub Action jobs.  Doing it this way will increase your GitHub Actions minutes consumption rate but provides the ability to do things in parallel and quickly see which part of the build failed.
 
 We may provide consolidated variants in the future which use fewer separate jobs.
+
+## Examples
+
+- [platform-icons](https://github.com/ritterim/platform-icons/tree/master/.github/workflows)
+- [platform-ui](https://github.com/ritterim/platform-ui/tree/master/.github/workflows)
 
 ## Sequence Diagrams
 
@@ -194,8 +227,3 @@ Execute '`npm run test`' against the package.json file.  There is support for pa
 
 Note: This restores the workspace created in the [npm-build.yml](#npm-buildyml) job before executing the test script.
 
-# Versioning
-
-## calculate-version-from-txt-using-github-run-id.yml
-
-Calculates the version using a version.txt file and GitHub "github.run_id" value. This will increment the patch value roughly every 15 minutes.
