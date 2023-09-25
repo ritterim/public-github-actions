@@ -1,0 +1,173 @@
+name: Build (.NET/NPM)
+
+# A combined workflow that does both 'dotnet build' and 'npm run build'.
+# Note that the NPM side only handles a single package.json file, so
+# the 'npm_project_directory' input is generally going to be required
+# but the 'dotnet build' command can usually be run from the solution folder.
+
+permissions:
+  contents: read
+  packages: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      configuration:
+        required: false
+        type: string
+        default: "Release"
+
+      dotnet_version:
+        required: false
+        type: string
+        default: "6.0"
+
+      node_version:
+        description: The node version to install such as '18.x'.  It is best to stick to LTS releases of nodejs to avoid slow build times.
+        required: false
+        type: string
+        default: '18.x'
+
+      npm_package_json_filename:
+        description: Name of the 'package.json' file if not the default name.
+        required: false
+        type: string
+        default: package.json
+
+      npm_project_directory:
+        description: Location of the package.json file for the NPM package.
+        required: false
+        type: string
+        default: ./
+
+      project_directory:
+        description: Location of the solution file for the dotnet solution.  Defaults to the root directory.
+        required: false
+        type: string
+        default: ./
+
+    outputs:
+
+      configuration:
+        value: ${{ inputs.configuration }}
+
+      dotnet_version:
+        value: ${{ inputs.dotnet_version }}
+
+      node_version:
+        value: ${{ inputs.node_version }}
+
+      npm_package_json_filename:
+        value: ${{ inputs.npm_package_json_filename }}
+
+      npm_project_directory:
+        value: ${{ inputs.npm_project_directory }}
+
+      persisted_workspace_artifact_name:
+        description: Name of the artifact which contains the persisted workspace directory.
+        value: ${{ jobs.build.outputs.persisted_workspace_artifact_name }}
+
+      project_directory:
+        value: ${{ inputs.project_directory }}
+
+jobs:
+
+  build:
+    name: Build (.NET/NPM)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.project_directory }}
+
+    outputs:
+      persisted_workspace_artifact_name: ${{ steps.persist-workspace.outputs.artifact_name }}
+
+    env:
+      CONFIGURATION: ${{ inputs.configuration }}
+      NPMPACKAGEJSONFILENAME: ${{ inputs.npm_package_json_filename }}
+      NPMPROJECTDIRECTORY: ${{ inputs.npm_project_directory }}
+      PROJECTDIRECTORY: ${{ inputs.project_directory }}
+
+    steps:
+
+      - name: Validate inputs.configuration
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.7.0
+        with:
+          case_sensitive: false
+          regex_pattern: "^debug|release$"
+          value: ${{ env.CONFIGURATION }}
+
+      - name: Validate inputs.npm_package_json_filename
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.5.0
+        with:
+          file_name: ${{ env.NPMPACKAGEJSONFILENAME }}
+
+      - name: Validate inputs.npm_project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.7.0
+        with:
+          path_name: ${{ env.NPMPROJECTDIRECTORY }}
+
+      - name: Validate inputs.project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.7.0
+        with:
+          path_name: ${{ env.PROJECTDIRECTORY }}
+
+      - name: git ref debug information
+        working-directory: ./
+        run: |
+          echo "github.base_ref=${{ github.base_ref }}"
+          echo "github.head_ref=${{ github.head_ref }}"
+          echo "github.ref=${{ github.ref }}"
+
+      - name: Checkout Project
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ inputs.dotnet_version }}
+          source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+        env:
+          NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Setup ~/.nuget/packages cache
+        uses: actions/cache@v3
+        with:
+          key: nuget-packages-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          path: |
+            ~/.nuget/packages
+
+      # See this for why setup-node can be slow: https://github.com/actions/setup-node/issues/726#issuecomment-1527198808
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: 'npm'
+          cache-dependency-path: "${{ inputs.npm_project_directory }}${{ inputs.npm_package_json_filename }}"
+
+      - name: npm-config-github-packages-repository
+        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@v1.5.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: npm ci
+        working-directory: ${{ env.NPMPROJECTDIRECTORY }}
+        run: npm ci
+
+      - name: npm run build
+        working-directory:  ${{ env.NPMPROJECTDIRECTORY }}
+        run: npm run build
+
+      - name: dotnet build
+        run: dotnet build --configuration "${CONFIGURATION}"
+
+      - run: ls -la
+
+      - name: Persist Workspace
+        id: persist-workspace
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.7.0
