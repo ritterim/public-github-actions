@@ -87,12 +87,6 @@ on:
         type: boolean
         default: true
 
-    secrets:
-
-      mssql_password:
-        description: The password to use for the MSSQL 'sa' account when the SQL for Docker container is created.  This is not very sensitive as it's only used for running tests.
-        required: false
-
 jobs:
 
   tests:
@@ -109,7 +103,8 @@ jobs:
       RIMDEVTESTS__ELASTICSEARCH__PORT: ${{ inputs.docker_elasticsearch_http_port }}
       RIMDEVTESTS__ELASTICSEARCH__TRANSPORTPORT: ${{ inputs.docker_elasticsearch_transport_port }}
       RIMDEVTESTS__SQL__PORT: ${{ inputs.docker_mssql_port }}
-      RIMDEVTESTS__SQL__PASSWORD: ${{ secrets.mssql_password }}
+      # The SQL password just needs to be not-empty, it's a temporary database
+      RIMDEVTESTS__SQL__PASSWORD: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
       # Elasticsearch
       discovery.type: single-node
       ES_JAVA_OPTS: -Xms256m -Xmx256m
@@ -132,7 +127,7 @@ jobs:
       mssql:
         image: ${{ inputs.docker_mssql_image }}
         env:
-          SA_PASSWORD: ${{ secrets.mssql_password }}
+          SA_PASSWORD: ${{ env.RIMDEVTESTS__SQL__PASSWORD }}
           ACCEPT_EULA: 'Y'
         ports:
           - ${{ inputs.docker_mssql_port }}:1433
@@ -161,11 +156,11 @@ jobs:
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
-      - name: Validate secrets.mssql_password (must be 8-250 chars)
+      - name: Validate RIMDEVTESTS__SQL__PASSWORD (must be 8-250 chars)
         uses: ritterim/public-github-actions/actions/regex-validator@v1.7.0
         if: inputs.docker_mssql_image != ''
         with:
-          value: ${{ secrets.mssql_password }}
+          value: ${{ env.RIMDEVTESTS__SQL__PASSWORD }}
           regex_pattern: "^.{8,250}$"
 
       - name: Bypass Tests
