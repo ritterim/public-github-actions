@@ -42,7 +42,7 @@ Note that you *must* have a `version.txt` file in the root of the repository wit
 
       - name: Calculate Version
         id: version
-        uses: ritterim/public-github-actions/actions/calculate-version-from-txt-using-github-run-id@v1.7.0
+        uses: ritterim/public-github-actions/actions/calculate-version-from-txt-using-github-run-id@v1.8.0
         with:
           version_suffix: "-alpha${{ github.run_number }}"
           github_run_id_baseline: 6100000000
