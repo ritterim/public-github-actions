@@ -48,12 +48,12 @@ jobs:
     steps:
 
       - name: Validate inputs.artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.5.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
         with:
           file_name: ${{ env.ARTIFACTNAME }}
 
       - name: Validate inputs.artifact_file_path
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.5.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
         with:
           file_name: ${{ env.ARTIFACTFILEPATH }} 
 
@@ -63,7 +63,7 @@ jobs:
           name: ${{ inputs.artifact_name }}
 
       - name: npm-config-npmjs-org-registry
-        uses: ritterim/public-github-actions/actions/npm-config-npmjs-org-registry@v1.5.0
+        uses: ritterim/public-github-actions/actions/npm-config-npmjs-org-registry@v1.8.0
         with:
           npmjs_org_api_key: ${{ secrets.npmjs_org_api_key }}
 

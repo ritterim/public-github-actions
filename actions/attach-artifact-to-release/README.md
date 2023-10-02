@@ -9,7 +9,7 @@ Attach artifact from the workflow run to a GitHub Release.
 
 ```
       - name: Attach Artifact to GitHub Release
-        uses: ritterim/public-github-actions/attach-artifact-to-release@v1.5.0
+        uses: ritterim/public-github-actions/attach-artifact-to-release@v1.8.0
         with:
           artifact_name: ${{ inputs.artifact_name }}
           artifact_file_path: ${{ inputs.artifact_file_path }}

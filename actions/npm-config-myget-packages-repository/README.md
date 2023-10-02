@@ -13,7 +13,7 @@ WARN: It's not designed for use outside of our organization due to the hardcoded
 
 ```
       - name: npm-config-myget-packages-repository
-        uses: ritterim/public-github-actions/actions/npm-config-myget-packages-repository@v1.5.0
+        uses: ritterim/public-github-actions/actions/npm-config-myget-packages-repository@v1.8.0
         with:
           myget_api_key: ${{ secrets.myget_api_key }}
 ```
