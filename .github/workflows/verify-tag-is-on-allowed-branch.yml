@@ -153,7 +153,7 @@ jobs:
 
           echo "Drop branch entries that do not match the pattern."
           echo "The branch name must be 'remotes/origin/XYZ' where 'XYZ' is the simple branch name."
-          IFS=$'\n' readarray -t TAGGEDBRANCHES < <(printf "%s\n" ${TAGGEDBRANCHES[@]} | grep -E '^remotes/origin/[A-Za-z0-9\.-]{3,50}$')
+          IFS=$'\n' readarray -t TAGGEDBRANCHES < <(printf "%s\n" ${TAGGEDBRANCHES[@]} | grep -E '^remotes/origin/[A-Za-z0-9\.-]{2,50}$')
 
           echo "TAGGEDBRANCHES={"
           printf '  [%s]\n' "${TAGGEDBRANCHES[@]}"
