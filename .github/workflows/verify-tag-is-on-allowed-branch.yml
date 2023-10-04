@@ -90,11 +90,11 @@ jobs:
           printf '  [%s]\n' "${ALLOWEDBRANCHES[@]}"
           echo "}"
 
-          echo "Test each element against a grep pattern for validity."
+          echo "Test each element against a grep pattern for valid branch name style."
           for branch in "${ALLOWEDBRANCHES[@]}"
           do
             echo "  Validate [$branch]"
-            echo "$branch" | grep -E '^[A-Za-z0-9\.-]{3,50}$' > /dev/null
+            echo "$branch" | grep -E '^[A-Za-z0-9\.-]{2,50}$' > /dev/null
           done
 
           echo "ALLOWEDBRANCHES=${ALLOWEDBRANCHES[@]}" >> $GITHUB_ENV
