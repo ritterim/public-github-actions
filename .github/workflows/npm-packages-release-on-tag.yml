@@ -90,7 +90,7 @@ on:
 jobs:
 
   verify-tag-branch:
-    uses: ritterim/public-github-actions/.github/workflows/verify-tag-is-on-allowed-branch.yml@v1.8.0
+    uses: ritterim/public-github-actions/.github/workflows/verify-tag-is-on-allowed-branch.yml@v1.8.1
     #uses: ./.github/workflows/verify-tag-is-on-allowed-branch.yml
     with:
       allowed_branches: ${{ inputs.allowed_branches }}
