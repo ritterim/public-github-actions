@@ -58,10 +58,18 @@ describe('Validate Input Required True', () => {
 
 describe('Error Message', () => {
     it('displays error', () => {
-        const regexExpression = String.raw`!\\\\\\^!^!^(0|[1-9]\d*)$?`
+        const regexExpression = String.raw`!\\\\\\^!^!^(0|[1-9]\d*)$?`;
         var result = ValidateInput('cdbbdbsbz', regexExpression, true, true);
 
         expect(result.isValid).toBe(false);
+        expect(typeof result.error).toBe('string');
+    })
+
+    it('return error when regex is valid but doesn\'t pass test method', () => {
+        const regexExpression = String.raw`^[0-9]{10,12}$`;
+        var result = ValidateInput('not a number', regexExpression, true, true);
+
+        expect(result.isMatched).toBe(false);
         expect(typeof result.error).toBe('string');
     })
 })

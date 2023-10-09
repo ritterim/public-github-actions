@@ -46,13 +46,21 @@ function matchRegexPattern (
     regexPattern: string,
     caseSensitive: boolean
     ): boolean {
+    const errorMessage = "The input was not valid";
+
     try {
         var caseSensitiveFlag = caseSensitive ? "" : "i";
         var re = new RegExp(regexPattern, caseSensitiveFlag);
         var regexResult = re.test(input)
+
+        if(!regexResult) {
+            result.error = errorMessage;
+            return false;
+        }
+
         return regexResult;
     } catch (error: any) {
-        result.error = "The input was not valid."
+        result.error = errorMessage;
         return false;
     }
 }
