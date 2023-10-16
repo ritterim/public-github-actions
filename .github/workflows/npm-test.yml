@@ -49,7 +49,7 @@ jobs:
     steps:
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.9.0
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
@@ -59,7 +59,7 @@ jobs:
         run: echo "The 'inputs.run_tests' value is FALSE, skipping tests!"
 
       - name: Restore Workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.8.0
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.0
         if: inputs.run_tests == true
         with:
           action: retrieve

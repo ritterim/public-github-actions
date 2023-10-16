@@ -36,7 +36,7 @@ jobs:
     steps:
 
       - name: Create GitHub Release
-        uses: ritterim/public-github-actions/actions/create-github-release@v1.8.0
+        uses: ritterim/public-github-actions/actions/create-github-release@v1.9.0
         with:
           github_repository: ${{ github.repository }}
           github_token: ${{ github.token }}
@@ -44,7 +44,7 @@ jobs:
           version_tag: ${{ env.GH_REF_NAME }}
 
       - name: Attach Artifact to GitHub Release
-        uses: ritterim/public-github-actions/actions/attach-artifact-to-release@v1.8.0
+        uses: ritterim/public-github-actions/actions/attach-artifact-to-release@v1.9.0
         with:
           artifact_name: ${{ inputs.artifact_name }}
           artifact_file_path: ${{ inputs.artifact_file_path }}
