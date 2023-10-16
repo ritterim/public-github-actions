@@ -42,12 +42,12 @@ jobs:
     steps:
 
       - name: Validate inputs.artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.9.0
         with:
           file_name: ${{ env.ARTIFACTNAME }}
 
       - name: Validate inputs.artifact_file_path
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.9.0
         with:
           file_name: ${{ env.ARTIFACTFILEPATH }} 
 
@@ -57,7 +57,7 @@ jobs:
           name: ${{ inputs.artifact_name }}
 
       - name: npm-config-myget-packages-repository
-        uses: ritterim/public-github-actions/actions/npm-config-myget-packages-repository@v1.8.0
+        uses: ritterim/public-github-actions/actions/npm-config-myget-packages-repository@v1.9.0
         with:
           myget_api_key: ${{ secrets.myget_api_key }}
 

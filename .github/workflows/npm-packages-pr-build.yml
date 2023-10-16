@@ -57,7 +57,7 @@ on:
 jobs:
 
   version:
-    uses: ritterim/public-github-actions/.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml@v1.8.0
+    uses: ritterim/public-github-actions/.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml@v1.9.0
     #uses: ./.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml
     with:
       always_increment_patch_version: ${{ inputs.always_increment_patch_version }}
@@ -66,14 +66,14 @@ jobs:
       version_suffix: "-pr${{ github.event.number }}.${{ github.run_number }}"
 
   npm-build:
-    uses: ritterim/public-github-actions/.github/workflows/npm-build.yml@v1.8.0
+    uses: ritterim/public-github-actions/.github/workflows/npm-build.yml@v1.9.0
     #uses: ./.github/workflows/npm-build.yml
     with:
       node_version: ${{ inputs.node_version }}
       project_directory: ${{ inputs.project_directory }}
 
   npm-test:
-    uses: ritterim/public-github-actions/.github/workflows/npm-test.yml@v1.8.0
+    uses: ritterim/public-github-actions/.github/workflows/npm-test.yml@v1.9.0
     #uses: ./.github/workflows/npm-test.yml
     needs: [ npm-build ]
     with:
@@ -82,7 +82,7 @@ jobs:
       run_tests: ${{ inputs.run_tests }}
 
   npm-pack:
-    uses: ritterim/public-github-actions/.github/workflows/npm-pack.yml@v1.8.0
+    uses: ritterim/public-github-actions/.github/workflows/npm-pack.yml@v1.9.0
     #uses: ./.github/workflows/npm-pack.yml
     needs: [ npm-build, npm-test, version ]
     with:

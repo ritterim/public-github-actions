@@ -74,12 +74,12 @@ jobs:
     steps:
 
       - name: Validate inputs.package_json_filename
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.9.0
         with:
           file_name: ${{ env.PACKAGEJSONFILENAME }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.9.0
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
@@ -122,4 +122,4 @@ jobs:
       - name: Persist Workspace
         id: persist-workspace
         if: inputs.persist_workspace == true
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.8.0
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.0

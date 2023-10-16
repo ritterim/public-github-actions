@@ -160,41 +160,41 @@ jobs:
     steps:
 
       - name: Validate inputs.artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.9.0
         with:
           file_name: ${{ env.ARTIFACTNAME }}
 
       - name: Validate inputs.configuration
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.9.0
         with:
           case_sensitive: false
           regex_pattern: "^debug|release$"
           value: ${{ env.CONFIGURATION }}
 
       - name: Validate inputs.npm_package_json_filename
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.9.0
         with:
           file_name: ${{ env.NPMPACKAGEJSONFILENAME }}
 
       - name: Validate inputs.npm_project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.9.0
         with:
           path_name: ${{ env.NPMPROJECTDIRECTORY }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.9.0
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: Validate RIMDEVTESTS__SQL__PASSWORD (must be 8-250 chars)
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.9.0
         if: inputs.docker_mssql_image != ''
         with:
           value: ${{ env.RIMDEVTESTS__SQL__PASSWORD }}
           regex_pattern: "^.{8,250}$"
 
       - name: Restore Workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.8.0
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.0
         with:
           action: retrieve
           artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
@@ -223,7 +223,7 @@ jobs:
           cache-dependency-path: "${{ inputs.npm_project_directory }}${{ inputs.npm_package_json_filename }}"
 
       - name: npm-config-github-packages-repository
-        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@v1.8.0
+        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@v1.9.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
