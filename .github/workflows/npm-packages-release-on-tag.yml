@@ -60,12 +60,6 @@ on:
         type: boolean
         default: true
 
-      publish_to_myget:
-        description: Whether the artifact should be published to the MyGet Package registry.
-        required: false
-        type: boolean
-        default: true
-
       publish_to_npmjs_org:
         description: Whether the artifact should be published to the NPM (npmjs.org) registry.
         required: false
@@ -78,10 +72,6 @@ on:
         default: true
 
     secrets:
-
-      myget_api_key:
-        description: The secret API key needed in order to access the MyGet API.  These are formatted as GUIDs.
-        required: false
 
       npmjs_org_api_key:
         description: The secret API key needed in order to access the NPM (npmjs.org) registry.
@@ -135,17 +125,6 @@ jobs:
     #uses: ./.github/workflows/npm-publish-to-github-packages.yml
     if: inputs.publish_to_github == true
     needs: [ npm-pack ]
-    with:
-      artifact_name: ${{ needs.npm-pack.outputs.artifact_name }}
-      artifact_file_path: ${{ needs.npm-pack.outputs.artifact_file_path }}
-
-  npm-publish-to-myget:
-    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-myget.yml@v1.8.0
-    #uses: ./.github/workflows/npm-publish-to-myget.yml
-    needs: [ npm-pack ]
-    if: inputs.publish_to_myget == true
-    secrets:
-      myget_api_key: ${{ secrets.myget_api_key }}
     with:
       artifact_name: ${{ needs.npm-pack.outputs.artifact_name }}
       artifact_file_path: ${{ needs.npm-pack.outputs.artifact_file_path }}
