@@ -56,7 +56,8 @@ runs:
         INPUTARTIFACTNAME: ${{ inputs.artifact_name }}
       run: |
         GITHUBRUNID=${{ github.run_id }}
-        ARTIFACTNAME=${INPUTARTIFACTNAME:-persisted-workspace-$GITHUBRUNID}
+        RANDOMSUFFIX=$(dd if=/dev/urandom bs=12 count=1 status=none | base64 | tr -dc A-Za-z0-9)
+        ARTIFACTNAME=${INPUTARTIFACTNAME:-persisted-workspace-$GITHUBRUNID-$RANDOMSUFFIX}
         echo "ARTIFACTNAME=${ARTIFACTNAME}"
         echo "ARTIFACTNAME=${ARTIFACTNAME}" >> $GITHUB_ENV
 
