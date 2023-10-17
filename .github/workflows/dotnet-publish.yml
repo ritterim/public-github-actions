@@ -108,7 +108,7 @@ jobs:
           file_name: ${{ env.ZIPFILENAME }}
 
       - name: Restore Workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.0
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.1
         with:
           action: retrieve
           artifact_name: ${{ inputs.persisted_workspace_artifact_name }}

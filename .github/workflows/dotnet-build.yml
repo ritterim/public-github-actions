@@ -105,7 +105,7 @@ jobs:
 
       - name: Persist Workspace
         id: persist-workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.0
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.1
 
       - run: ls -la ~/.nuget
 
