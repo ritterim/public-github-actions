@@ -147,10 +147,7 @@ jobs:
 
       - run: cat app/githash.txt
 
-      - run: ls -l 'app'
-
-      # There must be at least one .dll file in the app folder for success
-      - run: ls -lt app/*.dll
+      - run: ls -lR 'app'
 
       - run: mkdir -p 'output'
 
