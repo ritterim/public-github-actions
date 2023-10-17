@@ -89,6 +89,7 @@ jobs:
       CONFIGURATION: ${{ inputs.configuration }}
       NPMPACKAGEJSONFILENAME: ${{ inputs.npm_package_json_filename }}
       NPMPROJECTDIRECTORY: ${{ inputs.npm_project_directory }}
+      NUGETHASHFILES: "${{ inputs.project_directory }}**/*.csproj"
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
 
     steps:
@@ -138,7 +139,7 @@ jobs:
       - name: Setup ~/.nuget/packages cache
         uses: actions/cache@v3
         with:
-          key: nuget-packages-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          key: nuget-packages-${{ runner.os }}-${{ hashFiles(env.NUGETHASHFILES) }}
           path: |
             ~/.nuget/packages
 

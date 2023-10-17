@@ -99,6 +99,7 @@ jobs:
     env:
       ARTIFACTNAME: ${{ inputs.artifact_name }}
       CONFIGURATION: ${{ inputs.configuration }}
+      NUGETHASHFILES: "${{ inputs.project_directory }}**/*.csproj"
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
       RIMDEVTESTS__ELASTICSEARCH__PORT: ${{ inputs.docker_elasticsearch_http_port }}
       RIMDEVTESTS__ELASTICSEARCH__TRANSPORTPORT: ${{ inputs.docker_elasticsearch_transport_port }}
@@ -188,7 +189,7 @@ jobs:
         uses: actions/cache@v3
         if: inputs.run_tests == true
         with:
-          key: nuget-packages-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          key: nuget-packages-${{ runner.os }}-${{ hashFiles(env.NUGETHASHFILES) }}
           path: |
             ~/.nuget/packages
 
