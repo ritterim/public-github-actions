@@ -19,6 +19,10 @@ inputs:
     default: 
     required: false
 
+  artifact_name_suffix:
+    default: 
+    required: false
+
   retention_days:
     type: number
     default: 3
@@ -45,19 +49,28 @@ runs:
   steps:
 
     - name: Validate inputs.artifact_name
-      uses: ritterim/public-github-actions/actions/file-name-validator@v1.9.0
+      uses: ritterim/public-github-actions/actions/file-name-validator@v1.9.1
       with:
         file_name: ${{ inputs.artifact_name }}
         required: false
+
+    - name: Validate inputs.artifact_name_suffix
+      uses: ritterim/public-github-actions/actions/regex-validator@v1.9.1
+      with:
+        regex_pattern: '^[a-zA-Z0-9]{2,40}$'
+        required: false
+        value: ${{ inputs.artifact_name_suffix }}
 
     - name: Calculate ARTIFACTNAME
       shell: bash
       env:
         INPUTARTIFACTNAME: ${{ inputs.artifact_name }}
+        INPUTARTIFACTSUFFIX: ${{ inputs.artifact_name_suffix }}
       run: |
         GITHUBRUNID=${{ github.run_id }}
         RANDOMSUFFIX=$(dd if=/dev/urandom bs=12 count=1 status=none | base64 | tr -dc A-Za-z0-9)
-        ARTIFACTNAME=${INPUTARTIFACTNAME:-persisted-workspace-$GITHUBRUNID-$RANDOMSUFFIX}
+        ARTIFACTSUFFIX=${INPUTARTIFACTSUFFIX:$RANDOMSUFFIX}
+        ARTIFACTNAME=${INPUTARTIFACTNAME:-persisted-workspace-$ARTIFACTSUFFIX-$GITHUBRUNID}
         echo "ARTIFACTNAME=${ARTIFACTNAME}"
         echo "ARTIFACTNAME=${ARTIFACTNAME}" >> $GITHUB_ENV
 
