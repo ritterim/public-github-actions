@@ -16,6 +16,11 @@ on:
         required: true
         type: string
 
+      artifact_retention_days:
+        required: false
+        type: number
+        default: 90
+
       configuration:
         required: false
         type: string
@@ -170,4 +175,5 @@ jobs:
         with:
           name: ${{ inputs.artifact_name }}
           path: "${{ inputs.project_directory }}output/${{ env.ZIPFILENAME }}"
+          retention-days: ${{ inputs.artifact_retention_days }}
           if-no-files-found: error

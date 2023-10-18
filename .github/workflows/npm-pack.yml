@@ -18,6 +18,11 @@ on:
 
     inputs:
 
+      artifact_retention_days:
+        required: false
+        type: number
+        default: 90
+
       npm_scope:
         description: The NPM 'scope' value to use.  Default is 'ritterim' as it needs to match the GitHub organization value.
         type: string
@@ -160,4 +165,5 @@ jobs:
         with:
           name: ${{ steps.set-outputs.outputs.artifact_name }}
           path: ${{ steps.set-outputs.outputs.artifact_file_path }}
+          retention-days: ${{ inputs.artifact_retention_days }}
           if-no-files-found: error
