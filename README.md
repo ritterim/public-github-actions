@@ -74,6 +74,7 @@ Actions which can be used to validate input values to workflows against RegEx pa
 - [npmjs-access-token-validator](actions/npmjs-access-token-validator/)
 - [path-name-validator](actions/path-name-validator/)
 - [regex-validator](actions/regex-validator/)
+- [version-number-major-minor-validator](actions/version-number-major-minor-validator/)
 - [version-number-validator](actions/version-number-validator/)
 
 # Forked GitHub Actions
