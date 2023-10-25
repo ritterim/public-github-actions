@@ -35,6 +35,12 @@ on:
         type: string
         default: package.json
 
+      persisted_workspace_artifact_suffix:
+        description: By default, each persisted workspace artifact gets a random suffix appended to the base name.  This input can be used to provide a more meaningful name suffix.
+        default: 
+        type: string
+        required: false
+
       project_directory:
         description: Location of the package.json file for the NPM package.
         required: false
@@ -113,4 +119,6 @@ jobs:
 
       - name: Persist Workspace
         id: persist-workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.1
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.2
+        with:
+          artifact_name_suffix: ${{ inputs.persisted_workspace_artifact_suffix }}
