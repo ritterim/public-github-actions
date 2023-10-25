@@ -20,6 +20,7 @@ inputs:
     required: false
 
   artifact_name_suffix:
+    description: By default, each persisted workspace artifact gets a random suffix appended to the base name.  This input can be used to provide a more meaningful name suffix.
     default: 
     required: false
 
