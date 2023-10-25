@@ -91,8 +91,8 @@ describe('ValidateInput: Version RegEx', () => {
       );
 })
 
-describe('ValidateInput: Case-Insensitive RegEx', () => {
-    const versionRegex = String.raw`^release|debug$`
+describe('ValidateInput: Configuration RegEx', () => {
+    const configurationRegex = String.raw`^release|debug$`
     const cases = [
         {value: 'release', expected: true},
         {value: 'RELEASE', expected: true},
@@ -108,7 +108,25 @@ describe('ValidateInput: Case-Insensitive RegEx', () => {
     it.each(cases)(
         "Case: '$value' returns $expected",
         ({value, expected}) => {
-          let result = ValidateInput(value, versionRegex, true, false);
+          let result = ValidateInput(value, configurationRegex, true, false);
+          expect(result.isMatched).toEqual(expected);
+        }
+      );
+})
+
+describe('ValidateInput: GUID Regex', () => {
+    const guidRegex = String.raw`^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$`
+    const cases = [
+        {value: 'garbage', expected: false},
+        {value: '{40445FBF-4543-4262-9535-526271758AEC}', expected: false},
+        {value: '40445FBF454342629535526271758AEC', expected: false},
+        {value: '40445FBF-4543-4262-9535-526271758AEC', expected: true},
+        {value: '40445fbf-4543-4262-9535-526271758Aec', expected: true},
+    ];
+    it.each(cases)(
+        "Case: '$value' returns $expected",
+        ({value, expected}) => {
+          let result = ValidateInput(value, guidRegex, true, false);
           expect(result.isMatched).toEqual(expected);
         }
       );
