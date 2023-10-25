@@ -24,7 +24,7 @@ runs:
   steps:
 
     - name: Validate
-      uses: ritterim/public-github-actions/actions/regex-validator@v1.9.0
+      uses: ritterim/public-github-actions/actions/regex-validator@v1.9.2
       with:
         value: ${{ inputs.npm_scope }}
         regex_pattern: '^[a-z0-9\-]{5,25}$'

@@ -24,7 +24,7 @@ runs:
   steps:
 
     - name: Validate inputs.npm_scope
-      uses: ritterim/public-github-actions/actions/npm-package-scope-validator@v1.9.0
+      uses: ritterim/public-github-actions/actions/npm-package-scope-validator@v1.9.2
       with:
         npm_scope: ${{ inputs.npm_scope }}
 
