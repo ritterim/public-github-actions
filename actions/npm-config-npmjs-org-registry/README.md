@@ -11,7 +11,7 @@ This uses `npm config set` commands to set the API key and scope registry for th
 
 ```
       - name: npm-config-npmjs-org-registry
-        uses: ritterim/public-github-actions/actions/npm-config-npmjs-org-registry@v1.9.0
+        uses: ritterim/public-github-actions/actions/npm-config-npmjs-org-registry@v1.9.2
         with:
           npmjs_api_key: ${{ secrets.npmjs_api_key }}
 ```
