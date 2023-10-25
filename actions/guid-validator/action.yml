@@ -7,7 +7,7 @@ branding:
 
 inputs:
 
-  version:
+  guid:
     required: true
 
   required:
@@ -28,7 +28,7 @@ runs:
     - name: Validate
       uses: ritterim/public-github-actions/actions/regex-validator@v1.9.2
       with:
-        value: ${{ inputs.version }}
+        value: ${{ inputs.guid }}
         regex_pattern: '^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$'
         required: ${{ inputs.required }}
         error_if_not_valid: ${{ inputs.error_if_not_valid }}
