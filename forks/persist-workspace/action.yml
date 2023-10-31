@@ -70,7 +70,7 @@ runs:
       run: |
         GITHUBRUNID=${{ github.run_id }}
         RANDOMSUFFIX=$(dd if=/dev/urandom bs=12 count=1 status=none | base64 | tr -dc A-Za-z0-9)
-        ARTIFACTSUFFIX=${INPUTARTIFACTSUFFIX:$RANDOMSUFFIX}
+        ARTIFACTSUFFIX=${INPUTARTIFACTSUFFIX:-$RANDOMSUFFIX}
         ARTIFACTNAME=${INPUTARTIFACTNAME:-persisted-workspace-$ARTIFACTSUFFIX-$GITHUBRUNID}
         echo "ARTIFACTNAME=${ARTIFACTNAME}"
         echo "ARTIFACTNAME=${ARTIFACTNAME}" >> $GITHUB_ENV
