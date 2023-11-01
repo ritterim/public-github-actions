@@ -1,0 +1,130 @@
+name: JFrog XRay Audit
+
+# Use JFrog XRay to 'audit' the source files in the solution.
+
+# This requires a persisted workspace artifact from a 'build' job.
+
+permissions:
+  contents: read
+  id-token: write
+  packages: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      jfrog_api_url:
+        description: 'JFrog platform url (for example: https://rimdev.jfrog.io)'
+        required: true
+        type: string
+
+      persisted_workspace_artifact_name:
+        description: Name of the artifact which contains the persisted workspace directory.
+        required: false
+        type: string
+        default:
+
+      project_directory:
+        description: Location of the solution file for the dotnet solution.  Defaults to the root directory.
+        required: false
+        type: string
+        default: ./
+
+      report_artifact_name:
+        description: The GitHub artifact name for the report file.
+        required: true
+        type: string
+
+      report_artifact_retention_days:
+        required: false
+        type: number
+        default: 90
+
+    secrets:
+
+      jfrog_api_key:
+        description: The secret API key needed in order to access the JFrog XRay API.  This assumes the JWT style token.
+        required: true
+
+    outputs:
+      report_artifact_name:
+        value: ${{ jobs.xray-scan.outputs.report_artifact_name }}
+
+jobs:
+
+  xray-scan:
+    name: JFrog XRay Audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.project_directory }}
+
+    outputs:
+      report_artifact_name: ${{ env.REPORTARTIFACTNAME }}
+
+    env:
+      CI: true
+      NUGETHASHFILES: "${{ inputs.project_directory }}**/*.csproj"
+      PROJECTDIRECTORY: ${{ inputs.project_directory }}
+      REPORTARTIFACTNAME: ${{ inputs.report_artifact_name }}
+
+    steps:
+
+      - name: Validate secrets.jfrog_api_key
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.9.2
+        with:
+          regex_pattern: '^[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*$'
+          value: ${{ secrets.jfrog_api_key }}
+
+      - name: Validate inputs.project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.9.2
+        with:
+          path_name: ${{ env.PROJECTDIRECTORY }}
+
+      - name: Validate inputs.report_artifact_name
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.9.2
+        with:
+          file_name: ${{ env.REPORTARTIFACTNAME }}
+
+      - name: Restore Workspace
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.2
+        with:
+          action: retrieve
+          artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
+
+      - name: Setup ~/.nuget/packages cache
+        uses: actions/cache@v3
+        with:
+          key: nuget-packages-${{ runner.os }}-${{ hashFiles(env.NUGETHASHFILES) }}
+          path: |
+            ~/.nuget/packages
+
+      - uses: jfrog/setup-jfrog-cli@v3
+        env:
+          JF_URL: ${{ inputs.jfrog_api_url }}
+          JF_ACCESS_TOKEN: ${{ secrets.jfrog_api_key }}
+
+      # Note: The 'ping' can succeed even if the API key is wrong/missing.
+      - name: Check JFrog CLI version and server connection.
+        run: |
+          jf --version
+          jf rt ping
+
+      - name: jf audit
+        run: |
+          set -o pipefail
+          jf audit --format=json --licenses | tee "${REPORTARTIFACTNAME}.json"
+
+      - name: Report File
+        run: cat "${REPORTARTIFACTNAME}.json"
+
+      - name: Upload Artifacts
+        id: upload-artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.REPORTARTIFACTNAME }}
+          path: ${{ env.REPORTARTIFACTNAME }}.json
+          retention-days: ${{ inputs.report_artifact_retention_days }}
+          if-no-files-found: error
