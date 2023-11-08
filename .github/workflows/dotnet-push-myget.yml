@@ -1,0 +1,80 @@
+name: MyGet Push (.NET)
+
+# Performs the 'dotnet nuget push' to MyGet
+# It assumes that the uploaded artifact put the packed .nupkg/.snupkg files in the root of the artifact.
+
+permissions:
+  contents: read
+  id-token: write
+  packages: write
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      artifact_name:
+        required: true
+        type: string
+
+      project_directory:
+        required: false
+        type: string
+        default: "./"
+
+    secrets:
+
+      myget_api_key:
+        required: true
+
+jobs:
+
+  push:
+    name: MyGet Push (.NET)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+          working-directory: ${{ inputs.project_directory }}
+
+    env:
+      MYGETAPIKEY: ${{ secrets.myget_api_key }}
+
+    steps:
+
+      - name: Validate inputs.artifact_name
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.9.2
+        with:
+          file_name: ${{ inputs.artifact_name }}
+
+      - name: Validate inputs.project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.9.2
+        with:
+          path_name: ${{ inputs.project_directory }}
+
+      - name: Validate inputs.myget_api_key
+        run: |
+          echo "${MYGETAPIKEY}" | grep -E '^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$'
+  
+      - name: Download Artifacts
+        id: download-artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.artifact_name }}
+
+      - run: find . -type f -name '*.*nupkg'
+
+      - run: ls -l *.nupkg
+
+      # A common error is "source not found".  But what that can really mean is that the API token was null/empty.
+      # This can happen if MYGET_DEPLOY_API_KEY_SECRET is not shared to the repository from the org-level secrets.
+      # You should at the "env:" section to verify that the API token variable has a value like:
+      #     env:
+      #       NUGET_AUTH_TOKEN: ***
+      - name: dotnet push (MyGet)
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.myget_api_key }}
+        run: dotnet nuget push '*.nupkg' --api-key "$NUGET_AUTH_TOKEN" --source "https://ritterim.myget.org/F/dotnet/auth/a3a01215-4956-4cfe-b1a0-1b61a14790f0/api/v3/index.json"
+
+      # Symbols (.snupkg) files are supposed to upload at the same time.  When I tried uploading them
+      # specifically, I get the HTTP 409 error.
