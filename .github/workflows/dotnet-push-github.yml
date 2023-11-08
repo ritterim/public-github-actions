@@ -1,0 +1,60 @@
+name: GitHub Push (.NET)
+
+# Performs the 'dotnet nuget push' to GitHub Packages
+# It assumes that the uploaded artifact put the packed .nupkg/.snupkg files in the root of the artifact.
+
+permissions:
+  contents: read
+  id-token: write
+  packages: write
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      artifact_name:
+        required: true
+        type: string
+
+      project_directory:
+        required: false
+        type: string
+        default: "./"
+
+jobs:
+
+  push:
+    name: GitHub Packages Push (.NET)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+          working-directory: ${{ inputs.project_directory }}
+
+    steps:
+
+      - name: Validate inputs.artifact_name
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.9.2
+        with:
+          file_name: ${{ inputs.artifact_name }}
+
+      - name: Validate inputs.project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.9.2
+        with:
+          path_name: ${{ inputs.project_directory }}
+
+      - name: Download Artifacts
+        id: download-artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.artifact_name }}
+
+      - run: find . -type f -name '*.*nupkg'
+
+      - run: ls -l *.nupkg
+
+      - name: dotnet push (GitHub)
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: dotnet nuget push '*.*nupkg' --api-key "$NUGET_AUTH_TOKEN" --source "https://nuget.pkg.github.com/ritterim/index.json"
