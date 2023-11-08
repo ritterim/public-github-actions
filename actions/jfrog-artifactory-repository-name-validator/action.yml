@@ -1,0 +1,32 @@
+name: jfrog-artifactory-repository-name-validator
+description: Validate that the name value matches a regex pattern for JFrog Artifactory Repository names.
+author: RIMdev <RIMdev@RitterIM.com>
+branding:
+  icon: 'check-square'  
+  color: 'blue'
+
+inputs:
+
+  name:
+    required: true
+
+  required:
+    required: false
+    default: true
+
+  error_if_not_valid:
+    required: false
+    default: true
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - name: Validate
+      uses: ritterim/public-github-actions/actions/regex-validator@v1.9.2
+      with:
+        value: ${{ inputs.name }}
+        regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
+        required: ${{ inputs.required }}
+        error_if_not_valid: ${{ inputs.error_if_not_valid }}
