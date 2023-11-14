@@ -1,8 +1,7 @@
 name: JFrog XRay Audit
 
 # Use JFrog XRay to 'audit' the source files in the solution.
-
-# This requires a persisted workspace artifact from a 'build' job.
+# This reusable workflow assumes that the workspace was persisted into an artifact.
 
 permissions:
   contents: read
@@ -15,8 +14,13 @@ on:
 
     inputs:
 
-      jfrog_api_url:
+      jfrog_api_base_url:
         description: 'JFrog platform url (for example: https://rimdev.jfrog.io)'
+        required: true
+        type: string
+
+      jfrog_xray_watch_list:
+        description: Comma-delimited list (with no spaces) of XRay watches to enforce.  Passed to "jf audit" via the "--watches" argument.
         required: true
         type: string
 
@@ -45,7 +49,7 @@ on:
     secrets:
 
       jfrog_api_key:
-        description: The secret API key needed in order to access the JFrog XRay API.  This assumes the JWT style token.
+        description: The secret API key needed in order to access the JFrog XRay API.
         required: true
 
     outputs:
@@ -54,7 +58,7 @@ on:
 
 jobs:
 
-  xray-scan:
+  xray-audit:
     name: JFrog XRay Audit
     runs-on: ubuntu-latest
     defaults:
@@ -69,27 +73,28 @@ jobs:
       NUGETHASHFILES: "${{ inputs.project_directory }}**/*.csproj"
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
       REPORTARTIFACTNAME: ${{ inputs.report_artifact_name }}
+      XRAYWATCHES: ${{ inputs.jfrog_xray_watch_list }}
 
     steps:
 
       - name: Validate secrets.jfrog_api_key
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.9.2
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.10.0
         with:
           regex_pattern: '^[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*$'
           value: ${{ secrets.jfrog_api_key }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.9.2
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.10.0
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: Validate inputs.report_artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.9.2
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.10.0
         with:
           file_name: ${{ env.REPORTARTIFACTNAME }}
 
       - name: Restore Workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.2
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.10.0
         with:
           action: retrieve
           artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
@@ -103,10 +108,10 @@ jobs:
 
       - uses: jfrog/setup-jfrog-cli@v3
         env:
-          JF_URL: ${{ inputs.jfrog_api_url }}
+          JF_URL: ${{ inputs.jfrog_api_base_url }}
           JF_ACCESS_TOKEN: ${{ secrets.jfrog_api_key }}
 
-      # Note: The 'ping' can succeed even if the API key is wrong/missing.
+      # Note: The 'ping' can succeed even if the API key (JF_ACCESS_TOKEN) is wrong/missing.
       - name: Check JFrog CLI version and server connection.
         run: |
           jf --version
@@ -115,16 +120,18 @@ jobs:
       - name: jf audit
         run: |
           set -o pipefail
-          jf audit --format=json --licenses | tee "${REPORTARTIFACTNAME}.json"
+          jf audit --watches="${XRAYWATCHES}" | tee "${REPORTARTIFACTNAME}.txt"
+
+        # OLD: jf audit --format=json --licenses=true --watches="${XRAYWATCHES}" | tee "${REPORTARTIFACTNAME}.json"
 
       - name: Report File
-        run: cat "${REPORTARTIFACTNAME}.json"
+        run: cat "${REPORTARTIFACTNAME}.txt"
 
       - name: Upload Artifacts
         id: upload-artifact
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.REPORTARTIFACTNAME }}
-          path: ${{ env.REPORTARTIFACTNAME }}.json
+          path: ${{ env.REPORTARTIFACTNAME }}.*
           retention-days: ${{ inputs.report_artifact_retention_days }}
           if-no-files-found: error
