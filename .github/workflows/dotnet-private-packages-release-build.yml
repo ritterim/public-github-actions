@@ -36,10 +36,20 @@ on:
         required: true
         type: string # has to be string, because the caller is often passing in a GitHub Actions variable.
 
-      jfrog_api_url:
-        description: 'JFrog platform url (for example: https://rimdev.jfrog.io)'
+      jfrog_api_base_url:
+        description: 'JFrog platform url (for example: https://rimdev.jfrog.io/)'
         required: false
-        default: 'https://rimdev.jfrog.io'
+        default: 'https://rimdev.jfrog.io/'
+        type: string
+
+      jfrog_artifactory_repository:
+        description: 'JFrog Artifactory repository identifier.'
+        required: true
+        type: string
+
+      jfrog_xray_watch_list:
+        description: Comma-delimited list (with no spaces) of XRay watches to enforce.  Passed to "jf audit" via the "--watches" argument.
+        required: true
         type: string
 
       project_name:
@@ -54,19 +64,23 @@ on:
     secrets:
 
       jfrog_api_key:
-        description: The secret API key needed in order to access the JFrog API.  Assumes that it is a JWT style token.  This API key will also need the ability to push artifacts to Artifactory.
+        description: The secret API key needed in order to access the JFrog XRay API.
+        required: true
+
+      jfrog_publish_api_key:
+        description: The secret API key needed in order to push/publish packages to JFrog Artifactory.
         required: true
 
 jobs:
 
   version:
-    uses: ritterim/public-github-actions/.github/workflows/calculate-version-from-txt-using-github-run-id.yml@v1.9.2
+    uses: ritterim/public-github-actions/.github/workflows/calculate-version-from-txt-using-github-run-id.yml@v1.11.0
     #uses: ./.github/workflows/calculate-version-from-txt-using-github-run-id.yml
     with:
       github_run_id_baseline: ${{ inputs.github_run_id_baseline }}
 
   build:
-    uses: ritterim/public-github-actions/.github/workflows/dotnet-build.yml@v1.9.2
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-build.yml@v1.11.0
     #uses: ./.github/workflows/dotnet-build.yml
     with:
       dotnet_version: ${{ inputs.dotnet_version }}
@@ -74,7 +88,7 @@ jobs:
 
   dotnet-test:
     needs: [ build, version ]
-    uses: ritterim/public-github-actions/.github/workflows/dotnet-test.yml@v1.9.2
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-test.yml@v1.11.0
     #uses: ./.github/workflows/dotnet-test.yml
     with:
       artifact_name: ${{ github.event.repository.name }}-testResults-${{ needs.version.outputs.informational_version }}
@@ -85,9 +99,21 @@ jobs:
       docker_mssql_image: ${{ inputs.docker_mssql_image }}
       docker_mssql_port: ${{ inputs.docker_mssql_port }}
 
+  jfrog-xray-audit:
+    needs: [ build, version ]
+    uses: ritterim/public-github-actions/.github/workflows/jfrog-xray-audit.yml@v1.11.0
+    #uses: ./.github/workflows/jfrog-xray-audit.yml
+    secrets:
+      jfrog_api_key: ${{ secrets.jfrog_api_key }}
+    with:
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_xray_watch_list: ${{ inputs.jfrog_xray_watch_list }}
+      persisted_workspace_artifact_name: ${{ needs.build.outputs.persisted_workspace_artifact_name }}
+      report_artifact_name: ${{ github.event.repository.name }}-xray-audit-${{ needs.version.outputs.informational_version }}
+
   dotnet-pack:
-    needs: [ build, dotnet-test, version ]
-    uses: ritterim/public-github-actions/.github/workflows/dotnet-pack.yml@v1.9.2
+    needs: [ build, dotnet-test, jfrog-xray-audit, version ]
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-pack.yml@v1.11.0
     #uses: ./.github/workflows/dotnet-pack.yml
     with:
       artifact_name: ${{ github.event.repository.name }}-packages-${{ needs.version.outputs.informational_version }}
@@ -100,29 +126,19 @@ jobs:
 
   dotnet-push-github:
     needs: [ dotnet-pack ]
-    uses: ritterim/github-actions/.github/workflows/dotnet-push-github.yml@v1.2023.1016
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-push-github.yml@v1.11.0
+    #uses: ./.github/workflows/dotnet-push-github.yml
     with:
       artifact_name: ${{ needs.dotnet-pack.outputs.artifact_name }}
 
-
-  jfrog-xray-audit:
-    needs: [ build, version ]
-    uses: ritterim/public-github-actions/.github/workflows/jfrog-xray-audit.yml@v1.10.0
-    #uses: ./.github/workflows/jfrog-xray-audit.yml
+  dotnet-push-jfrog-artifactory:
+    needs: [ build, dotnet-pack ]
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-push-jfrog-artifactory.yml@v1.11.0
+    #uses: ./.github/workflows/dotnet-push-jfrog-artifactory.yml
     secrets:
-      jfrog_api_key: ${{ secrets.jfrog_api_key }}
+      jfrog_api_key: ${{ secrets.jfrog_publish_api_key }}
     with:
+      artifact_name: ${{ needs.dotnet-pack.outputs.artifact_name }}
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_artifactory_repository: ${{ inputs.jfrog_artifactory_repository }}
       persisted_workspace_artifact_name: ${{ needs.build.outputs.persisted_workspace_artifact_name }}
-      jfrog_api_url: ${{ inputs.jfrog_api_url }}
-      report_artifact_name: ${{ github.event.repository.name }}-xray-audit-${{ needs.version.outputs.informational_version }}
-
-  jfrog-xray-scan:
-    needs: [ dotnet-pack, version ]
-    uses: ritterim/public-github-actions/.github/workflows/dotnet-jfrog-xray-scan.yml@v1.10.0
-    #uses: ./.github/workflows/dotnet-jfrog-xray-scan.yml
-    secrets:
-      jfrog_api_key: ${{ secrets.jfrog_api_key }}
-    with:
-      artifact_name: ${{ needs.dotnet-pack.outputs.artifact_name }}
-      jfrog_api_url: ${{ inputs.jfrog_api_url }}
-      report_artifact_name: ${{ github.event.repository.name }}-xray-scan-${{ needs.version.outputs.informational_version }}
