@@ -1,0 +1,158 @@
+name: JFrog Artifactory Push (.NET)
+
+# Performs the 'jf rt upload' to JFrog Artifactory
+
+# Requires the persisted workspace files and a ".git" folder.
+
+# It assumes that the uploaded artifact put the packed .nupkg/.snupkg files
+# in the root of the artifact.
+
+permissions:
+  contents: read
+  id-token: write
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      artifact_name:
+        required: true
+        type: string
+
+      jfrog_api_base_url:
+        description: 'JFrog platform url (for example: https://rimdev.jfrog.io/)'
+        required: true
+        type: string
+
+      jfrog_artifactory_repository:
+        description: 'JFrog Artifactory repository identifier.'
+        required: true
+        type: string
+
+      persisted_workspace_artifact_name:
+        description: Name of the artifact which contains the persisted workspace directory.
+        required: true
+        type: string
+
+      project_directory:
+        required: false
+        type: string
+        default: "./"
+
+    secrets:
+
+      jfrog_api_key:
+        description: The secret API key needed in order to access the JFrog XRay API.
+        required: true
+
+jobs:
+
+  push:
+    name: JFrog Artifactory Push (.NET)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+          working-directory: ${{ inputs.project_directory }}
+
+    env:
+      BUILDNAME: ${{ github.repository }}
+      BUILDNUMBER: ${{ github.run_id }}
+      JFROG_SERVER_ID: setup-jfrog-cli-server
+      JFROG_API_BASE_URL: ${{ inputs.jfrog_api_base_url }}
+      JFROG_ARTIFACTORY_REPOSITORY: ${{ inputs.jfrog_artifactory_repository }}
+      JFROG_ARTIFACTORY_REPOSITORY_URL: "${{ inputs.jfrog_api_base_url }}artifactory/api/nuget/${{ inputs.jfrog_artifactory_repository }}/"
+
+    steps:
+
+      - name: Validate inputs.artifact_name
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.10.0
+        with:
+          file_name: ${{ inputs.artifact_name }}
+
+      - name: Validate inputs.jfrog_artifactory_repository
+        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.10.0
+        with:
+          name: ${{ env.JFROG_ARTIFACTORY_REPOSITORY }}
+
+      - name: Validate inputs.project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.10.0
+        with:
+          path_name: ${{ inputs.project_directory }}
+
+      - name: Validate secrets.jfrog_api_key
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.10.0
+        with:
+          regex_pattern: '^[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*$'
+          value: ${{ secrets.jfrog_api_key }}
+
+      - name: github context debug information
+        working-directory: ./
+        run: |
+          echo "github.base_ref=${{ github.base_ref }}"
+          echo "github.head_ref=${{ github.head_ref }}"
+          echo "github.ref=${{ github.ref }}"
+          echo "github.ref_name=${{ github.ref_name }}"
+          echo "github.repository=${{ github.repository }}"
+          echo "github.repository_owner=${{ github.repository_owner }}"
+          echo "github.sha=${{ github.sha }}"
+
+      - name: Checkout Project
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Restore Workspace
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.2
+        with:
+          action: retrieve
+          artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
+
+      - run: ls -la
+
+      - name: Download Artifacts
+        id: download-artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.artifact_name }}
+
+      - run: find . -type f -name '*.*nupkg'
+
+      - run: ls -l *.nupkg
+
+      # This creates a server config ID named 'setup-jfrog-cli-server'.
+      # That means we don't have to do a separate 'jf config add' later.
+      - uses: jfrog/setup-jfrog-cli@v3
+        env:
+          JF_URL: ${{ inputs.jfrog_api_base_url }}
+          JF_ACCESS_TOKEN: ${{ secrets.jfrog_api_key }}
+
+      # Note: The 'ping' can succeed even if the API key is wrong/missing.
+      - name: Check JFrog CLI version and server connection.
+        run: |
+          jf --version
+          jf rt ping
+
+      - run: jf config show
+
+      - name: jf config add
+        env:
+          JF_ACCESS_TOKEN: ${{ secrets.jfrog_api_key }}
+        run: jf config add "${JFROG_SERVER_ID}" --overwrite=true --interactive=false --url="${JFROG_API_BASE_URL}" --access-token "${JF_ACCESS_TOKEN}"
+
+      - run: jf dotnet-config --server-id-resolve="${JFROG_SERVER_ID}" --repo-resolve="${JFROG_ARTIFACTORY_REPOSITORY_URL}"
+
+      - run: jf config show
+
+      - run: jf rt build-collect-env
+
+      - run: jf rt build-add-git
+
+      - run: jf rt upload '*.nupkg' "${JFROG_ARTIFACTORY_REPOSITORY}" --fail-no-op --server-id="${JFROG_SERVER_ID}" --build-name "${BUILDNAME}" --build-number "${BUILDNUMBER}"
+        continue-on-error: true
+
+      - run: jf rt upload '*.snupkg' "${JFROG_ARTIFACTORY_REPOSITORY}" --server-id="${JFROG_SERVER_ID}" --build-name "${BUILDNAME}" --build-number "${BUILDNUMBER}"
+        continue-on-error: true
+
+      - run: jf rt build-publish "${BUILDNAME}" "${BUILDNUMBER}"
