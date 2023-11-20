@@ -118,11 +118,11 @@ jobs:
           jf rt ping
 
       - name: jf audit
+        id: audit
         run: |
           set -o pipefail
           jf audit --watches="${XRAYWATCHES}" | tee "${REPORTARTIFACTNAME}.txt"
-
-        # OLD: jf audit --format=json --licenses=true --watches="${XRAYWATCHES}" | tee "${REPORTARTIFACTNAME}.json"
+        continue-on-error: true
 
       - name: Report File
         run: cat "${REPORTARTIFACTNAME}.txt"
@@ -135,3 +135,7 @@ jobs:
           path: ${{ env.REPORTARTIFACTNAME }}.*
           retention-days: ${{ inputs.report_artifact_retention_days }}
           if-no-files-found: error
+
+      - name: Fail build on audit error
+        if: steps.audit.outcome == 'failure'
+        run: exit 1
