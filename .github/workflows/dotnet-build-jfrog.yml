@@ -1,0 +1,176 @@
+name: Build (.NET)
+
+# Uses JFrog Artifactory as the sole upstream repository for resolving the NuGet packages.
+# It's expected that you point at a 'virtual' Artifactory repository which can also
+# resolve any public NuGet packages which you consume.
+
+# At the moment, this requires a user-generated JWT for the authentication.
+
+permissions:
+  contents: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      configuration:
+        required: false
+        type: string
+        default: "Release"
+
+      dotnet_version:
+        required: false
+        type: string
+        default: "6.0"
+
+      jfrog_api_base_url:
+        description: 'JFrog platform url (for example: https://rimdev.jfrog.io/)'
+        required: true
+        type: string
+
+      jfrog_api_username:
+        required: true
+        type: string
+
+      jfrog_nuget_feed_repo:
+        description: The 'virtual' JFrog Artifactory repository identifier for NuGet package retrieval.
+        required: true
+        type: string
+
+      persisted_workspace_artifact_suffix:
+        description: By default, each persisted workspace artifact gets a random suffix appended to the base name.  This input can be used to provide a more meaningful name suffix.
+        default:
+        type: string
+        required: false
+
+      project_directory:
+        description: Location of the solution file for the dotnet solution.  Defaults to the root directory.
+        required: false
+        type: string
+        default: ./
+
+    secrets:
+
+      jfrog_api_key:
+        description: The secret API key needed in order to access the JFrog XRay API and pull packages.
+        required: true
+
+    outputs:
+
+      configuration:
+        value: ${{ inputs.configuration }}
+
+      dotnet_version:
+        value: ${{ inputs.dotnet_version }}
+
+      persisted_workspace_artifact_name:
+        description: Name of the artifact which contains the persisted workspace directory.
+        value: ${{ jobs.build.outputs.persisted_workspace_artifact_name }}
+
+      project_directory:
+        value: ${{ inputs.project_directory }}
+
+jobs:
+
+  build:
+    name: Build (.NET)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.project_directory }}
+
+    outputs:
+      persisted_workspace_artifact_name: ${{ steps.persist-workspace.outputs.artifact_name }}
+
+    env:
+      CONFIGURATION: ${{ inputs.configuration }}
+      NUGETHASHFILES: "${{ inputs.project_directory }}**/*.csproj"
+      PROJECTDIRECTORY: ${{ inputs.project_directory }}
+      JFROG_API_KEY: ${{ secrets.jfrog_api_key }}
+      JFROG_API_BASE_URL: ${{ inputs.jfrog_api_base_url }}
+      JFROG_API_USERNAME: ${{ inputs.jfrog_api_username }}
+      JFROG_NUGET_FEED_NAME: jfrog-${{ inputs.jfrog_nuget_feed_repo }}
+      JFROG_NUGET_FEED_REPO: ${{ inputs.jfrog_nuget_feed_repo }}
+      JFROG_NUGET_FEED_REPO_URL: "${{ inputs.jfrog_api_base_url }}artifactory/api/nuget/v3/${{ inputs.jfrog_nuget_feed_repo }}/index.json"
+
+    steps:
+
+      - name: Validate inputs.configuration
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.9.2
+        with:
+          case_sensitive: false
+          regex_pattern: "^debug|release$"
+          value: ${{ env.CONFIGURATION }}
+
+      - name: Validate inputs.jfrog_nuget_feed_repo
+        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.10.0
+        with:
+          name: ${{ env.JFROG_NUGET_FEED_REPO }}
+
+      - name: Validate inputs.project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.9.2
+        with:
+          path_name: ${{ env.PROJECTDIRECTORY }}
+
+      - name: Validate secrets.jfrog_api_key
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.10.0
+        with:
+          regex_pattern: '^[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*$'
+          value: ${{ env.JFROG_API_KEY }}
+
+      - name: github context debug information
+        working-directory: ./
+        run: |
+          echo "github.base_ref=${{ github.base_ref }}"
+          echo "github.head_ref=${{ github.head_ref }}"
+          echo "github.ref=${{ github.ref }}"
+          echo "github.ref_name=${{ github.ref_name }}"
+          echo "github.repository=${{ github.repository }}"
+          echo "github.repository_owner=${{ github.repository_owner }}"
+          echo "github.sha=${{ github.sha }}"
+
+      - name: Checkout Project
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ inputs.dotnet_version }}
+
+      # Remove any predefined NuGet sources
+      - run: dotnet nuget list source
+      - run: dotnet nuget remove source NuGet
+      - run: dotnet nuget remove source nuget.org
+      - run: dotnet nuget list source
+
+      - run: dotnet nuget add source "${JFROG_NUGET_FEED_REPO_URL}" --name "${JFROG_NUGET_FEED_NAME}" --username "${JFROG_API_USERNAME}" --password "${JFROG_API_KEY}" --store-password-in-clear-text
+      - run: dotnet nuget list source
+
+      - name: Setup ~/.nuget/packages cache
+        uses: actions/cache@v3
+        with:
+          key: nuget-packages-${{ runner.os }}-${{ hashFiles(env.NUGETHASHFILES) }}
+          path: |
+            ~/.nuget/packages
+
+      - name: dotnet build
+        run: dotnet build --configuration "${CONFIGURATION}"
+
+      - run: ls -la
+
+      - name: Persist Workspace
+        id: persist-workspace
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.2
+        with:
+          artifact_name_suffix: ${{ inputs.persisted_workspace_artifact_suffix }}
+
+      - run: ls -la ~/.nuget
+
+      - run: du -chs ~/.nuget/*
+
+      - run: ls -la ~/.nuget/packages
+
