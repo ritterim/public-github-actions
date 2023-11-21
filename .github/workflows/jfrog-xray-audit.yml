@@ -136,6 +136,13 @@ jobs:
           retention-days: ${{ inputs.report_artifact_retention_days }}
           if-no-files-found: error
 
+      # TODO: Post the report text back to the pull request?
+
+      # Spit out the report file again, because this is the step that will go angry-red
+      # when the audit is not successful.  By repeating it here, the dev doesn't have
+      # to scroll up to a prior step when there is an issue.
       - name: Fail build on audit error
         if: steps.audit.outcome == 'failure'
-        run: exit 1
+        run: |
+          cat "${REPORTARTIFACTNAME}.txt"
+          exit 1
