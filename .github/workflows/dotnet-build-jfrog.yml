@@ -31,6 +31,7 @@ on:
         type: string
 
       jfrog_api_username:
+        description: The JFrog username associated with the jfrog_api_key.
         required: true
         type: string
 
