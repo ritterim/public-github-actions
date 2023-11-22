@@ -3,7 +3,6 @@ name: Package PR Build (.NET)
 permissions:
   contents: read
   id-token: write
-  packages: read
 
 on:
 
@@ -35,8 +34,17 @@ on:
 
       jfrog_api_base_url:
         description: 'JFrog platform url (for example: https://rimdev.jfrog.io/)'
-        required: false
-        default: 'https://rimdev.jfrog.io/'
+        required: true
+        type: string
+
+      jfrog_api_username:
+        description: The JFrog username associated with the jfrog_api_key.
+        required: true
+        type: string
+
+      jfrog_nuget_feed_repo:
+        description: The 'virtual' JFrog Artifactory repository identifier for NuGet package retrieval.
+        required: true
         type: string
 
       jfrog_xray_watch_list:
@@ -56,7 +64,7 @@ on:
     secrets:
 
       jfrog_api_key:
-        description: The secret API key needed in order to access the JFrog XRay API.
+        description: The secret API key needed in order to access the JFrog XRay API and pull packages.
         required: true
 
 jobs:
@@ -69,20 +77,30 @@ jobs:
       version_suffix: "-pr${{ github.event.number }}"
 
   build:
-    uses: ritterim/public-github-actions/.github/workflows/dotnet-build.yml@v1.11.0
-    #uses: ./.github/workflows/dotnet-build.yml
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-build-jfrog.yml@v1.11.0
+    #uses: ./.github/workflows/dotnet-build-jfrog.yml
+    secrets:
+      jfrog_api_key: ${{ secrets.jfrog_api_key }}
     with:
       dotnet_version: ${{ inputs.dotnet_version }}
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_api_username: ${{ inputs.jfrog_api_username }}
+      jfrog_nuget_feed_repo: ${{ inputs.jfrog_nuget_feed_repo }}
       project_directory: ${{ inputs.project_directory }}
 
   dotnet-test:
     needs: [ build, version ]
-    uses: ritterim/public-github-actions/.github/workflows/dotnet-test.yml@v1.11.0
-    #uses: ./.github/workflows/dotnet-test.yml
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-test-jfrog.yml@v1.11.0
+    #uses: ./.github/workflows/dotnet-test-jfrog.yml
+    secrets:
+      jfrog_api_key: ${{ secrets.jfrog_api_key }}
     with:
       artifact_name: ${{ github.event.repository.name }}-testResults-${{ needs.version.outputs.informational_version }}
       configuration: ${{ needs.build.outputs.configuration }}
       dotnet_version: ${{ needs.build.outputs.dotnet_version }}
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_api_username: ${{ inputs.jfrog_api_username }}
+      jfrog_nuget_feed_repo: ${{ inputs.jfrog_nuget_feed_repo }}
       persisted_workspace_artifact_name: ${{ needs.build.outputs.persisted_workspace_artifact_name }}
       project_directory: ${{ needs.build.outputs.project_directory }}
       docker_mssql_image: ${{ inputs.docker_mssql_image }}
