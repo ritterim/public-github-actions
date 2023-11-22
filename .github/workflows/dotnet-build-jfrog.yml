@@ -94,7 +94,7 @@ jobs:
       JFROG_API_USERNAME: ${{ inputs.jfrog_api_username }}
       JFROG_NUGET_FEED_NAME: jfrog-${{ inputs.jfrog_nuget_feed_repo }}
       JFROG_NUGET_FEED_REPO: ${{ inputs.jfrog_nuget_feed_repo }}
-      JFROG_NUGET_FEED_REPO_URL: "${{ inputs.jfrog_api_base_url }}artifactory/api/nuget/${{ inputs.jfrog_nuget_feed_repo }}/"
+      JFROG_NUGET_FEED_REPO_URL: "${{ inputs.jfrog_api_base_url }}artifactory/api/nuget/v3/${{ inputs.jfrog_nuget_feed_repo }}/index.json"
 
     steps:
 
