@@ -55,7 +55,7 @@ on:
     secrets:
 
       jfrog_api_key:
-        description: The secret API key needed in order to access the JFrog XRay API and pull packages.
+        description: The secret API key (JWT) needed in order to access the JFrog XRay API and pull packages.
         required: true
 
     outputs:
@@ -115,7 +115,7 @@ jobs:
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
-      - name: Validate secrets.jfrog_api_key
+      - name: Validate secrets.jfrog_api_key JWT
         uses: ritterim/public-github-actions/actions/regex-validator@v1.10.0
         with:
           regex_pattern: '^[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*$'
@@ -142,13 +142,17 @@ jobs:
         with:
           dotnet-version: ${{ inputs.dotnet_version }}
 
-      # Remove any predefined NuGet sources
-      - run: dotnet nuget list source
-      - run: dotnet nuget remove source NuGet
-      - run: dotnet nuget remove source nuget.org
       - run: dotnet nuget list source
 
-      - run: dotnet nuget add source "${JFROG_NUGET_FEED_REPO_URL}" --name "${JFROG_NUGET_FEED_NAME}" --username "${JFROG_API_USERNAME}" --password "${JFROG_API_KEY}" --store-password-in-clear-text
+      - name: Remove any pre-defined NuGet sources
+        run: |
+          sources=$(dotnet nuget list source | grep '\[Enabled\]' | awk '{print $2}')
+          echo "$sources"
+          echo "$sources" | xargs -I % dotnet nuget remove source %
+
+      - name: dotnet nuget add source JFROG_NUGET_FEED_NAME
+        run: dotnet nuget add source "${JFROG_NUGET_FEED_REPO_URL}" --name "${JFROG_NUGET_FEED_NAME}" --username "${JFROG_API_USERNAME}" --password "${JFROG_API_KEY}" --store-password-in-clear-text
+
       - run: dotnet nuget list source
 
       - name: Setup ~/.nuget/packages cache
@@ -158,8 +162,9 @@ jobs:
           path: |
             ~/.nuget/packages
 
-      - name: dotnet build
-        run: dotnet build --configuration "${CONFIGURATION}"
+      - run: dotnet restore --verbosity=normal
+
+      - run: dotnet build --configuration "${CONFIGURATION}"
 
       - run: ls -la
 
