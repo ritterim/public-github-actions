@@ -4,8 +4,8 @@ name: Private Package Release Build (.NET)
 # to our private feeds.
 
 permissions:
-  id-token: write
   contents: read
+  id-token: write
   packages: write
 
 on:
