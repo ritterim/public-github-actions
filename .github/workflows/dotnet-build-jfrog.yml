@@ -153,6 +153,9 @@ jobs:
       - name: dotnet nuget add source JFROG_NUGET_FEED_NAME
         run: dotnet nuget add source "${JFROG_NUGET_FEED_REPO_URL}" --name "${JFROG_NUGET_FEED_NAME}" --username "${JFROG_API_USERNAME}" --password "${JFROG_API_KEY}" --store-password-in-clear-text
 
+      # Temporary fix for the proxy issue in JFrog Artifactory
+      - run: dotnet nuget add source https://api.nuget.org/v3/index.json --name nuget.org
+
       - run: dotnet nuget list source
 
       - name: Setup ~/.nuget/packages cache
