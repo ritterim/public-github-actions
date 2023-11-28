@@ -46,7 +46,7 @@ on:
         required: true
         type: string
 
-      jfrog_xray_watch_list:
+      jfrog_audit_xray_watch_list:
         description: Comma-delimited list (with no spaces) of XRay watches to enforce.  Passed to "jf audit" via the "--watches" argument.
         required: true
         type: string
@@ -113,7 +113,7 @@ jobs:
       jfrog_api_key: ${{ secrets.jfrog_api_key }}
     with:
       jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
-      jfrog_xray_watch_list: ${{ inputs.jfrog_xray_watch_list }}
+      jfrog_xray_watch_list: ${{ inputs.jfrog_audit_xray_watch_list }}
       persisted_workspace_artifact_name: ${{ needs.build.outputs.persisted_workspace_artifact_name }}
       report_artifact_name: ${{ github.event.repository.name }}-xray-audit-${{ needs.version.outputs.informational_version }}
 
