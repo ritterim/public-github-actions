@@ -1,0 +1,270 @@
+name: Build-Test-Publish (NPM)
+
+# This build-test workflow will NOT persist the workspace.
+# We use this on larger site builds where the artifact is over a few hundred megabytes.
+# But it can also be used in situations where you don't want separate build/test/publish jobs.
+
+permissions:
+  contents: read
+  packages: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      publish_artifact_name:
+        required: true
+        type: string
+
+      test_results_artifact_name:
+        required: true
+        type: string
+
+      environment:
+        description: Use 'localhost', 'development' or 'production'.
+        required: true
+        type: string
+
+      node_version:
+        description: The node version to install such as '18.x'.  It is best to stick to LTS releases of nodejs to avoid slow build times.
+        required: false
+        type: string
+        default: '18.x'
+
+      npm_package_json_filename:
+        description: Name of the 'package.json' file if not the default name.
+        required: false
+        type: string
+        default: package.json
+
+      npm_project_directory:
+        description: Location of the package.json file for the NPM package.
+        required: false
+        type: string
+        default: ./
+
+      package_json_filename:
+        description: Name of the 'package.json' file if not the default name.
+        required: false
+        type: string
+        default: package.json
+
+      publish_artifact_directory:
+        required: false
+        type: string
+        default: dist/
+
+      publish_working_directory:
+        required: false
+        type: string
+        default: ./
+
+      informational_version:
+        required: true
+        type: string
+
+      version:
+        required: true
+        type: string
+
+    outputs:
+
+      node_version:
+        value: ${{ inputs.node_version }}
+
+      npm_package_json_filename:
+        value: ${{ inputs.npm_package_json_filename }}
+
+      npm_project_directory:
+        value: ${{ inputs.npm_project_directory }}
+
+      publish_artifact_name:
+        value: ${{ jobs.build-test-publish.outputs.publish_artifact_name }}
+
+      publish_artifact_filename:
+        value: ${{ jobs.build-test-publish.outputs.publish_artifact_filename }}
+
+jobs:
+
+  build-test-publish:
+    name: Build-Test-Publish (NPM)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.npm_project_directory }}
+
+    env:
+      PUBLISHARTIFACTDIRECTORY: ${{ inputs.publish_artifact_directory }}
+      PUBLISHWORKINGDIRECTORY: ${{ inputs.publish_working_directory }}
+      PUBLISHARTIFACTNAME: ${{ inputs.publish_artifact_name }}
+      TESTRESULTSARTIFACTNAME: ${{ inputs.test_results_artifact_name }}
+      NPMPACKAGEJSONFILENAME: ${{ inputs.npm_package_json_filename }}
+      NPMPROJECTDIRECTORY: ${{ inputs.npm_project_directory }}
+      PACKAGEJSONFILENAME: ${{ inputs.package_json_filename }}
+      INFORMATIONALVERSION: ${{ inputs.informational_version }}
+      VERSION: ${{ inputs.version }}
+      ZIPFILENAME: "${{ inputs.publish_artifact_name }}.zip"
+      ENVIRONMENT: ${{ inputs.environment }}
+
+    outputs:
+      publish_artifact_name: ${{ inputs.publish_artifact_name }}
+      publish_artifact_filename: ${{ env.ZIPFILENAME }}
+
+    steps:
+
+      - name: Validate inputs.environment
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.8.0
+        with:
+          value: ${{ env.ENVIRONMENT }}
+          regex_pattern: '^(localhost|development|production)$'
+
+      - name: Validate inputs.publish_artifact_name
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        with:
+          file_name: ${{ env.PUBLISHARTIFACTNAME }}
+
+      - name: Validate inputs.test_results_artifact_name
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        with:
+          file_name: ${{ env.TESTRESULTSARTIFACTNAME }}
+
+      - name: Validate inputs.npm_package_json_filename
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        with:
+          file_name: ${{ env.NPMPACKAGEJSONFILENAME }}
+
+      - name: Validate inputs.npm_project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.8.0
+        with:
+          path_name: ${{ env.NPMPROJECTDIRECTORY }}
+
+      - name: Validate inputs.package_json_filename
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        with:
+          file_name: ${{ env.PACKAGEJSONFILENAME }}
+
+      - name: Validate inputs.publish_artifact_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.8.0
+        with:
+          path_name: ${{ env.PUBLISHARTIFACTDIRECTORY }}
+
+      - name: Validate inputs.publish_working_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.8.0
+        with:
+          path_name: ${{ env.PUBLISHWORKINGDIRECTORY }}
+
+      - name: Validate inputs.informational_version
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.8.0
+        with:
+          version: ${{ env.INFORMATIONALVERSION }}
+
+      - name: Validate inputs.version
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.8.0
+        with:
+          version: ${{ env.VERSION }}
+
+      - name: Validate ZIPFILENAME
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        with:
+          file_name: ${{ env.ZIPFILENAME }}
+
+      - name: git ref debug information
+        working-directory: ./
+        run: |
+          echo "github.base_ref=${{ github.base_ref }}"
+          echo "github.head_ref=${{ github.head_ref }}"
+          echo "github.ref=${{ github.ref }}"
+
+      - name: Checkout Project
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+          lfs: true
+
+      # See this for why setup-node can be slow: https://github.com/actions/setup-node/issues/726#issuecomment-1527198808
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: 'npm'
+          cache-dependency-path: "${{ inputs.npm_project_directory }}${{ inputs.npm_package_json_filename }}"
+
+      - name: npm-config-github-packages-repository
+        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@v1.8.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: npm ci
+        working-directory: ${{ env.NPMPROJECTDIRECTORY }}
+        run: npm ci
+
+      - name: Check version in ${{ inputs.package_json_filename }}
+        run: jq -r '.version' "${PACKAGEJSONFILENAME}"
+
+      - name: npm version config
+        run: |
+          npm config set allow-same-version=true
+          npm config set git-tag-version=false
+          npm config set sign-git-tag=false
+
+      # Note the use of '--ignore-scripts' here to prevent 'npm version' from running any scripts in the package.json
+      - run: npm version --ignore-scripts "${VERSION}"
+
+      - name: Check version in ${{ inputs.package_json_filename }}
+        run: jq -r '.version' "${PACKAGEJSONFILENAME}"
+
+      - name: npm run build
+        working-directory:  ${{ env.NPMPROJECTDIRECTORY }}
+        run: npm run build
+
+      - run: ls -la
+
+      - name: npm run test
+        working-directory:  ${{ env.NPMPROJECTDIRECTORY }}
+        run: npm run test
+
+      - name: mkdir -p "${{ env.PUBLISHARTIFACTDIRECTORY }}"
+        working-directory: ${{ inputs.publish_working_directory }}
+        run: mkdir -p "${PUBLISHARTIFACTDIRECTORY}"
+
+      - name: Create _git_hash/index.html file
+        working-directory: ${{ inputs.publish_working_directory }}
+        run: |
+          PULL_REQUEST_HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          GH_SHA="${PULL_REQUEST_HEAD_SHA:-${GITHUB_SHA:-ERROR}}"
+          mkdir -p "${PUBLISHARTIFACTDIRECTORY}_git_hash"
+          echo $GH_SHA > "${PUBLISHARTIFACTDIRECTORY}_git_hash/index.html"
+          cat "${PUBLISHARTIFACTDIRECTORY}_git_hash/index.html"
+
+      - name: ls -l "${{ env.PUBLISHARTIFACTDIRECTORY }}"
+        working-directory: ${{ inputs.publish_working_directory }}
+        run: ls -l "${PUBLISHARTIFACTDIRECTORY}"
+
+      - name: Create output directory.
+        working-directory: ${{ inputs.publish_working_directory }}
+        run: mkdir -p 'output'
+
+      - name: Create Release Zip File
+        working-directory: "${{ inputs.publish_working_directory }}${{ inputs.publish_artifact_directory }}"
+        run: |
+          zip -v -r \
+            "../output/${ZIPFILENAME}" \
+            .
+
+      - name: Inspect output directory.
+        working-directory: ${{ inputs.publish_working_directory }}
+        run: ls -lt output/*.zip
+
+      - name: Test Release Zip File
+        working-directory: ${{ inputs.publish_working_directory }}
+        run: zip -T "output/${ZIPFILENAME}"
+
+      - name: Upload Artifact for Deployment
+        id: upload-publish-artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.publish_artifact_name }}
+          path: "${{ inputs.publish_working_directory }}output/${{ env.ZIPFILENAME }}"
+          if-no-files-found: error
