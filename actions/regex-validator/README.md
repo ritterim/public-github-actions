@@ -8,7 +8,7 @@ Validate a string value against a Regular Expression (RegEx) using `RegExp.test(
 
 ## Release Process
 
-Currently Github Actions does not build each project automatically. You will need to run `npm build` in the project you're submitting changes too. 
+Currently Github Actions does not build each project automatically. You will need to run `npm run build` in the project you're submitting changes too. 
 
 # Example Workflow
 
