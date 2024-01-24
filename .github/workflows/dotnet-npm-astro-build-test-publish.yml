@@ -1,0 +1,390 @@
+name: Build-Test-Publish (.NET/NPM)
+
+# A combined workflow that does both 'dotnet build' and 'npm run ci:build'.
+# Note that the NPM side only handles a single package.json file, so
+# the 'npm_project_directory' input is generally going to be required
+# but the 'dotnet build' command can usually be run from the solution folder.
+
+# This also does the publish step.
+
+# This is for workflows where the build directory is so large that we're going to skip persisting the workspace.
+
+# To integrate with the Astro build, we are going to define the following
+# environment variables:
+# - TARGET_BRAND (standard, whitelabel)
+# - TARGET_ENVIRONMENT (development, staging, production, etc.)
+# - TARGET_CONFIGURATION (release, debug)
+# Note that these should be treated as case-sensitive.
+
+permissions:
+  contents: read
+  packages: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      artifact_retention_days:
+        required: false
+        type: number
+        default: 90
+
+      astro_target_brand:
+        description: Pass in 'standard' or 'whitelabel'.
+        required: true
+        type: string
+
+      astro_target_environment:
+        description: Pass in development, staging, production, etc.
+        required: true
+        type: string
+
+      astro_target_configuration:
+        description: Pass in 'release', 'debug'.  Controls whether to minify javascript and other debug vs release optimizations.
+        required: false
+        type: string
+        default: "release"
+
+      publish_artifact_name:
+        required: true
+        type: string
+
+      test_results_artifact_name:
+        required: true
+        type: string
+
+      configuration:
+        required: false
+        type: string
+        default: "Release"
+
+      dotnet_version:
+        required: false
+        type: string
+        default: "6.0"
+
+      node_version:
+        description: The node version to install such as '18.x'.  It is best to stick to LTS releases of nodejs to avoid slow build times.
+        required: false
+        type: string
+        default: '18.x'
+
+      npm_package_json_filename:
+        description: Name of the 'package.json' file if not the default name.
+        required: false
+        type: string
+        default: package.json
+
+      npm_project_directory:
+        description: Location of the package.json file for the NPM package.
+        required: false
+        type: string
+        default: ./
+
+      project_directory:
+        description: Location of the solution file for the dotnet solution.  Defaults to the root directory.
+        required: false
+        type: string
+        default: ./
+
+      publish_working_directory:
+        required: false
+        type: string
+        default: src/
+
+      git_hash:
+        required: true
+        type: string
+
+      informational_version:
+        required: true
+        type: string
+
+      version:
+        required: true
+        type: string
+
+    outputs:
+
+      configuration:
+        value: ${{ inputs.configuration }}
+
+      dotnet_version:
+        value: ${{ inputs.dotnet_version }}
+
+      node_version:
+        value: ${{ inputs.node_version }}
+
+      npm_package_json_filename:
+        value: ${{ inputs.npm_package_json_filename }}
+
+      npm_project_directory:
+        value: ${{ inputs.npm_project_directory }}
+
+      project_directory:
+        value: ${{ inputs.project_directory }}
+
+      publish_artifact_name:
+        value: ${{ jobs.build-test-publish.outputs.publish_artifact_name }}
+
+      publish_artifact_filename:
+        value: ${{ jobs.build-test-publish.outputs.publish_artifact_filename }}
+
+
+jobs:
+
+  build-test-publish:
+    name: Build-Test-Publish (.NET/NPM)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.project_directory }}
+
+    env:
+      PUBLISHWORKINGDIRECTORY: ${{ inputs.publish_working_directory }}
+      PUBLISHARTIFACTNAME: ${{ inputs.publish_artifact_name }}
+      TESTRESULTSARTIFACTNAME: ${{ inputs.test_results_artifact_name }}
+      CONFIGURATION: ${{ inputs.configuration }}
+      NPMPACKAGEJSONFILENAME: ${{ inputs.npm_package_json_filename }}
+      NPMPROJECTDIRECTORY: ${{ inputs.npm_project_directory }}
+      PROJECTDIRECTORY: ${{ inputs.project_directory }}
+      RIMDEVTESTS__SQL__PORT: 14333
+      RIMDEVTESTS__SQL__PASSWORD: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+      GIT_HASH: ${{ inputs.git_hash }}
+      INFORMATIONALVERSION: ${{ inputs.informational_version }}
+      VERSION: ${{ inputs.version }}
+      ZIPFILENAME: "${{ inputs.publish_artifact_name }}.zip"
+      TARGET_BRAND: ${{ inputs.astro_target_brand }}
+      TARGET_ENVIRONMENT: ${{ inputs.astro_target_environment }}
+      TARGET_CONFIGURATION: ${{ inputs.astro_target_configuration }}
+
+    outputs:
+      publish_artifact_name: ${{ inputs.publish_artifact_name }}
+      publish_artifact_filename: ${{ env.ZIPFILENAME }}
+
+    services:
+
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        env:
+          SA_PASSWORD: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          ACCEPT_EULA: 'Y'
+        ports:
+          - 14333:1433
+
+    steps:
+
+      - name: Validate inputs.publish_artifact_name
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        with:
+          file_name: ${{ env.PUBLISHARTIFACTNAME }}
+
+      - name: Validate inputs.test_results_artifact_name
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        with:
+          file_name: ${{ env.TESTRESULTSARTIFACTNAME }}
+
+      - name: Validate inputs.configuration
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.8.0
+        with:
+          case_sensitive: false
+          regex_pattern: "^debug|release$"
+          value: ${{ env.CONFIGURATION }}
+
+      - name: Validate inputs.npm_package_json_filename
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        with:
+          file_name: ${{ env.NPMPACKAGEJSONFILENAME }}
+
+      - name: Validate inputs.npm_project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.8.0
+        with:
+          path_name: ${{ env.NPMPROJECTDIRECTORY }}
+
+      - name: Validate inputs.publish_working_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.8.0
+        with:
+          path_name: ${{ env.PUBLISHWORKINGDIRECTORY }}
+
+      - name: Validate inputs.project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.8.0
+        with:
+          path_name: ${{ env.PROJECTDIRECTORY }}
+
+      - name: Validate inputs.git_hash
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.8.0
+        with:
+          value: ${{ env.GIT_HASH }}
+          regex_pattern: '^([a-fA-F0-9]{40})$'
+
+      - name: Validate inputs.informational_version
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.8.0
+        with:
+          version: ${{ env.INFORMATIONALVERSION }}
+
+      - name: Validate inputs.version
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.8.0
+        with:
+          version: ${{ env.VERSION }}
+
+      - name: Validate inputs.astro_target_brand
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.8.0
+        with:
+          value: ${{ env.TARGET_BRAND }}
+          regex_pattern: '^(standard|whitelabel)$'
+
+      - name: Validate inputs.astro_target_environment
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.8.0
+        with:
+          value: ${{ env.TARGET_ENVIRONMENT }}
+          regex_pattern: '^(development|staging|production)$'
+
+      - name: Validate inputs.astro_target_configuration
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.8.0
+        with:
+          value: ${{ env.TARGET_CONFIGURATION }}
+          regex_pattern: '^(release|debug)$'
+
+      - name: Validate ZIPFILENAME
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        with:
+          file_name: ${{ env.ZIPFILENAME }}
+
+      - name: git ref debug information
+        working-directory: ./
+        run: |
+          echo "github.base_ref=${{ github.base_ref }}"
+          echo "github.head_ref=${{ github.head_ref }}"
+          echo "github.ref=${{ github.ref }}"
+
+      - name: Checkout Project
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+          lfs: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ inputs.dotnet_version }}
+          source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+        env:
+          NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Setup ~/.nuget/packages cache
+        uses: actions/cache@v3
+        with:
+          key: nuget-packages-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          path: |
+            ~/.nuget/packages
+
+      # See this for why setup-node can be slow: https://github.com/actions/setup-node/issues/726#issuecomment-1527198808
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: 'npm'
+          cache-dependency-path: "${{ inputs.npm_project_directory }}${{ inputs.npm_package_json_filename }}"
+
+      - name: npm-config-github-packages-repository
+        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@v1.8.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: npm ci
+        working-directory: ${{ env.NPMPROJECTDIRECTORY }}
+        run: npm ci
+
+      - name: npm run ci:build
+        working-directory:  ${{ env.NPMPROJECTDIRECTORY }}
+        run: npm run 'ci:build'
+
+      - name: dotnet build
+        run: dotnet build --configuration "${CONFIGURATION}"
+
+      - run: ls -la
+
+      - name: npm run test
+        working-directory:  ${{ env.NPMPROJECTDIRECTORY }}
+        run: npm run test
+
+      # https://github.com/dotnet/core/issues/7412
+      # We can't feed in --no-build or --no-restore or else the test command will just fail silently
+      # instead of throwing an error when it fails to restore the dependencies.
+      - name: dotnet test
+        run: |
+          dotnet test \
+            --logger "console;verbosity=normal" \
+            --logger "trx;logfilename=testResults.trx" \
+            --configuration "${CONFIGURATION}"
+
+      - name: Find .trx files
+        run: find . -name '*.trx' -type f
+
+      - name: Upload Artifacts
+        id: upload-artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.test_results_artifact_name }}
+          path: "${{ inputs.project_directory }}**/*.trx"
+          if-no-files-found: error
+
+      - name: mkdir -p 'app'
+        working-directory: ${{ inputs.publish_working_directory }}
+        run: mkdir -p 'app'
+
+      - name: dotnet publish
+        working-directory: ${{ inputs.publish_working_directory }}
+        run: |
+          dotnet publish \
+            --no-build \
+            --configuration "${CONFIGURATION}" \
+            -p:Version="${VERSION}" \
+            -p:InformationalVersion="${INFORMATIONALVERSION}" \
+            --property:PublishDir=app
+
+      - name: Create githash.txt file
+        working-directory: ${{ inputs.publish_working_directory }}
+        run: |
+          PULL_REQUEST_HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          GH_SHA="${PULL_REQUEST_HEAD_SHA:-${GITHUB_SHA:-ERROR}}"
+          echo $GH_SHA > "app/githash.txt"
+          cat app/githash.txt
+
+      - name: ls -l 'app'
+        working-directory: ${{ inputs.publish_working_directory }}
+        run: ls -l 'app'
+
+      - name: There must be at least one DLL file in the app/ folder for success.
+        working-directory: ${{ inputs.publish_working_directory }}
+        run: ls -lt app/*.dll
+
+      - name: Create output directory.
+        working-directory: ${{ inputs.publish_working_directory }}
+        run: mkdir -p 'output'
+
+      - name: Create Release Zip File
+        working-directory: "${{ inputs.publish_working_directory }}app"
+        run: |
+          zip -v -r \
+            "../output/${ZIPFILENAME}" \
+            .
+
+      - name: Inspect output directory.
+        working-directory: ${{ inputs.publish_working_directory }}
+        run: ls -lt output/*.zip
+
+      - name: Test Release Zip File
+        working-directory: ${{ inputs.publish_working_directory }}
+        run: zip -T "output/${ZIPFILENAME}"
+
+      - name: Upload Artifact for Deployment
+        id: upload-publish-artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.publish_artifact_name }}
+          path: "${{ inputs.publish_working_directory }}output/${{ env.ZIPFILENAME }}"
+          retention-days: ${{ inputs.artifact_retention_days }}
+          if-no-files-found: error
