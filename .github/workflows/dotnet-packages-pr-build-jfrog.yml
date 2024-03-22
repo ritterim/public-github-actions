@@ -1,0 +1,140 @@
+name: Package PR Build (.NET)
+
+permissions:
+  contents: read
+  id-token: write
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      docker_mssql_image:
+        description: Supply an image/tag string if you need to startup the SQL for Docker service for tests.  Leave this input blank if you do not need the service.
+        type: string
+        required: false
+        default: ''
+
+      docker_mssql_port:
+        description: The port on which the SQL for Docker container will listen.
+        required: false
+        default: 11435
+        type: number
+
+      dotnet_version:
+        required: false
+        type: string
+        default: "6.0"
+
+      github_run_id_baseline:
+        description: The zero point for calculating the patch value from the 'github.run_id' value.
+        required: true
+        type: string # has to be string, because the caller is often passing in a GitHub Actions variable.
+
+      jfrog_api_base_url:
+        description: 'JFrog platform url (for example: https://rimdev.jfrog.io/)'
+        required: true
+        type: string
+
+      jfrog_artifactory_package_push_repository:
+        description: 'JFrog Artifactory repository identifier where the package will be pushed to.'
+        required: true
+        type: string
+
+      jfrog_audit_xray_watch_list:
+        description: Comma-delimited list (with no spaces) of XRay watches to enforce.  Passed to "jf audit" via the "--watches" argument.
+        required: true
+        type: string
+
+      jfrog_build_name:
+        description: 'JFrog build name.'
+        required: true
+        type: string
+
+      jfrog_nuget_feed_repo:
+        description: The 'virtual' JFrog Artifactory repository identifier for NuGet package retrieval.
+        required: true
+        type: string
+
+      jfrog_oidc_provider_name:
+        description: The OIDC Integration Provider Name to use for authentication from the GitHub Action to the JFrog instance.
+        required: true
+        type: string
+
+      project_directory:
+        required: false
+        type: string
+        default: "./"
+
+jobs:
+
+  version:
+    uses: ritterim/public-github-actions/.github/workflows/calculate-version-from-txt-using-github-run-id.yml@v1.12.0
+    #uses: ./.github/workflows/calculate-version-from-txt-using-github-run-id.yml
+    with:
+      github_run_id_baseline: ${{ inputs.github_run_id_baseline }}
+      version_suffix: "-pr${{ github.event.number }}.${{ github.run_number }}.${{ github.run_attempt }}"
+
+  build:
+    needs: [ version ]
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-build-jfrog.yml@v1.14.0-rc1
+    #uses: ./.github/workflows/dotnet-build-jfrog.yml
+    with:
+      dotnet_version: ${{ inputs.dotnet_version }}
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_build_name: ${{ inputs.jfrog_build_name }}
+      jfrog_build_number: ${{ needs.version.outputs.version }}
+      jfrog_nuget_feed_repo: ${{ inputs.jfrog_nuget_feed_repo }}
+      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
+      project_directory: ${{ inputs.project_directory }}
+
+  dotnet-test:
+    needs: [ build, version ]
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-test-jfrog.yml@v1.14.0-rc2
+    #uses: ./.github/workflows/dotnet-test-jfrog.yml
+    with:
+      artifact_name: ${{ github.event.repository.name }}-testResults-${{ needs.version.outputs.informational_version }}
+      configuration: ${{ needs.build.outputs.configuration }}
+      dotnet_version: ${{ needs.build.outputs.dotnet_version }}
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_nuget_feed_repo: ${{ inputs.jfrog_nuget_feed_repo }}
+      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
+      persisted_workspace_artifact_name: ${{ needs.build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.build.outputs.project_directory }}
+      docker_mssql_image: ${{ inputs.docker_mssql_image }}
+      docker_mssql_port: ${{ inputs.docker_mssql_port }}
+
+  jfrog-xray-audit:
+    needs: [ build, version ]
+    #uses: ritterim/public-github-actions/.github/workflows/jfrog-xray-audit.yml@v1.12.0
+    uses: ./.github/workflows/jfrog-xray-audit.yml
+    with:
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
+      jfrog_xray_watch_list: ${{ inputs.jfrog_audit_xray_watch_list }}
+      persisted_workspace_artifact_name: ${{ needs.build.outputs.persisted_workspace_artifact_name }}
+      report_artifact_name: ${{ github.event.repository.name }}-xray-audit-${{ needs.version.outputs.informational_version }}
+
+  dotnet-pack:
+    needs: [
+      build,
+      dotnet-test,
+      version
+      ]
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-pack-jfrog.yml@v1.14.0-rc1
+    #uses: ./.github/workflows/dotnet-pack-jfrog.yml
+    with:
+      artifact_name: ${{ github.event.repository.name }}-packages-${{ needs.version.outputs.informational_version }}
+      configuration: ${{ needs.build.outputs.configuration }}
+      dotnet_version: ${{ needs.build.outputs.dotnet_version }}
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_artifactory_repository: ${{ inputs.jfrog_artifactory_package_push_repository }}
+      jfrog_build_name: ${{ inputs.jfrog_build_name }}
+      jfrog_build_name_build: ${{ needs.build.outputs.jfrog_build_name_build }}
+      jfrog_build_number: ${{ needs.version.outputs.version }}
+      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
+      persisted_workspace_artifact_name: ${{ needs.build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.build.outputs.project_directory }}
+      informational_version: ${{ needs.version.outputs.informational_version }}
+      version: ${{ needs.version.outputs.version }}
