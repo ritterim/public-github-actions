@@ -3,8 +3,12 @@ name: JFrog XRay Audit
 # Use JFrog XRay to 'audit' the source files in the solution.
 # This reusable workflow assumes that the workspace was persisted into an artifact.
 
+# The "jfrog/setup-jfrog-cli" action requires "id-token: write" or else you will get
+# an error about: "Unable to get ACTIONS_ID_TOKEN_REQUEST_URL env variable".
+
 permissions:
   contents: read
+  id-token: write
 
 on:
 
@@ -14,6 +18,11 @@ on:
 
       jfrog_api_base_url:
         description: 'JFrog platform url (for example: https://rimdev.jfrog.io)'
+        required: true
+        type: string
+
+      jfrog_oidc_provider_name:
+        description: The OIDC Integration Provider Name to use for authentication from the GitHub Action to the JFrog instance.
         required: true
         type: string
 
@@ -44,12 +53,6 @@ on:
         type: number
         default: 90
 
-    secrets:
-
-      jfrog_api_key:
-        description: The secret API key needed in order to access the JFrog XRay API.
-        required: true
-
     outputs:
       report_artifact_name:
         value: ${{ jobs.xray-scan.outputs.report_artifact_name }}
@@ -71,15 +74,19 @@ jobs:
       NUGETHASHFILES: "${{ inputs.project_directory }}**/*.csproj"
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
       REPORTARTIFACTNAME: ${{ inputs.report_artifact_name }}
-      XRAYWATCHES: ${{ inputs.jfrog_xray_watch_list }}
+      JFROG_API_BASE_URL: ${{ inputs.jfrog_api_base_url }}
+      JFROG_OIDC_PROVIDER_NAME: ${{ inputs.jfrog_oidc_provider_name }}
+      JFROG_XRAY_WATCH_LIST: ${{ inputs.jfrog_xray_watch_list }}
 
     steps:
 
-      - name: Validate secrets.jfrog_api_key
+      - name: Validate inputs.jfrog_oidc_provider_name
         uses: ritterim/public-github-actions/actions/regex-validator@v1.10.0
-        with:
-          regex_pattern: '^[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*$'
-          value: ${{ secrets.jfrog_api_key }}
+        with: # This regex pattern is a bit of a guess
+          regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
+          value: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
+
+#TODO: Validate inputs.jfrog_xray_watch_list
 
       - name: Validate inputs.project_directory
         uses: ritterim/public-github-actions/actions/path-name-validator@v1.10.0
@@ -104,29 +111,29 @@ jobs:
           path: |
             ~/.nuget/packages
 
-      - uses: jfrog/setup-jfrog-cli@v3
+      - name: Install JFrog CLI
+        uses: jfrog/setup-jfrog-cli@v4
         env:
-          JF_URL: ${{ inputs.jfrog_api_base_url }}
-          JF_ACCESS_TOKEN: ${{ secrets.jfrog_api_key }}
+          JF_URL: ${{ env.JFROG_API_BASE_URL }}
+        with:
+          oidc-provider-name: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
 
-      # Note: The 'ping' can succeed even if the API key (JF_ACCESS_TOKEN) is wrong/missing.
-      - name: Check JFrog CLI version and server connection.
-        run: |
-          jf --version
-          jf rt ping
+      - name: jf config show
+        run: jf config show
 
       - name: jf audit
         id: audit
         run: |
           set -o pipefail
-          jf audit --watches="${XRAYWATCHES}" | tee "${REPORTARTIFACTNAME}.txt"
+          touch "${REPORTARTIFACTNAME}.txt"
+          jf audit --watches="${JFROG_XRAY_WATCH_LIST}" | tee "${REPORTARTIFACTNAME}.txt"
         continue-on-error: true
 
       - name: Report File
         run: cat "${REPORTARTIFACTNAME}.txt"
 
       - name: Upload Artifacts
-        id: upload-artifact
+        if: steps.audit.outcome == 'success'
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.REPORTARTIFACTNAME }}
@@ -142,5 +149,6 @@ jobs:
       - name: Fail build on audit error
         if: steps.audit.outcome == 'failure'
         run: |
+          echo "REPORT FILE: ${REPORTARTIFACTNAME}.txt"
           cat "${REPORTARTIFACTNAME}.txt"
           exit 1
