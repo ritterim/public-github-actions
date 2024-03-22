@@ -4,10 +4,12 @@ name: Test (.NET)
 # It's expected that you point at a 'virtual' Artifactory repository which can also
 # resolve any public NuGet packages which you consume.
 
-# At the moment, this requires a user-generated JWT for the authentication.
+# The "jfrog/setup-jfrog-cli" action requires "id-token: write" or else you will get
+# an error about: "Unable to get ACTIONS_ID_TOKEN_REQUEST_URL env variable".
 
 permissions:
   contents: read
+  id-token: write
 
 on:
 
@@ -86,13 +88,13 @@ on:
         required: true
         type: string
 
-      jfrog_api_username:
-        description: The JFrog username associated with the jfrog_api_key.
+      jfrog_nuget_feed_repo:
+        description: The 'virtual' JFrog Artifactory repository identifier for NuGet package retrieval.
         required: true
         type: string
 
-      jfrog_nuget_feed_repo:
-        description: The 'virtual' JFrog Artifactory repository identifier for NuGet package retrieval.
+      jfrog_oidc_provider_name:
+        description: The OIDC Integration Provider Name to use for authentication from the GitHub Action to the JFrog instance.
         required: true
         type: string
 
@@ -112,12 +114,6 @@ on:
         type: boolean
         default: true
 
-    secrets:
-
-      jfrog_api_key:
-        description: The secret API key needed in order to access the JFrog XRay API and pull packages.
-        required: true
-
 jobs:
 
   tests:
@@ -132,20 +128,21 @@ jobs:
       CONFIGURATION: ${{ inputs.configuration }}
       NUGETHASHFILES: "${{ inputs.project_directory }}**/*.csproj"
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
-      RIMDEVTESTS__ELASTICSEARCH__PORT: ${{ inputs.docker_elasticsearch_http_port }}
-      RIMDEVTESTS__ELASTICSEARCH__TRANSPORTPORT: ${{ inputs.docker_elasticsearch_transport_port }}
+      # SQL Server
       RIMDEVTESTS__SQL__PORT: ${{ inputs.docker_mssql_port }}
       # The SQL password just needs to be not-empty, it's a temporary database
       RIMDEVTESTS__SQL__PASSWORD: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
       # Elasticsearch
+      RIMDEVTESTS__ELASTICSEARCH__PORT: ${{ inputs.docker_elasticsearch_http_port }}
+      RIMDEVTESTS__ELASTICSEARCH__TRANSPORTPORT: ${{ inputs.docker_elasticsearch_transport_port }}
       discovery.type: single-node
       ES_JAVA_OPTS: -Xms256m -Xmx256m
-      JFROG_API_KEY: ${{ secrets.jfrog_api_key }}
+      # JFrog
       JFROG_API_BASE_URL: ${{ inputs.jfrog_api_base_url }}
-      JFROG_API_USERNAME: ${{ inputs.jfrog_api_username }}
       JFROG_NUGET_FEED_NAME: jfrog-${{ inputs.jfrog_nuget_feed_repo }}
       JFROG_NUGET_FEED_REPO: ${{ inputs.jfrog_nuget_feed_repo }}
       JFROG_NUGET_FEED_REPO_URL: "${{ inputs.jfrog_api_base_url }}artifactory/api/nuget/v3/${{ inputs.jfrog_nuget_feed_repo }}/index.json"
+      JFROG_OIDC_PROVIDER_NAME: ${{ inputs.jfrog_oidc_provider_name }}
 
     services:
 
@@ -194,6 +191,12 @@ jobs:
         with:
           name: ${{ env.JFROG_NUGET_FEED_REPO }}
 
+      - name: Validate inputs.jfrog_oidc_provider_name
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.10.0
+        with: # This regex pattern is a bit of a guess
+          regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
+          value: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
+
       - name: Validate inputs.project_directory
         uses: ritterim/public-github-actions/actions/path-name-validator@v1.9.2
         with:
@@ -206,10 +209,29 @@ jobs:
           value: ${{ env.RIMDEVTESTS__SQL__PASSWORD }}
           regex_pattern: "^.{8,250}$"
 
+      - name: github context debug information
+        working-directory: ./
+        run: |
+          echo "github.base_ref=${{ github.base_ref }}"
+          echo "github.head_ref=${{ github.head_ref }}"
+          echo "github.ref=${{ github.ref }}"
+          echo "github.ref_name=${{ github.ref_name }}"
+          echo "github.repository=${{ github.repository }}"
+          echo "github.repository_owner=${{ github.repository_owner }}"
+          echo "github.run_id=${{ github.run_id }}"
+          echo "github.run_number=${{ github.run_number }}"
+          echo "github.run_attempt=${{ github.run_attempt }}"
+          echo "github.sha=${{ github.sha }}"
+
       - name: Bypass Tests
         if: inputs.run_tests != true
         working-directory: ./
         run: echo "The 'inputs.run_tests' value is FALSE, skipping tests!"
+
+      - name: Checkout Project
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
 
       - name: Restore Workspace
         uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.2
@@ -218,23 +240,20 @@ jobs:
           action: retrieve
           artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
 
+      - name: Install JFrog CLI
+        uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_URL: ${{ env.JFROG_API_BASE_URL }}
+        with:
+          oidc-provider-name: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
+
+      - name: jf config show
+        run: jf config show
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ inputs.dotnet_version }}
-
-      - run: dotnet nuget list source
-
-      - name: Remove any pre-defined NuGet sources
-        run: |
-          sources=$(dotnet nuget list source | grep '\[Enabled\]' | awk '{print $2}')
-          echo "$sources"
-          echo "$sources" | xargs -I % dotnet nuget remove source %
-
-      - name: dotnet nuget add source JFROG_NUGET_FEED_NAME
-        run: dotnet nuget add source "${JFROG_NUGET_FEED_REPO_URL}" --name "${JFROG_NUGET_FEED_NAME}" --username "${JFROG_API_USERNAME}" --password "${JFROG_API_KEY}" --store-password-in-clear-text
-
-      - run: dotnet nuget list source
 
       - name: Setup ~/.nuget/packages cache
         uses: actions/cache@v3
@@ -244,7 +263,21 @@ jobs:
           path: |
             ~/.nuget/packages
 
-      - run: dotnet restore --verbosity=normal
+      - run: dotnet nuget list source
+
+      - name: Remove any pre-defined NuGet sources
+        run: |
+          sources=$(dotnet nuget list source | grep '\[Enabled\]' | awk '{print $2}')
+          echo "$sources"
+          echo "$sources" | xargs -I % dotnet nuget remove source %
+
+      - run: dotnet nuget list source
+
+      - name: Configure .NET / NuGet using JFrog CLI
+        run: jf dotnet-config --server-id-resolve setup-jfrog-cli-server --repo-resolve "${JFROG_NUGET_FEED_REPO}"
+
+      - name: .NET Restore using JFrog CLI
+        run: jf dotnet restore
 
       # https://github.com/dotnet/core/issues/7412
       # We can't feed in --no-build or --no-restore or else the test command will just fail silently
