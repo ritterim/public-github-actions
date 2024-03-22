@@ -4,10 +4,14 @@ name: Build (.NET)
 # It's expected that you point at a 'virtual' Artifactory repository which can also
 # resolve any public NuGet packages which you consume.
 
-# At the moment, this requires a user-generated JWT for the authentication.
+# The "jfrog/setup-jfrog-cli" action requires "id-token: write" or else you will get
+# an error about: "Unable to get ACTIONS_ID_TOKEN_REQUEST_URL env variable".
+
+# https://docs.jfrog-applications.jfrog.io/jfrog-applications/jfrog-cli/cli-for-jfrog-artifactory/build-integration#aggregating-published-builds
 
 permissions:
   contents: read
+  id-token: write
 
 on:
 
@@ -30,13 +34,23 @@ on:
         required: true
         type: string
 
-      jfrog_api_username:
-        description: The JFrog username associated with the jfrog_api_key.
+      jfrog_build_name:
+        description: 'JFrog build name.'
+        required: true
+        type: string
+
+      jfrog_build_number:
+        description: 'JFrog build number. Can be an integer, a semantic version, or a string.'
         required: true
         type: string
 
       jfrog_nuget_feed_repo:
         description: The 'virtual' JFrog Artifactory repository identifier for NuGet package retrieval.
+        required: true
+        type: string
+
+      jfrog_oidc_provider_name:
+        description: The OIDC Integration Provider Name to use for authentication from the GitHub Action to the JFrog instance.
         required: true
         type: string
 
@@ -52,12 +66,6 @@ on:
         type: string
         default: ./
 
-    secrets:
-
-      jfrog_api_key:
-        description: The secret API key (JWT) needed in order to access the JFrog XRay API and pull packages.
-        required: true
-
     outputs:
 
       configuration:
@@ -65,6 +73,10 @@ on:
 
       dotnet_version:
         value: ${{ inputs.dotnet_version }}
+
+      jfrog_build_name_build:
+        description: The JFrog build name for the 'build' step is suffixed with '-build'.
+        value: ${{ jobs.build.outputs.jfrog_build_name }}
 
       persisted_workspace_artifact_name:
         description: Name of the artifact which contains the persisted workspace directory.
@@ -84,17 +96,18 @@ jobs:
 
     outputs:
       persisted_workspace_artifact_name: ${{ steps.persist-workspace.outputs.artifact_name }}
+      jfrog_build_name: ${{ env.JFROG_CLI_BUILD_NAME }}
 
     env:
       CONFIGURATION: ${{ inputs.configuration }}
       NUGETHASHFILES: "${{ inputs.project_directory }}**/*.csproj"
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
-      JFROG_API_KEY: ${{ secrets.jfrog_api_key }}
       JFROG_API_BASE_URL: ${{ inputs.jfrog_api_base_url }}
-      JFROG_API_USERNAME: ${{ inputs.jfrog_api_username }}
-      JFROG_NUGET_FEED_NAME: jfrog-${{ inputs.jfrog_nuget_feed_repo }}
+      JFROG_CLI_BUILD_NAME: "${{ inputs.jfrog_build_name }}-build"
+      JFROG_CLI_BUILD_NUMBER: ${{ inputs.jfrog_build_number }}
+      JFROG_CLI_LOG_LEVEL: DEBUG # JFrog CLI { DEBUG, INFO, WARN, ERROR }
       JFROG_NUGET_FEED_REPO: ${{ inputs.jfrog_nuget_feed_repo }}
-      JFROG_NUGET_FEED_REPO_URL: "${{ inputs.jfrog_api_base_url }}artifactory/api/nuget/v3/${{ inputs.jfrog_nuget_feed_repo }}/index.json"
+      JFROG_OIDC_PROVIDER_NAME: ${{ inputs.jfrog_oidc_provider_name }}
 
     steps:
 
@@ -110,16 +123,16 @@ jobs:
         with:
           name: ${{ env.JFROG_NUGET_FEED_REPO }}
 
+      - name: Validate inputs.jfrog_oidc_provider_name
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.10.0
+        with: # This regex pattern is a bit of a guess
+          regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
+          value: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
+
       - name: Validate inputs.project_directory
         uses: ritterim/public-github-actions/actions/path-name-validator@v1.9.2
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
-
-      - name: Validate secrets.jfrog_api_key JWT
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.10.0
-        with:
-          regex_pattern: '^[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*$'
-          value: ${{ env.JFROG_API_KEY }}
 
       - name: github context debug information
         working-directory: ./
@@ -130,6 +143,9 @@ jobs:
           echo "github.ref_name=${{ github.ref_name }}"
           echo "github.repository=${{ github.repository }}"
           echo "github.repository_owner=${{ github.repository_owner }}"
+          echo "github.run_id=${{ github.run_id }}"
+          echo "github.run_number=${{ github.run_number }}"
+          echo "github.run_attempt=${{ github.run_attempt }}"
           echo "github.sha=${{ github.sha }}"
 
       - name: Checkout Project
@@ -137,10 +153,28 @@ jobs:
         with:
           ref: ${{ github.ref }}
 
+      # This creates the setup-jfrog-cli-server server ID
+      - name: Install JFrog CLI
+        uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_URL: ${{ env.JFROG_API_BASE_URL }}
+        with:
+          oidc-provider-name: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
+
+      - name: jf config show
+        run: jf config show
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ inputs.dotnet_version }}
+
+      - name: Setup ~/.nuget/packages cache
+        uses: actions/cache@v3
+        with:
+          key: nuget-packages-${{ runner.os }}-${{ hashFiles(env.NUGETHASHFILES) }}
+          path: |
+            ~/.nuget/packages
 
       - run: dotnet nuget list source
 
@@ -150,29 +184,17 @@ jobs:
           echo "$sources"
           echo "$sources" | xargs -I % dotnet nuget remove source %
 
-      - name: dotnet nuget add source JFROG_NUGET_FEED_NAME
-        run: dotnet nuget add source "${JFROG_NUGET_FEED_REPO_URL}" --name "${JFROG_NUGET_FEED_NAME}" --username "${JFROG_API_USERNAME}" --password "${JFROG_API_KEY}" --store-password-in-clear-text
-
       - run: dotnet nuget list source
 
-      - name: Setup ~/.nuget/packages cache
-        uses: actions/cache@v3
-        with:
-          key: nuget-packages-${{ runner.os }}-${{ hashFiles(env.NUGETHASHFILES) }}
-          path: |
-            ~/.nuget/packages
+      - name: Configure .NET / NuGet using JFrog CLI
+        run: jf dotnet-config --server-id-resolve setup-jfrog-cli-server --repo-resolve "${JFROG_NUGET_FEED_REPO}"
 
-      - run: dotnet restore --verbosity=normal
+      - name: .NET Restore using JFrog CLI
+        run: jf dotnet restore
 
       - run: dotnet build --configuration "${CONFIGURATION}"
 
       - run: ls -la
-
-      - name: Persist Workspace
-        id: persist-workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.2
-        with:
-          artifact_name_suffix: ${{ inputs.persisted_workspace_artifact_suffix }}
 
       - run: ls -la ~/.nuget
 
@@ -180,3 +202,17 @@ jobs:
 
       - run: ls -la ~/.nuget/packages
 
+      - name: Persist Workspace
+        id: persist-workspace
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.2
+        with:
+          artifact_name_suffix: ${{ inputs.persisted_workspace_artifact_suffix }}
+
+      - name: Collect JFrog Build Information
+        run: jf rt build-collect-env "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      - name: Collect JFrog 'git' Information
+        run: jf rt build-add-git "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      - name: Push JFrog Build Information
+        run: jf rt build-publish "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
