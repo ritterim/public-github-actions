@@ -222,7 +222,6 @@ jobs:
       - name: Upload '*.nupkg' files to JFrog Artifactory
         run: jf rt upload '*.nupkg' "${JFROG_ARTIFACTORY_REPOSITORY}" --fail-no-op --server-id="${JFROG_SERVER_ID}" --build-name="${JFROG_CLI_BUILD_NAME}" --build-number="${JFROG_CLI_BUILD_NUMBER}"
         working-directory: ${{ env.ARTIFACTRELATIVEFOLDER }}
-        continue-on-error: true
 
       - name: Upload '*.snupkg' files to JFrog Artifactory
         run: jf rt upload '*.snupkg' "${JFROG_ARTIFACTORY_REPOSITORY}" --server-id="${JFROG_SERVER_ID}" --build-name="${JFROG_CLI_BUILD_NAME}" --build-number="${JFROG_CLI_BUILD_NUMBER}"
