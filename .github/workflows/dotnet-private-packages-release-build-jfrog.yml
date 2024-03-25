@@ -81,7 +81,7 @@ jobs:
 
   build:
     needs: [ version ]
-    uses: ritterim/public-github-actions/.github/workflows/dotnet-build-jfrog.yml@v1.14.0-rc4
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-build-jfrog.yml@v1.14.0-rc6
     #uses: ./.github/workflows/dotnet-build-jfrog.yml
     with:
       dotnet_version: ${{ inputs.dotnet_version }}
@@ -94,7 +94,7 @@ jobs:
 
   dotnet-test:
     needs: [ build, version ]
-    uses: ritterim/public-github-actions/.github/workflows/dotnet-test-jfrog.yml@v1.14.0-rc4
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-test-jfrog.yml@v1.14.0-rc6
     #uses: ./.github/workflows/dotnet-test-jfrog.yml
     with:
       artifact_name: ${{ github.event.repository.name }}-testResults-${{ needs.version.outputs.informational_version }}
@@ -110,7 +110,7 @@ jobs:
 
   jfrog-xray-audit:
     needs: [ build, version ]
-    uses: ritterim/public-github-actions/.github/workflows/jfrog-xray-audit.yml@v1.14.0-rc4
+    uses: ritterim/public-github-actions/.github/workflows/jfrog-xray-audit.yml@v1.14.0-rc6
     #uses: ./.github/workflows/jfrog-xray-audit.yml
     with:
       jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
@@ -125,7 +125,7 @@ jobs:
       dotnet-test,
       version
       ]
-    uses: ritterim/public-github-actions/.github/workflows/dotnet-pack-jfrog.yml@v1.14.0-rc4
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-pack-jfrog.yml@v1.14.0-rc6
     #uses: ./.github/workflows/dotnet-pack-jfrog.yml
     with:
       artifact_name: ${{ github.event.repository.name }}-packages-${{ needs.version.outputs.informational_version }}
