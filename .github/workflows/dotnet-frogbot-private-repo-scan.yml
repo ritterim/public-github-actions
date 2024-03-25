@@ -83,7 +83,7 @@ jobs:
           value: ${{ env.CONFIGURATION }}
 
       - name: Validate inputs.jfrog_nuget_feed_repo
-        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.10.0
+        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.14.0
         with:
           name: ${{ env.JFROG_NUGET_FEED_REPO }}
 
