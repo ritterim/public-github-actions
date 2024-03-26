@@ -24,6 +24,12 @@ on:
         type: string
         default: "Release"
 
+      dotnet_restore_verbosity:
+        description: 'The dotnet restore "--verbosity=" flag.  Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal.'
+        required: false
+        type: string
+        default: minimal
+
       dotnet_version:
         required: false
         type: string
@@ -42,6 +48,12 @@ on:
       jfrog_build_number:
         description: 'JFrog build number. Can be an integer, a semantic version, or a string.'
         required: true
+        type: string
+
+      jfrog_cli_log_level:
+        description: 'Set the log level for the JFrog CLI. Default is ERROR. Values are: (DEBUG, INFO, WARN, ERROR).'
+        required: false
+        default: ERROR
         type: string
 
       jfrog_nuget_feed_repo:
@@ -100,12 +112,13 @@ jobs:
 
     env:
       CONFIGURATION: ${{ inputs.configuration }}
+      DOTNET_RESTORE_VERBOSITY: ${{ inputs.dotnet_restore_verbosity }}
       NUGETHASHFILES: "${{ inputs.project_directory }}**/*.csproj"
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
       JFROG_API_BASE_URL: ${{ inputs.jfrog_api_base_url }}
       JFROG_CLI_BUILD_NAME: "${{ inputs.jfrog_build_name }}-build"
       JFROG_CLI_BUILD_NUMBER: ${{ inputs.jfrog_build_number }}
-      JFROG_CLI_LOG_LEVEL: DEBUG # JFrog CLI { DEBUG, INFO, WARN, ERROR }
+      JFROG_CLI_LOG_LEVEL: ${{ inputs.jfrog_cli_log_level }}
       JFROG_NUGET_FEED_REPO: ${{ inputs.jfrog_nuget_feed_repo }}
       JFROG_OIDC_PROVIDER_NAME: ${{ inputs.jfrog_oidc_provider_name }}
 
@@ -187,7 +200,9 @@ jobs:
       - run: dotnet nuget list source
 
       - name: Configure .NET / NuGet using JFrog CLI
-        run: jf dotnet-config --server-id-resolve setup-jfrog-cli-server --repo-resolve "${JFROG_NUGET_FEED_REPO}"
+        run: jf dotnet-config --global --server-id-resolve setup-jfrog-cli-server --repo-resolve "${JFROG_NUGET_FEED_REPO}"
+
+      - run: dotnet nuget list source
 
       - name: .NET Restore using JFrog CLI
         run: jf dotnet restore --build-name="${JFROG_CLI_BUILD_NAME}" --build-number="${JFROG_CLI_BUILD_NUMBER}" --verbosity="${DOTNET_RESTORE_VERBOSITY}"

@@ -22,6 +22,12 @@ on:
         default: 11435
         type: number
 
+      dotnet_restore_verbosity:
+        description: 'The dotnet restore "--verbosity=" flag.  Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal.'
+        required: false
+        type: string
+        default: minimal
+
       dotnet_version:
         required: false
         type: string
@@ -52,6 +58,12 @@ on:
         required: true
         type: string
 
+      jfrog_cli_log_level:
+        description: 'Set the log level for the JFrog CLI. Default is ERROR. Values are: (DEBUG, INFO, WARN, ERROR).'
+        required: false
+        default: ERROR
+        type: string
+
       jfrog_nuget_feed_repo:
         description: The 'virtual' JFrog Artifactory repository identifier for NuGet package retrieval.
         required: true
@@ -78,13 +90,15 @@ jobs:
 
   build:
     needs: [ version ]
-    uses: ritterim/public-github-actions/.github/workflows/dotnet-build-jfrog.yml@v1.14.0
-    #uses: ./.github/workflows/dotnet-build-jfrog.yml
+    #uses: ritterim/public-github-actions/.github/workflows/dotnet-build-jfrog.yml@v1.14.0
+    uses: ./.github/workflows/dotnet-build-jfrog.yml
     with:
+      dotnet_restore_verbosity: ${{ inputs.dotnet_restore_verbosity }}
       dotnet_version: ${{ inputs.dotnet_version }}
       jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
       jfrog_build_name: ${{ inputs.jfrog_build_name }}
       jfrog_build_number: ${{ needs.version.outputs.version }}
+      jfrog_cli_log_level: ${{ inputs.jfrog_cli_log_level }}
       jfrog_nuget_feed_repo: ${{ inputs.jfrog_nuget_feed_repo }}
       jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
       project_directory: ${{ inputs.project_directory }}
