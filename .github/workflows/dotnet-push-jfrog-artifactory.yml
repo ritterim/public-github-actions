@@ -72,7 +72,7 @@ jobs:
           file_name: ${{ inputs.artifact_name }}
 
       - name: Validate inputs.jfrog_artifactory_repository
-        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.14.0
+        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.14.1
         with:
           name: ${{ env.JFROG_ARTIFACTORY_REPOSITORY }}
 
