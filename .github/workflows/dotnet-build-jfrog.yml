@@ -190,7 +190,7 @@ jobs:
         run: jf dotnet-config --server-id-resolve setup-jfrog-cli-server --repo-resolve "${JFROG_NUGET_FEED_REPO}"
 
       - name: .NET Restore using JFrog CLI
-        run: jf dotnet restore
+        run: jf dotnet restore --build-name="${JFROG_CLI_BUILD_NAME}" --build-number="${JFROG_CLI_BUILD_NUMBER}" --verbosity="${DOTNET_RESTORE_VERBOSITY}"
 
       - run: dotnet build --configuration "${CONFIGURATION}"
 
