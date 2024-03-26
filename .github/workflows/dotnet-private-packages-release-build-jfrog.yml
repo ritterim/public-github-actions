@@ -26,6 +26,12 @@ on:
         default: 11435
         type: number
 
+      dotnet_restore_verbosity:
+        description: 'The dotnet restore "--verbosity=" flag.  Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal.'
+        required: false
+        type: string
+        default: minimal
+
       dotnet_version:
         required: false
         type: string
@@ -39,6 +45,12 @@ on:
       jfrog_api_base_url:
         description: 'JFrog platform url (for example: https://rimdev.jfrog.io/)'
         required: true
+        type: string
+
+      jfrog_cli_log_level:
+        description: 'Set the log level for the JFrog CLI. Default is ERROR. Values are: (DEBUG, INFO, WARN, ERROR).'
+        required: false
+        default: ERROR
         type: string
 
       jfrog_oidc_provider_name:
@@ -84,10 +96,12 @@ jobs:
     uses: ritterim/public-github-actions/.github/workflows/dotnet-build-jfrog.yml@v1.14.1
     #uses: ./.github/workflows/dotnet-build-jfrog.yml
     with:
+      dotnet_restore_verbosity: ${{ inputs.dotnet_restore_verbosity }}
       dotnet_version: ${{ inputs.dotnet_version }}
       jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
       jfrog_build_name: ${{ inputs.jfrog_build_name }}
       jfrog_build_number: ${{ needs.version.outputs.version }}
+      jfrog_cli_log_level: ${{ inputs.jfrog_cli_log_level }}
       jfrog_nuget_feed_repo: ${{ inputs.jfrog_nuget_feed_repo }}
       jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
       project_directory: ${{ inputs.project_directory }}
@@ -136,6 +150,7 @@ jobs:
       jfrog_build_name: ${{ inputs.jfrog_build_name }}
       jfrog_build_name_build: ${{ needs.build.outputs.jfrog_build_name_build }}
       jfrog_build_number: ${{ needs.version.outputs.version }}
+      jfrog_nuget_feed_repo: ${{ inputs.jfrog_nuget_feed_repo }}
       jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
       persisted_workspace_artifact_name: ${{ needs.build.outputs.persisted_workspace_artifact_name }}
       project_directory: ${{ needs.build.outputs.project_directory }}
