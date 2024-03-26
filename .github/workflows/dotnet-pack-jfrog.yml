@@ -63,6 +63,11 @@ on:
         default: ERROR
         type: string
 
+      jfrog_nuget_feed_repo:
+        description: The 'virtual' JFrog Artifactory repository identifier for NuGet package retrieval.
+        required: true
+        type: string
+
       jfrog_oidc_provider_name:
         description: The OIDC Integration Provider Name to use for authentication from the GitHub Action to the JFrog instance.
         required: true
@@ -112,6 +117,7 @@ jobs:
       JFROG_CLI_BUILD_NAME_BUILD: "${{ inputs.jfrog_build_name_build }}"
       JFROG_CLI_BUILD_NUMBER: ${{ inputs.jfrog_build_number }}
       JFROG_CLI_LOG_LEVEL: ${{ inputs.jfrog_cli_log_level }}
+      JFROG_NUGET_FEED_REPO: ${{ inputs.jfrog_nuget_feed_repo }}
       JFROG_OIDC_PROVIDER_NAME: ${{ inputs.jfrog_oidc_provider_name }}
       NUGETHASHFILES: "${{ inputs.project_directory }}**/*.csproj"
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
@@ -195,8 +201,20 @@ jobs:
           path: |
             ~/.nuget/packages
 
+      - run: dotnet nuget list source
+
+      - name: Remove any pre-defined NuGet sources
+        run: |
+          sources=$(dotnet nuget list source | grep '\[Enabled\]' | awk '{print $2}')
+          echo "$sources"
+          echo "$sources" | xargs -I % dotnet nuget remove source %
+
+      - run: dotnet nuget list source
+
       - name: Configure .NET / NuGet using JFrog CLI
         run: jf dotnet-config --global --server-id-resolve setup-jfrog-cli-server --repo-resolve "${JFROG_NUGET_FEED_REPO}"
+
+      - run: dotnet nuget list source
 
       - run: mkdir -p "${ARTIFACTRELATIVEFOLDER}"
 

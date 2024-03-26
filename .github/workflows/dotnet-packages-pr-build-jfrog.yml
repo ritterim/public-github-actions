@@ -147,6 +147,7 @@ jobs:
       jfrog_build_name: ${{ inputs.jfrog_build_name }}
       jfrog_build_name_build: ${{ needs.build.outputs.jfrog_build_name_build }}
       jfrog_build_number: ${{ needs.version.outputs.version }}
+      jfrog_nuget_feed_repo: ${{ inputs.jfrog_nuget_feed_repo }}
       jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
       persisted_workspace_artifact_name: ${{ needs.build.outputs.persisted_workspace_artifact_name }}
       project_directory: ${{ needs.build.outputs.project_directory }}
