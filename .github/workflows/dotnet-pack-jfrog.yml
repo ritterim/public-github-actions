@@ -57,6 +57,12 @@ on:
         required: true
         type: string
 
+      jfrog_cli_log_level:
+        description: 'Set the log level for the JFrog CLI. Default is ERROR. Values are: (DEBUG, INFO, WARN, ERROR).'
+        required: false
+        default: ERROR
+        type: string
+
       jfrog_oidc_provider_name:
         description: The OIDC Integration Provider Name to use for authentication from the GitHub Action to the JFrog instance.
         required: true
@@ -105,7 +111,7 @@ jobs:
       JFROG_CLI_BUILD_NAME: "${{ inputs.jfrog_build_name }}"
       JFROG_CLI_BUILD_NAME_BUILD: "${{ inputs.jfrog_build_name_build }}"
       JFROG_CLI_BUILD_NUMBER: ${{ inputs.jfrog_build_number }}
-      JFROG_CLI_LOG_LEVEL: DEBUG # JFrog CLI { DEBUG, INFO, WARN, ERROR }
+      JFROG_CLI_LOG_LEVEL: ${{ inputs.jfrog_cli_log_level }}
       JFROG_OIDC_PROVIDER_NAME: ${{ inputs.jfrog_oidc_provider_name }}
       NUGETHASHFILES: "${{ inputs.project_directory }}**/*.csproj"
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
@@ -189,9 +195,11 @@ jobs:
           path: |
             ~/.nuget/packages
 
+      - name: Configure .NET / NuGet using JFrog CLI
+        run: jf dotnet-config --global --server-id-resolve setup-jfrog-cli-server --repo-resolve "${JFROG_NUGET_FEED_REPO}"
+
       - run: mkdir -p "${ARTIFACTRELATIVEFOLDER}"
 
-      # TODO: Switch to "jf dotnet pack"
       - name: dotnet pack
         run: |
           jf dotnet pack \
