@@ -41,6 +41,11 @@ on:
         type: string
         default: "./"
 
+      publish_working_directory:
+        description: The directory where the 'dotnet publish' command should be run.  This is going to be the folder containing the Host/API main project.
+        required: true
+        type: string
+
       informational_version:
         required: true
         type: string
@@ -75,6 +80,7 @@ jobs:
       CONFIGURATION: ${{ inputs.configuration }}
       NUGETHASHFILES: "${{ inputs.project_directory }}**/*.csproj"
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
+      PUBLISH_WORKING_DIRECTORY: ${{ inputs.publish_working_directory }}
       INFORMATIONALVERSION: ${{ inputs.informational_version }}
       VERSION: ${{ inputs.version }}
       ZIPFILENAME: "${{ inputs.artifact_name }}.zip"
@@ -98,6 +104,11 @@ jobs:
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
+      - name: Validate inputs.publish_working_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.9.2
+        with:
+          path_name: ${{ env.PUBLISH_WORKING_DIRECTORY }}
+
       - name: Validate inputs.informational_version
         uses: ritterim/public-github-actions/actions/version-number-validator@v1.9.2
         with:
@@ -112,6 +123,25 @@ jobs:
         uses: ritterim/public-github-actions/actions/file-name-validator@v1.9.2
         with:
           file_name: ${{ env.ZIPFILENAME }}
+
+      - name: github context debug information
+        working-directory: ./
+        run: |
+          echo "github.base_ref=${{ github.base_ref }}"
+          echo "github.head_ref=${{ github.head_ref }}"
+          echo "github.ref=${{ github.ref }}"
+          echo "github.ref_name=${{ github.ref_name }}"
+          echo "github.repository=${{ github.repository }}"
+          echo "github.repository_owner=${{ github.repository_owner }}"
+          echo "github.run_id=${{ github.run_id }}"
+          echo "github.run_number=${{ github.run_number }}"
+          echo "github.run_attempt=${{ github.run_attempt }}"
+          echo "github.sha=${{ github.sha }}"
+
+      - name: Checkout Project
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
 
       - name: Restore Workspace
         uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.2
@@ -134,9 +164,13 @@ jobs:
           path: |
             ~/.nuget/packages
 
+      - run: dotnet nuget list source
+
       - run: mkdir -p 'app'
+        working-directory: ${{ inputs.publish_working_directory }}
 
       - name: dotnet publish
+        working-directory: ${{ inputs.publish_working_directory }}
         run: |
           dotnet publish \
             --no-build \
@@ -146,27 +180,33 @@ jobs:
             --property:PublishDir=app
 
       - name: Create githash.txt file
+        working-directory: ${{ inputs.publish_working_directory }}
         run: |
           PULL_REQUEST_HEAD_SHA=${{ github.event.pull_request.head.sha }}
           GH_SHA="${PULL_REQUEST_HEAD_SHA:-${GITHUB_SHA:-ERROR}}"
           echo $GH_SHA > app/githash.txt
 
       - run: cat app/githash.txt
+        working-directory: ${{ inputs.publish_working_directory }}
 
       - run: ls -lR 'app'
+        working-directory: ${{ inputs.publish_working_directory }}
 
       - run: mkdir -p 'output'
+        working-directory: ${{ inputs.publish_working_directory }}
 
       - name: Create Release Zip File
-        working-directory: "${{ inputs.project_directory }}app"
+        working-directory: "${{ inputs.publish_working_directory }}app"
         run: |
           zip -v -r \
             "../output/${ZIPFILENAME}" \
             .
 
       - run: ls -lt output/*.zip
+        working-directory: ${{ inputs.publish_working_directory }}
 
       - name: Test Release Zip File
+        working-directory: ${{ inputs.publish_working_directory }}
         run: zip -T "output/${ZIPFILENAME}"
 
       - name: Upload Artifact for Deployment
@@ -174,6 +214,6 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ inputs.artifact_name }}
-          path: "${{ inputs.project_directory }}output/${{ env.ZIPFILENAME }}"
+          path: "${{ inputs.publish_working_directory }}output/${{ env.ZIPFILENAME }}"
           retention-days: ${{ inputs.artifact_retention_days }}
           if-no-files-found: error
