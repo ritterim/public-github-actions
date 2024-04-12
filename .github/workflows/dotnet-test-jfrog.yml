@@ -88,6 +88,22 @@ on:
         required: true
         type: string
 
+      jfrog_build_name:
+        description: 'JFrog build name.'
+        required: true
+        type: string
+
+      jfrog_build_number:
+        description: 'JFrog build number. Can be an integer, a semantic version, or a string.'
+        required: true
+        type: string
+
+      jfrog_cli_log_level:
+        description: 'Set the log level for the JFrog CLI. Default is ERROR. Values are: (DEBUG, INFO, WARN, ERROR).'
+        required: false
+        default: ERROR
+        type: string
+
       jfrog_nuget_feed_repo:
         description: The 'virtual' JFrog Artifactory repository identifier for NuGet package retrieval.
         required: true
@@ -114,6 +130,12 @@ on:
         type: boolean
         default: true
 
+    outputs:
+
+      jfrog_build_name:
+        description: The JFrog build name for the 'dotnet-test' step is suffixed with '-dotnet-test'.
+        value: ${{ jobs.tests.outputs.jfrog_build_name }}
+
 jobs:
 
   tests:
@@ -122,6 +144,9 @@ jobs:
     defaults:
       run:
           working-directory: ${{ inputs.project_directory }}
+
+    outputs:
+      jfrog_build_name: ${{ env.JFROG_CLI_BUILD_NAME }}
 
     env:
       ARTIFACTNAME: ${{ inputs.artifact_name }}
@@ -139,9 +164,10 @@ jobs:
       ES_JAVA_OPTS: -Xms256m -Xmx256m
       # JFrog
       JFROG_API_BASE_URL: ${{ inputs.jfrog_api_base_url }}
-      JFROG_NUGET_FEED_NAME: jfrog-${{ inputs.jfrog_nuget_feed_repo }}
+      JFROG_CLI_BUILD_NAME: "${{ inputs.jfrog_build_name }}-dotnet-test"
+      JFROG_CLI_BUILD_NUMBER: ${{ inputs.jfrog_build_number }}
+      JFROG_CLI_LOG_LEVEL: ${{ inputs.jfrog_cli_log_level }}
       JFROG_NUGET_FEED_REPO: ${{ inputs.jfrog_nuget_feed_repo }}
-      JFROG_NUGET_FEED_REPO_URL: "${{ inputs.jfrog_api_base_url }}artifactory/api/nuget/v3/${{ inputs.jfrog_nuget_feed_repo }}/index.json"
       JFROG_OIDC_PROVIDER_NAME: ${{ inputs.jfrog_oidc_provider_name }}
 
     services:
@@ -185,6 +211,12 @@ jobs:
           case_sensitive: false
           regex_pattern: "^debug|release$"
           value: ${{ env.CONFIGURATION }}
+
+      - name: Validate inputs.jfrog_build_name
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.10.0
+        with: # This regex pattern is a bit of a guess
+          regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
+          value: ${{ inputs.jfrog_build_name }}
 
       - name: Validate inputs.jfrog_nuget_feed_repo
         uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.14.1
@@ -303,3 +335,17 @@ jobs:
           path: "${{ inputs.project_directory }}**/*.trx"
           retention-days: ${{ inputs.artifact_retention_days }}
           if-no-files-found: error
+
+      - name: Collect JFrog Build Information
+        run: jf rt build-collect-env "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      - name: Collect JFrog 'git' Information
+        run: jf rt build-add-git "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      # TODO: Upload the TRX files to an Artifactory repo?
+      # - name: Upload Artifact to JFrog Artifactory
+      #   run: jf rt upload "${ZIPFILENAME}" "${JFROG_ARTIFACTORY_REPOSITORY}" --fail-no-op --server-id="${JFROG_SERVER_ID}" --build-name="${JFROG_CLI_BUILD_NAME}" --build-number="${JFROG_CLI_BUILD_NUMBER}"
+      #   working-directory: "${{ inputs.project_directory }}output/"
+
+      - name: Push JFrog Build Information
+        run: jf rt build-publish "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"

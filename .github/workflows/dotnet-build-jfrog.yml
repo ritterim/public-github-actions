@@ -86,8 +86,8 @@ on:
       dotnet_version:
         value: ${{ inputs.dotnet_version }}
 
-      jfrog_build_name_build:
-        description: The JFrog build name for the 'build' step is suffixed with '-build'.
+      jfrog_build_name:
+        description: The JFrog build name for the 'dotnet-build' step is suffixed with '-dotnet-build'.
         value: ${{ jobs.build.outputs.jfrog_build_name }}
 
       persisted_workspace_artifact_name:
@@ -107,8 +107,8 @@ jobs:
         working-directory: ${{ inputs.project_directory }}
 
     outputs:
-      persisted_workspace_artifact_name: ${{ steps.persist-workspace.outputs.artifact_name }}
       jfrog_build_name: ${{ env.JFROG_CLI_BUILD_NAME }}
+      persisted_workspace_artifact_name: ${{ steps.persist-workspace.outputs.artifact_name }}
 
     env:
       CONFIGURATION: ${{ inputs.configuration }}
@@ -116,7 +116,7 @@ jobs:
       NUGETHASHFILES: "${{ inputs.project_directory }}**/*.csproj"
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
       JFROG_API_BASE_URL: ${{ inputs.jfrog_api_base_url }}
-      JFROG_CLI_BUILD_NAME: "${{ inputs.jfrog_build_name }}-build"
+      JFROG_CLI_BUILD_NAME: "${{ inputs.jfrog_build_name }}-dotnet-build"
       JFROG_CLI_BUILD_NUMBER: ${{ inputs.jfrog_build_number }}
       JFROG_CLI_LOG_LEVEL: ${{ inputs.jfrog_cli_log_level }}
       JFROG_NUGET_FEED_REPO: ${{ inputs.jfrog_nuget_feed_repo }}
@@ -130,6 +130,12 @@ jobs:
           case_sensitive: false
           regex_pattern: "^debug|release$"
           value: ${{ env.CONFIGURATION }}
+
+      - name: Validate inputs.jfrog_build_name
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.10.0
+        with: # This regex pattern is a bit of a guess
+          regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
+          value: ${{ inputs.jfrog_build_name }}
 
       - name: Validate inputs.jfrog_nuget_feed_repo
         uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.14.1

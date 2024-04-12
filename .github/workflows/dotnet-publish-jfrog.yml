@@ -1,11 +1,14 @@
-name: Pack (.NET)
+name: Publish (.NET)
 
 # The "jfrog/setup-jfrog-cli" action requires "id-token: write" or else you will get
 # an error about: "Unable to get ACTIONS_ID_TOKEN_REQUEST_URL env variable".
 
+# Performs only the 'dotnet publish'.
+
 permissions:
   contents: read
   id-token: write
+  packages: read
 
 on:
 
@@ -78,6 +81,11 @@ on:
         type: string
         default: "./"
 
+      publish_working_directory:
+        description: The directory where the 'dotnet publish' command should be run.  This is going to be the folder containing the Host/API main project.
+        required: true
+        type: string
+
       informational_version:
         required: true
         type: string
@@ -89,41 +97,46 @@ on:
     outputs:
 
       artifact_name:
-        value: ${{ inputs.artifact_name }}
+        value: ${{ jobs.publish.outputs.artifact_name }}
+
+      artifact_filename:
+        value: ${{ jobs.publish.outputs.artifact_filename }}
 
       jfrog_build_name:
-        description: The JFrog build name for the 'dotnet-pack' step is suffixed with '-dotnet-pack'.
-        value: ${{ jobs.pack.outputs.jfrog_build_name }}
+        description: The JFrog build name for the 'dotnet-publish' step is suffixed with '-dotnet-publish'.
+        value: ${{ jobs.publish.outputs.jfrog_build_name }}
 
 jobs:
 
-  pack:
-    name: Pack (.NET)
+  publish:
+    name: Publish (.NET)
     runs-on: ubuntu-latest
     defaults:
       run:
-          working-directory: ${{ inputs.project_directory }}
+        working-directory: ${{ inputs.project_directory }}
 
     outputs:
+      artifact_name: ${{ inputs.artifact_name }}
+      artifact_filename: ${{ env.ZIPFILENAME }}
       jfrog_build_name: ${{ env.JFROG_CLI_BUILD_NAME }}
 
     env:
       ARTIFACTNAME: ${{ inputs.artifact_name }}
-      ARTIFACTPATHSPEC: "${{ inputs.project_directory }}artifacts/*.*nupkg"
-      ARTIFACTRELATIVEFOLDER: artifacts
       CONFIGURATION: ${{ inputs.configuration }}
       JFROG_SERVER_ID: setup-jfrog-cli-server
       JFROG_API_BASE_URL: ${{ inputs.jfrog_api_base_url }}
       JFROG_ARTIFACTORY_REPOSITORY: ${{ inputs.jfrog_artifactory_repository }}
-      JFROG_CLI_BUILD_NAME: "${{ inputs.jfrog_build_name }}-dotnet-pack"
+      JFROG_CLI_BUILD_NAME: "${{ inputs.jfrog_build_name }}-dotnet-publish"
       JFROG_CLI_BUILD_NUMBER: ${{ inputs.jfrog_build_number }}
       JFROG_CLI_LOG_LEVEL: ${{ inputs.jfrog_cli_log_level }}
       JFROG_NUGET_FEED_REPO: ${{ inputs.jfrog_nuget_feed_repo }}
       JFROG_OIDC_PROVIDER_NAME: ${{ inputs.jfrog_oidc_provider_name }}
       NUGETHASHFILES: "${{ inputs.project_directory }}**/*.csproj"
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
+      PUBLISH_WORKING_DIRECTORY: ${{ inputs.publish_working_directory }}
       INFORMATIONALVERSION: ${{ inputs.informational_version }}
       VERSION: ${{ inputs.version }}
+      ZIPFILENAME: "${{ inputs.artifact_name }}.zip"
 
     steps:
 
@@ -150,6 +163,11 @@ jobs:
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
+      - name: Validate inputs.publish_working_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.9.2
+        with:
+          path_name: ${{ env.PUBLISH_WORKING_DIRECTORY }}
+
       - name: Validate inputs.informational_version
         uses: ritterim/public-github-actions/actions/version-number-validator@v1.9.2
         with:
@@ -159,6 +177,11 @@ jobs:
         uses: ritterim/public-github-actions/actions/version-number-validator@v1.9.2
         with:
           version: ${{ env.VERSION }}
+
+      - name: Validate ZIPFILENAME
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.9.2
+        with:
+          file_name: ${{ env.ZIPFILENAME }}
 
       - name: github context debug information
         working-directory: ./
@@ -180,7 +203,7 @@ jobs:
           ref: ${{ github.ref }}
 
       - name: Restore Workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.10.0
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.2
         with:
           action: retrieve
           artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
@@ -200,6 +223,9 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ inputs.dotnet_version }}
+          source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+        env:
+          NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Setup ~/.nuget/packages cache
         uses: actions/cache@v3
@@ -223,26 +249,55 @@ jobs:
 
       - run: dotnet nuget list source
 
-      - run: mkdir -p "${ARTIFACTRELATIVEFOLDER}"
+      - run: mkdir -p 'app'
+        working-directory: ${{ inputs.publish_working_directory }}
 
-      - name: dotnet pack
+      - name: dotnet publish
+        working-directory: ${{ inputs.publish_working_directory }}
         run: |
-          jf dotnet pack \
+          dotnet publish \
             --no-build \
-            --include-symbols \
             --configuration "${CONFIGURATION}" \
             -p:Version="${VERSION}" \
             -p:InformationalVersion="${INFORMATIONALVERSION}" \
-            --output "${ARTIFACTRELATIVEFOLDER}"
+            --property:PublishDir=app
 
-      - run: ls -l "${ARTIFACTRELATIVEFOLDER}"
+      - name: Create githash.txt file
+        working-directory: ${{ inputs.publish_working_directory }}
+        run: |
+          PULL_REQUEST_HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          GH_SHA="${PULL_REQUEST_HEAD_SHA:-${GITHUB_SHA:-ERROR}}"
+          echo $GH_SHA > app/githash.txt
 
-      - name: Upload Artifacts
+      - run: cat app/githash.txt
+        working-directory: ${{ inputs.publish_working_directory }}
+
+      - run: ls -lR 'app'
+        working-directory: ${{ inputs.publish_working_directory }}
+
+      - run: mkdir -p 'output'
+        working-directory: ${{ inputs.publish_working_directory }}
+
+      - name: Create Release Zip File
+        working-directory: "${{ inputs.publish_working_directory }}app"
+        run: |
+          zip -v -r \
+            "../output/${ZIPFILENAME}" \
+            .
+
+      - run: ls -lt output/*.zip
+        working-directory: ${{ inputs.publish_working_directory }}
+
+      - name: Test Release Zip File
+        working-directory: ${{ inputs.publish_working_directory }}
+        run: zip -T "output/${ZIPFILENAME}"
+
+      - name: Upload Artifact for Deployment
         id: upload-artifact
         uses: actions/upload-artifact@v3
         with:
           name: ${{ inputs.artifact_name }}
-          path: ${{ env.ARTIFACTPATHSPEC }}
+          path: "${{ inputs.publish_working_directory }}output/${{ env.ZIPFILENAME }}"
           retention-days: ${{ inputs.artifact_retention_days }}
           if-no-files-found: error
 
@@ -252,14 +307,9 @@ jobs:
       - name: Collect JFrog 'git' Information
         run: jf rt build-add-git "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
 
-      - name: Upload '*.nupkg' files to JFrog Artifactory
-        run: jf rt upload '*.nupkg' "${JFROG_ARTIFACTORY_REPOSITORY}" --fail-no-op --server-id="${JFROG_SERVER_ID}" --build-name="${JFROG_CLI_BUILD_NAME}" --build-number="${JFROG_CLI_BUILD_NUMBER}"
-        working-directory: ${{ env.ARTIFACTRELATIVEFOLDER }}
-
-      - name: Upload '*.snupkg' files to JFrog Artifactory
-        run: jf rt upload '*.snupkg' "${JFROG_ARTIFACTORY_REPOSITORY}" --server-id="${JFROG_SERVER_ID}" --build-name="${JFROG_CLI_BUILD_NAME}" --build-number="${JFROG_CLI_BUILD_NUMBER}"
-        working-directory: ${{ env.ARTIFACTRELATIVEFOLDER }}
-        continue-on-error: true
+      - name: Upload Artifact to JFrog Artifactory
+        run: jf rt upload "${ZIPFILENAME}" "${JFROG_ARTIFACTORY_REPOSITORY}" --fail-no-op --server-id="${JFROG_SERVER_ID}" --build-name="${JFROG_CLI_BUILD_NAME}" --build-number="${JFROG_CLI_BUILD_NUMBER}"
+        working-directory: "${{ inputs.publish_working_directory }}output/"
 
       - name: Push JFrog Build Information
         run: jf rt build-publish "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
