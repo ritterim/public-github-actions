@@ -1,0 +1,198 @@
+name: Publish Aggregate JFrog Build-Info
+
+# Publish an aggregate JFrog build-info using the build names produced by the prior steps.
+
+# The "jfrog/setup-jfrog-cli" action requires "id-token: write" or else you will get
+# an error about: "Unable to get ACTIONS_ID_TOKEN_REQUEST_URL env variable".
+
+permissions:
+  contents: read
+  id-token: write
+  packages: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      jfrog_api_base_url:
+        description: 'JFrog platform url (for example: https://rimdev.jfrog.io/)'
+        required: true
+        type: string
+
+      jfrog_build_name:
+        description: 'JFrog build-info name.'
+        required: true
+        type: string
+
+      jfrog_build_name_dotnet_build:
+        description: 'JFrog dotnet-build step build-info name.'
+        required: false
+        default: null
+        type: string
+
+      jfrog_build_name_dotnet_pack:
+        description: 'JFrog dotnet-pack step build-info name.'
+        required: false
+        default: null
+        type: string
+
+      jfrog_build_name_dotnet_publish:
+        description: 'JFrog dotnet-publish step build-info name.'
+        required: false
+        default: null
+        type: string
+
+      jfrog_build_name_dotnet_test:
+        description: 'JFrog dotnet-test step build-info name.'
+        required: false
+        default: null
+        type: string
+
+      jfrog_build_number:
+        description: 'JFrog build number. Can be an integer, a semantic version, or a string.'
+        required: true
+        type: string
+
+      jfrog_cli_log_level:
+        description: 'Set the log level for the JFrog CLI. Default is ERROR. Values are: (DEBUG, INFO, WARN, ERROR).'
+        required: false
+        default: ERROR
+        type: string
+
+      jfrog_nuget_feed_repo:
+        description: The 'virtual' JFrog Artifactory repository identifier for NuGet package retrieval.
+        required: true
+        type: string
+
+      jfrog_oidc_provider_name:
+        description: The OIDC Integration Provider Name to use for authentication from the GitHub Action to the JFrog instance.
+        required: true
+        type: string
+
+      persisted_workspace_artifact_name:
+        description: Name of the artifact which contains the persisted workspace directory.
+        required: true
+        type: string
+
+      project_directory:
+        required: false
+        type: string
+        default: "./"
+
+jobs:
+
+  publish:
+    name: Publish Aggregate JFrog Build-Info
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.project_directory }}
+
+    env:
+      JFROG_API_BASE_URL: ${{ inputs.jfrog_api_base_url }}
+      JFROG_CLI_BUILD_NAME: ${{ inputs.jfrog_build_name }}
+      JFROG_CLI_BUILD_NAME_DOTNET_BUILD: ${{ inputs.jfrog_build_name_dotnet_build }}
+      JFROG_CLI_BUILD_NAME_DOTNET_TEST: ${{ inputs.jfrog_build_name_dotnet_test }}
+      JFROG_CLI_BUILD_NAME_DOTNET_PACK: ${{ inputs.jfrog_build_name_dotnet_pack }}
+      JFROG_CLI_BUILD_NAME_DOTNET_PUBLISH: ${{ inputs.jfrog_build_name_dotnet_publish }}
+      JFROG_CLI_BUILD_NUMBER: ${{ inputs.jfrog_build_number }}
+      JFROG_CLI_LOG_LEVEL: ${{ inputs.jfrog_cli_log_level }}
+      JFROG_NUGET_FEED_REPO: ${{ inputs.jfrog_nuget_feed_repo }}
+      JFROG_OIDC_PROVIDER_NAME: ${{ inputs.jfrog_oidc_provider_name }}
+      NUGETHASHFILES: "${{ inputs.project_directory }}**/*.csproj"
+      PROJECTDIRECTORY: ${{ inputs.project_directory }}
+
+    steps:
+
+      - name: github context debug information
+        working-directory: ./
+        run: |
+          echo "github.base_ref=${{ github.base_ref }}"
+          echo "github.head_ref=${{ github.head_ref }}"
+          echo "github.ref=${{ github.ref }}"
+          echo "github.ref_name=${{ github.ref_name }}"
+          echo "github.repository=${{ github.repository }}"
+          echo "github.repository_owner=${{ github.repository_owner }}"
+          echo "github.run_id=${{ github.run_id }}"
+          echo "github.run_number=${{ github.run_number }}"
+          echo "github.run_attempt=${{ github.run_attempt }}"
+          echo "github.sha=${{ github.sha }}"
+
+      - name: Checkout Project
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Restore Workspace
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.9.2
+        with:
+          action: retrieve
+          artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
+
+      # This creates the setup-jfrog-cli-server server ID
+      - name: Install JFrog CLI
+        uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_URL: ${{ env.JFROG_API_BASE_URL }}
+        with:
+          oidc-provider-name: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
+
+      - name: jf config show
+        run: jf config show
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ inputs.dotnet_version }}
+          source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+        env:
+          NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Setup ~/.nuget/packages cache
+        uses: actions/cache@v3
+        with:
+          key: nuget-packages-${{ runner.os }}-${{ hashFiles(env.NUGETHASHFILES) }}
+          path: |
+            ~/.nuget/packages
+
+      - run: dotnet nuget list source
+
+      - name: Remove any pre-defined NuGet sources
+        run: |
+          sources=$(dotnet nuget list source | grep '\[Enabled\]' | awk '{print $2}')
+          echo "$sources"
+          echo "$sources" | xargs -I % dotnet nuget remove source %
+
+      - run: dotnet nuget list source
+
+      - name: Configure .NET / NuGet using JFrog CLI
+        run: jf dotnet-config --global --server-id-resolve setup-jfrog-cli-server --repo-resolve "${JFROG_NUGET_FEED_REPO}"
+
+      - run: dotnet nuget list source
+
+      - name: Collect JFrog Build Information
+        run: jf rt build-collect-env "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      - name: Collect JFrog 'git' Information
+        run: jf rt build-add-git "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      - name: Append "dotnet-build" build-info JSON
+        if: env.JFROG_CLI_BUILD_NAME_DOTNET_BUILD != null
+        run: jf rt build-append "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}" "${JFROG_CLI_BUILD_NAME_DOTNET_BUILD}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      - name: Append "dotnet-test" build-info JSON
+        if: env.JFROG_CLI_BUILD_NAME_DOTNET_TEST != null
+        run: jf rt build-append "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}" "${JFROG_CLI_BUILD_NAME_DOTNET_TEST}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      - name: Append "dotnet-pack" build-info JSON
+        if: env.JFROG_CLI_BUILD_NAME_DOTNET_PACK != null
+        run: jf rt build-append "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}" "${JFROG_CLI_BUILD_NAME_DOTNET_PACK}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      - name: Append "dotnet-publish" build-info JSON
+        if: env.JFROG_CLI_BUILD_NAME_DOTNET_PUBLISH != null
+        run: jf rt build-append "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}" "${JFROG_CLI_BUILD_NAME_DOTNET_PUBLISH}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      - name: Push JFrog Build Information
+        run: jf rt build-publish "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
