@@ -19,3 +19,4 @@ jobs:
     with:
       project_directory: actions/regex-validator/
       run_tests: true
+      node_version: '20.x'

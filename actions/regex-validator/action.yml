@@ -25,7 +25,7 @@ outputs:
   matched:
     description: 'Return if the input value if valid'
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/index.js'
 branding:
   icon: check-square
