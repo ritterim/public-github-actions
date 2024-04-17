@@ -49,7 +49,7 @@ jobs:
     steps:
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.9.2
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.15.0
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 

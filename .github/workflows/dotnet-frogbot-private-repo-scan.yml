@@ -76,24 +76,24 @@ jobs:
     steps:
 
       - name: Validate inputs.configuration
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.9.2
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.15.0
         with:
           case_sensitive: false
           regex_pattern: "^debug|release$"
           value: ${{ env.CONFIGURATION }}
 
       - name: Validate inputs.jfrog_nuget_feed_repo
-        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.14.1
+        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.15.0
         with:
           name: ${{ env.JFROG_NUGET_FEED_REPO }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.9.2
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.15.0
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: Validate secrets.jfrog_api_key JWT
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.10.0
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.15.0
         with:
           regex_pattern: '^[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*$'
           value: ${{ env.JFROG_API_KEY }}

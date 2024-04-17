@@ -67,14 +67,14 @@ jobs:
     steps:
 
       - name: Validate inputs.configuration
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.9.2
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.15.0
         with:
           case_sensitive: false
           regex_pattern: "^debug|release$"
           value: ${{ env.CONFIGURATION }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.9.2
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.15.0
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 

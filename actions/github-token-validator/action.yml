@@ -25,7 +25,7 @@ runs:
   steps:
 
     - name: Validate token
-      uses: ritterim/public-github-actions/actions/regex-validator@v1.9.2
+      uses: ritterim/public-github-actions/actions/regex-validator@v1.15.0
       with:
         value: ${{ inputs.token }}
         regex_pattern: '^(gh[pousr]_[A-Za-z0-9_]{36,251}|github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59}|v[0-9]\.[0-9a-f]{40})$'
