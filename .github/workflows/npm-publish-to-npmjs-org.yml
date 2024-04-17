@@ -48,12 +48,12 @@ jobs:
     steps:
 
       - name: Validate inputs.artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.9.2
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.15.0
         with:
           file_name: ${{ env.ARTIFACTNAME }}
 
       - name: Validate inputs.artifact_file_path
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.9.2
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.15.0
         with:
           file_name: ${{ env.ARTIFACTFILEPATH }} 
 
