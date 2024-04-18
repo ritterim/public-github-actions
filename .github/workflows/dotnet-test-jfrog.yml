@@ -261,7 +261,7 @@ jobs:
         run: echo "The 'inputs.run_tests' value is FALSE, skipping tests!"
 
       - name: Checkout Project
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
 

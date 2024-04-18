@@ -119,7 +119,7 @@ jobs:
           echo "HEADCOMMITTITLE=${HEADCOMMITTITLE}" >> $GITHUB_ENV
 
       - name: Checkout Project
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
 

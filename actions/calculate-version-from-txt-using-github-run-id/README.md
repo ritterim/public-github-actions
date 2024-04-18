@@ -36,7 +36,7 @@ Note that you *must* have a `version.txt` file in the root of the repository wit
     steps:
 
       - name: Checkout Project
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
 
