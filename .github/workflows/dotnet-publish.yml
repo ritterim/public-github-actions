@@ -81,6 +81,7 @@ jobs:
       NUGETHASHFILES: "${{ inputs.project_directory }}**/*.csproj"
       PROJECTDIRECTORY: ${{ inputs.project_directory }}
       PUBLISH_WORKING_DIRECTORY: ${{ inputs.publish_working_directory }}
+      PUBLISHARTIFACTDIRECTORY: app/
       INFORMATIONALVERSION: ${{ inputs.informational_version }}
       VERSION: ${{ inputs.version }}
       ZIPFILENAME: "${{ inputs.artifact_name }}.zip"
@@ -118,6 +119,11 @@ jobs:
         uses: ritterim/public-github-actions/actions/version-number-validator@v1.15.0
         with:
           version: ${{ env.VERSION }}
+
+      - name: Validate PUBLISHARTIFACTDIRECTORY
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.15.0
+        with:
+          path_name: ${{ env.PUBLISHARTIFACTDIRECTORY }}
 
       - name: Validate ZIPFILENAME
         uses: ritterim/public-github-actions/actions/file-name-validator@v1.15.0
@@ -166,8 +172,9 @@ jobs:
 
       - run: dotnet nuget list source
 
-      - run: mkdir -p 'app'
+      - name: mkdir -p $PUBLISHARTIFACTDIRECTORY
         working-directory: ${{ inputs.publish_working_directory }}
+        run: mkdir -p "${PUBLISHARTIFACTDIRECTORY}"
 
       - name: dotnet publish
         working-directory: ${{ inputs.publish_working_directory }}
@@ -177,26 +184,47 @@ jobs:
             --configuration "${CONFIGURATION}" \
             -p:Version="${VERSION}" \
             -p:InformationalVersion="${INFORMATIONALVERSION}" \
-            --property:PublishDir=app
+            --property:PublishDir="${PUBLISHARTIFACTDIRECTORY}"
 
       - name: Create githash.txt file
         working-directory: ${{ inputs.publish_working_directory }}
         run: |
           PULL_REQUEST_HEAD_SHA=${{ github.event.pull_request.head.sha }}
           GH_SHA="${PULL_REQUEST_HEAD_SHA:-${GITHUB_SHA:-ERROR}}"
-          echo $GH_SHA > app/githash.txt
+          echo $GH_SHA > "${PUBLISHARTIFACTDIRECTORY}githash.txt"
+          cat "${PUBLISHARTIFACTDIRECTORY}githash.txt"
 
-      - run: cat app/githash.txt
+      - name: Create version.json file
         working-directory: ${{ inputs.publish_working_directory }}
+        run: |
+          BUILDDATE=$(date -u -Idate)
+          echo "BUILDDATE=$BUILDDATE"
+          BUILDTIMESTAMP=$(date -u -Iseconds)
+          echo "BUILDTIMESTAMP=$BUILDTIMESTAMP"
+          PULL_REQUEST_HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          GH_SHA="${PULL_REQUEST_HEAD_SHA:-${GITHUB_SHA:-ERROR}}"
+          echo "GH_SHA=$GH_SHA"
+          BODY=$(jq --null-input \
+            --arg buildDate "$BUILDDATE" \
+            --arg buildTimestamp "$BUILDTIMESTAMP" \
+            --arg gitHash "$GH_SHA" \
+            --arg informationalVersion "$INFORMATIONALVERSION" \
+            --arg version "$VERSION" \
+            '{"buildDate": $buildDate, "buildTimestamp": $buildTimestamp, "gitHash": $gitHash, "informationalVersion": $informationalVersion, "version": $version}' \
+            )
+          mkdir -p "${PUBLISHARTIFACTDIRECTORY}_version"
+          echo "$BODY" > "${PUBLISHARTIFACTDIRECTORY}version.json"
+          cat "${PUBLISHARTIFACTDIRECTORY}version.json"
 
-      - run: ls -lR 'app'
+      - name: ls -lR $PUBLISHARTIFACTDIRECTORY
         working-directory: ${{ inputs.publish_working_directory }}
+        run: ls -lR "${PUBLISHARTIFACTDIRECTORY}"
 
       - run: mkdir -p 'output'
         working-directory: ${{ inputs.publish_working_directory }}
 
       - name: Create Release Zip File
-        working-directory: "${{ inputs.publish_working_directory }}app"
+        working-directory: "${{ inputs.publish_working_directory }}${{ env.PUBLISHARTIFACTDIRECTORY }}"
         run: |
           zip -v -r \
             "../output/${ZIPFILENAME}" \
