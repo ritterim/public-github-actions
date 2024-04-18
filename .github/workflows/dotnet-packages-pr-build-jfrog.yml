@@ -3,6 +3,7 @@ name: Package PR Build (.NET)
 permissions:
   contents: read
   id-token: write
+  packages: read
 
 on:
 
@@ -43,18 +44,13 @@ on:
         required: true
         type: string
 
-      jfrog_artifactory_package_push_repository:
-        description: 'JFrog Artifactory repository identifier where the package will be pushed to.'
-        required: true
-        type: string
-
       jfrog_audit_xray_watch_list:
         description: Comma-delimited list (with no spaces) of XRay watches to enforce.  Passed to "jf audit" via the "--watches" argument.
         required: true
         type: string
 
-      jfrog_build_name:
-        description: 'JFrog build name.'
+      jfrog_build_basename:
+        description: 'JFrog build basename.  Pass in vars.JFROG_BUILD_BASENAME from GitHub Actions Variables.'
         required: true
         type: string
 
@@ -66,6 +62,11 @@ on:
 
       jfrog_nuget_feed_repo:
         description: The 'virtual' JFrog Artifactory repository identifier for NuGet package retrieval.
+        required: true
+        type: string
+
+      jfrog_nuget_package_repo_basename:
+        description: 'JFrog Artifactory repository identifier where the package will be pushed to.  Pass in vars.JFROG_NUGET_PACKAGE_REPO_BASENAME from GitHub Actions repository level variables.'
         required: true
         type: string
 
@@ -82,21 +83,21 @@ on:
 jobs:
 
   version:
-    uses: ritterim/public-github-actions/.github/workflows/calculate-version-from-txt-using-github-run-id.yml@v1.12.0
+    uses: ritterim/public-github-actions/.github/workflows/calculate-version-from-txt-using-github-run-id.yml@v1.15.0
     #uses: ./.github/workflows/calculate-version-from-txt-using-github-run-id.yml
     with:
       github_run_id_baseline: ${{ inputs.github_run_id_baseline }}
       version_suffix: "-pr${{ github.event.number }}.${{ github.run_number }}.${{ github.run_attempt }}"
 
-  build:
+  dotnet-build:
     needs: [ version ]
-    #uses: ritterim/public-github-actions/.github/workflows/dotnet-build-jfrog.yml@v1.14.1
-    uses: ./.github/workflows/dotnet-build-jfrog.yml
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-build-jfrog.yml@v1.15.0
+    #uses: ./.github/workflows/dotnet-build-jfrog.yml
     with:
       dotnet_restore_verbosity: ${{ inputs.dotnet_restore_verbosity }}
       dotnet_version: ${{ inputs.dotnet_version }}
       jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
-      jfrog_build_name: ${{ inputs.jfrog_build_name }}
+      jfrog_build_name: "${{ inputs.jfrog_build_basename }}-draft"
       jfrog_build_number: ${{ needs.version.outputs.version }}
       jfrog_cli_log_level: ${{ inputs.jfrog_cli_log_level }}
       jfrog_nuget_feed_repo: ${{ inputs.jfrog_nuget_feed_repo }}
@@ -104,52 +105,58 @@ jobs:
       project_directory: ${{ inputs.project_directory }}
 
   dotnet-test:
-    needs: [ build, version ]
-    uses: ritterim/public-github-actions/.github/workflows/dotnet-test-jfrog.yml@v1.14.1
+    needs: [ dotnet-build, version ]
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-test-jfrog.yml@v1.15.0
     #uses: ./.github/workflows/dotnet-test-jfrog.yml
     with:
       artifact_name: ${{ github.event.repository.name }}-testResults-${{ needs.version.outputs.informational_version }}
-      configuration: ${{ needs.build.outputs.configuration }}
-      dotnet_version: ${{ needs.build.outputs.dotnet_version }}
+      configuration: ${{ needs.dotnet-build.outputs.configuration }}
+      dotnet_version: ${{ needs.dotnet-build.outputs.dotnet_version }}
       jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
-      jfrog_nuget_feed_repo: ${{ inputs.jfrog_nuget_feed_repo }}
-      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
-      persisted_workspace_artifact_name: ${{ needs.build.outputs.persisted_workspace_artifact_name }}
-      project_directory: ${{ needs.build.outputs.project_directory }}
-      docker_mssql_image: ${{ inputs.docker_mssql_image }}
-      docker_mssql_port: ${{ inputs.docker_mssql_port }}
-
-  jfrog-xray-audit:
-    needs: [ build, version ]
-    uses: ritterim/public-github-actions/.github/workflows/jfrog-xray-audit.yml@v1.14.1
-    #uses: ./.github/workflows/jfrog-xray-audit.yml
-    with:
-      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
-      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
-      jfrog_xray_watch_list: ${{ inputs.jfrog_audit_xray_watch_list }}
-      persisted_workspace_artifact_name: ${{ needs.build.outputs.persisted_workspace_artifact_name }}
-      report_artifact_name: ${{ github.event.repository.name }}-xray-audit-${{ needs.version.outputs.informational_version }}
-
-  dotnet-pack:
-    needs: [
-      build,
-      dotnet-test,
-      version
-      ]
-    uses: ritterim/public-github-actions/.github/workflows/dotnet-pack-jfrog.yml@v1.14.1
-    #uses: ./.github/workflows/dotnet-pack-jfrog.yml
-    with:
-      artifact_name: ${{ github.event.repository.name }}-packages-${{ needs.version.outputs.informational_version }}
-      configuration: ${{ needs.build.outputs.configuration }}
-      dotnet_version: ${{ needs.build.outputs.dotnet_version }}
-      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
-      jfrog_artifactory_repository: ${{ inputs.jfrog_artifactory_package_push_repository }}
-      jfrog_build_name: ${{ inputs.jfrog_build_name }}
-      jfrog_build_name_build: ${{ needs.build.outputs.jfrog_build_name_build }}
+      jfrog_build_name: "${{ inputs.jfrog_build_basename }}-draft"
       jfrog_build_number: ${{ needs.version.outputs.version }}
       jfrog_nuget_feed_repo: ${{ inputs.jfrog_nuget_feed_repo }}
       jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
-      persisted_workspace_artifact_name: ${{ needs.build.outputs.persisted_workspace_artifact_name }}
-      project_directory: ${{ needs.build.outputs.project_directory }}
+      persisted_workspace_artifact_name: ${{ needs.dotnet-build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.dotnet-build.outputs.project_directory }}
+      docker_mssql_image: ${{ inputs.docker_mssql_image }}
+      docker_mssql_port: ${{ inputs.docker_mssql_port }}
+
+  dotnet-pack:
+    needs: [
+      dotnet-build,
+      dotnet-test,
+      version
+      ]
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-pack-jfrog.yml@v1.15.0
+    #uses: ./.github/workflows/dotnet-pack-jfrog.yml
+    with:
+      artifact_name: ${{ github.event.repository.name }}-packages-${{ needs.version.outputs.informational_version }}
+      configuration: ${{ needs.dotnet-build.outputs.configuration }}
+      dotnet_version: ${{ needs.dotnet-build.outputs.dotnet_version }}
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_artifactory_repository: "${{ inputs.jfrog_nuget_package_repo_basename }}-draft"
+      jfrog_build_name: "${{ inputs.jfrog_build_basename }}-draft"
+      jfrog_build_number: ${{ needs.version.outputs.version }}
+      jfrog_nuget_feed_repo: ${{ inputs.jfrog_nuget_feed_repo }}
+      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
+      persisted_workspace_artifact_name: ${{ needs.dotnet-build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.dotnet-build.outputs.project_directory }}
       informational_version: ${{ needs.version.outputs.informational_version }}
       version: ${{ needs.version.outputs.version }}
+
+  jfrog-publish-aggregate-build-info:
+    needs: [ dotnet-build, dotnet-test, dotnet-pack, version ]
+    uses: ritterim/public-github-actions/.github/workflows/jfrog-publish-aggregate-build-info.yml@v1.15.0
+    #uses: ./.github/workflows/jfrog-publish-aggregate-build-info.yml
+    with:
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_build_name: "${{ inputs.jfrog_build_basename }}-draft"
+      jfrog_build_name_dotnet_build: ${{ needs.dotnet-build.outputs.jfrog_build_name }}
+      jfrog_build_name_dotnet_test: ${{ needs.dotnet-test.outputs.jfrog_build_name }}
+      jfrog_build_name_dotnet_pack: ${{ needs.dotnet-pack.outputs.jfrog_build_name }}
+      jfrog_build_number: ${{ needs.version.outputs.version }}
+      jfrog_nuget_feed_repo: ${{ inputs.jfrog_nuget_feed_repo }}
+      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
+      persisted_workspace_artifact_name: ${{ needs.dotnet-build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.dotnet-build.outputs.project_directory }}
