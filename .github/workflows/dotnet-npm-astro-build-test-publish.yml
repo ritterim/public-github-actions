@@ -145,6 +145,7 @@ jobs:
     env:
       PUBLISHWORKINGDIRECTORY: ${{ inputs.publish_working_directory }}
       PUBLISHARTIFACTNAME: ${{ inputs.publish_artifact_name }}
+      PUBLISHARTIFACTDIRECTORY: app/
       TESTRESULTSARTIFACTNAME: ${{ inputs.test_results_artifact_name }}
       CONFIGURATION: ${{ inputs.configuration }}
       NPMPACKAGEJSONFILENAME: ${{ inputs.npm_package_json_filename }}
@@ -331,9 +332,9 @@ jobs:
           path: "${{ inputs.project_directory }}**/*.trx"
           if-no-files-found: error
 
-      - name: mkdir -p 'app'
+      - name: mkdir -p $PUBLISHARTIFACTDIRECTORY
         working-directory: ${{ inputs.publish_working_directory }}
-        run: mkdir -p 'app'
+        run: mkdir -p "${PUBLISHARTIFACTDIRECTORY}"
 
       - name: dotnet publish
         working-directory: ${{ inputs.publish_working_directory }}
@@ -343,30 +344,48 @@ jobs:
             --configuration "${CONFIGURATION}" \
             -p:Version="${VERSION}" \
             -p:InformationalVersion="${INFORMATIONALVERSION}" \
-            --property:PublishDir=app
+            --property:PublishDir="${PUBLISHARTIFACTDIRECTORY}"
 
       - name: Create githash.txt file
         working-directory: ${{ inputs.publish_working_directory }}
         run: |
           PULL_REQUEST_HEAD_SHA=${{ github.event.pull_request.head.sha }}
           GH_SHA="${PULL_REQUEST_HEAD_SHA:-${GITHUB_SHA:-ERROR}}"
-          echo $GH_SHA > "app/githash.txt"
-          cat app/githash.txt
+          echo $GH_SHA > "${PUBLISHARTIFACTDIRECTORY}githash.txt"
+          cat "${PUBLISHARTIFACTDIRECTORY}githash.txt"
 
-      - name: ls -l 'app'
+      - name: Create version.json file
         working-directory: ${{ inputs.publish_working_directory }}
-        run: ls -l 'app'
+        run: |
+          BUILDDATE=$(date -u -Idate)
+          echo "BUILDDATE=$BUILDDATE"
+          BUILDTIMESTAMP=$(date -u -Iseconds)
+          echo "BUILDTIMESTAMP=$BUILDTIMESTAMP"
+          PULL_REQUEST_HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          GH_SHA="${PULL_REQUEST_HEAD_SHA:-${GITHUB_SHA:-ERROR}}"
+          echo "GH_SHA=$GH_SHA"
+          BODY=$(jq --null-input \
+            --arg buildDate "$BUILDDATE" \
+            --arg buildTimestamp "$BUILDTIMESTAMP" \
+            --arg gitHash "$GH_SHA" \
+            --arg informationalVersion "$INFORMATIONALVERSION" \
+            --arg version "$VERSION" \
+            '{"buildDate": $buildDate, "buildTimestamp": $buildTimestamp, "gitHash": $gitHash, "informationalVersion": $informationalVersion, "version": $version}' \
+            )
+          mkdir -p "${PUBLISHARTIFACTDIRECTORY}_version"
+          echo "$BODY" > "${PUBLISHARTIFACTDIRECTORY}version.json"
+          cat "${PUBLISHARTIFACTDIRECTORY}version.json"
 
-      - name: There must be at least one DLL file in the app/ folder for success.
+      - name: ls -lR $PUBLISHARTIFACTDIRECTORY
         working-directory: ${{ inputs.publish_working_directory }}
-        run: ls -lt app/*.dll
+        run: ls -lR "${PUBLISHARTIFACTDIRECTORY}"
 
       - name: Create output directory.
         working-directory: ${{ inputs.publish_working_directory }}
         run: mkdir -p 'output'
 
       - name: Create Release Zip File
-        working-directory: "${{ inputs.publish_working_directory }}app"
+        working-directory: "${{ inputs.publish_working_directory }}${{ env.PUBLISHARTIFACTDIRECTORY }}"
         run: |
           zip -v -r \
             "../output/${ZIPFILENAME}" \
