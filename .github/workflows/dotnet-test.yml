@@ -76,6 +76,11 @@ on:
         type: string
         default: "6.0"
 
+      github_job_runner_spec:
+        description: Which GitHub Runner to use.  Default is 'ubuntu-latest'.
+        type: string
+        default: "ubuntu-latest"
+
       persisted_workspace_artifact_name:
         description: Name of the artifact which contains the persisted workspace directory.
         required: true
@@ -96,7 +101,7 @@ jobs:
 
   tests:
     name: Test (.NET)
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.github_job_runner_spec }}
     defaults:
       run:
           working-directory: ${{ inputs.project_directory }}
