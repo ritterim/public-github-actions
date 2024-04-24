@@ -119,7 +119,7 @@ runs:
 
     - name: Retrieve workspace
       if: ${{ inputs.action == 'retrieve' }}
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: ${{ env.ARTIFACTNAME }}
 
