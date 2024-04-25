@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
       - name: Install dependencies
         run: npm install
       - uses: ritterim/forks/persist-workspace@v1
@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
       - name: Install dependencies
         run: npm install
       - uses: ritterim/forks/persist-workspace@v1
@@ -53,7 +53,7 @@ jobs:
     needs: [init]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
       - uses: ritterim/forks/persist-workspace@v1
         with:
           action: retrieve
@@ -76,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
       - name: Install dependencies
         run: npm install
       - uses: ritterim/forks/persist-workspace@v1
@@ -87,7 +87,7 @@ jobs:
     needs: [init]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
       - uses: ritterim/forks/persist-workspace@v1
         with:
           action: retrieve
@@ -99,7 +99,7 @@ jobs:
     needs: [init]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
       - uses: ritterim/forks/persist-workspace@v1
         with:
           action: retrieve
