@@ -128,35 +128,35 @@ jobs:
     steps:
 
       - name: Validate inputs.artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.15.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.0
         with:
           file_name: ${{ env.ARTIFACTNAME }}
 
       - name: Validate inputs.configuration
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.15.0
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.0
         with:
           case_sensitive: false
           regex_pattern: "^debug|release$"
           value: ${{ env.CONFIGURATION }}
 
       - name: Validate inputs.jfrog_build_name
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.15.0
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.0
         with: # This regex pattern is a bit of a guess
           regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
           value: ${{ inputs.jfrog_build_name }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.15.0
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.0
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: Validate inputs.informational_version
-        uses: ritterim/public-github-actions/actions/version-number-validator@v1.15.0
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.16.0
         with:
           version: ${{ env.INFORMATIONALVERSION }}
 
       - name: Validate inputs.version
-        uses: ritterim/public-github-actions/actions/version-number-validator@v1.15.0
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.16.0
         with:
           version: ${{ env.VERSION }}
 
@@ -180,7 +180,7 @@ jobs:
           ref: ${{ github.ref }}
 
       - name: Restore Workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.10.0
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.16.0
         with:
           action: retrieve
           artifact_name: ${{ inputs.persisted_workspace_artifact_name }}

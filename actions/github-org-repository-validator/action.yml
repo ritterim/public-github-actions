@@ -24,7 +24,7 @@ runs:
   steps:
 
     - name: Validate
-      uses: ritterim/public-github-actions/actions/regex-validator@v1.15.0
+      uses: ritterim/public-github-actions/actions/regex-validator@v1.16.0
       with:
         value: ${{ inputs.github_repository }}
         regex_pattern: '^[a-zA-Z0-9-]{1,25}\/[a-zA-Z0-9-]{1,50}$'

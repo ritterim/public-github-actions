@@ -115,58 +115,58 @@ jobs:
     steps:
 
       - name: Validate inputs.environment
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.0
         with:
           value: ${{ env.ENVIRONMENT }}
           regex_pattern: '^(localhost|development|production)$'
 
       - name: Validate inputs.publish_artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.0
         with:
           file_name: ${{ env.PUBLISHARTIFACTNAME }}
 
       - name: Validate inputs.test_results_artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.0
         with:
           file_name: ${{ env.TESTRESULTSARTIFACTNAME }}
 
       - name: Validate inputs.npm_package_json_filename
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.0
         with:
           file_name: ${{ env.NPMPACKAGEJSONFILENAME }}
 
       - name: Validate inputs.npm_project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.0
         with:
           path_name: ${{ env.NPMPROJECTDIRECTORY }}
 
       - name: Validate inputs.package_json_filename
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.0
         with:
           file_name: ${{ env.PACKAGEJSONFILENAME }}
 
       - name: Validate inputs.publish_artifact_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.0
         with:
           path_name: ${{ env.PUBLISHARTIFACTDIRECTORY }}
 
       - name: Validate inputs.publish_working_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.0
         with:
           path_name: ${{ env.PUBLISHWORKINGDIRECTORY }}
 
       - name: Validate inputs.informational_version
-        uses: ritterim/public-github-actions/actions/version-number-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.16.0
         with:
           version: ${{ env.INFORMATIONALVERSION }}
 
       - name: Validate inputs.version
-        uses: ritterim/public-github-actions/actions/version-number-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.16.0
         with:
           version: ${{ env.VERSION }}
 
       - name: Validate ZIPFILENAME
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.8.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.0
         with:
           file_name: ${{ env.ZIPFILENAME }}
 
@@ -192,7 +192,7 @@ jobs:
           cache-dependency-path: "${{ inputs.npm_project_directory }}${{ inputs.npm_package_json_filename }}"
 
       - name: npm-config-github-packages-repository
-        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@v1.8.0
+        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@v1.16.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 

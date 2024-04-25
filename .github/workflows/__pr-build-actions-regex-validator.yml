@@ -15,7 +15,7 @@ on:
 jobs:
 
   pr-build:
-    uses: ritterim/public-github-actions/.github/workflows/npm-build-test-public.yml@v1.15.5
+    uses: ritterim/public-github-actions/.github/workflows/npm-build-test-public.yml@v1.16.0
     with:
       project_directory: actions/regex-validator/
       run_tests: true
