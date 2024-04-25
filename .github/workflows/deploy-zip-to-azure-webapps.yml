@@ -49,7 +49,7 @@ jobs:
 
       - run: ls -la
 
-      - uses: azure/login@v1
+      - uses: azure/login@v2
         with:
           client-id: ${{ vars.ARTIFACT_DEPLOYER_AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.ARTIFACT_DEPLOYER_AZURE_TENANT_ID }}
