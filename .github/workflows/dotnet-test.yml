@@ -187,7 +187,7 @@ jobs:
           artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         if: inputs.run_tests == true
         with:
           dotnet-version: ${{ inputs.dotnet_version }}
