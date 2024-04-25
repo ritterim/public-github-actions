@@ -83,14 +83,14 @@ on:
 jobs:
 
   version:
-    uses: ritterim/public-github-actions/.github/workflows/calculate-version-from-txt-using-github-run-id.yml@v1.15.0
+    uses: ritterim/public-github-actions/.github/workflows/calculate-version-from-txt-using-github-run-id.yml@v1.16.0
     #uses: ./.github/workflows/calculate-version-from-txt-using-github-run-id.yml
     with:
       github_run_id_baseline: ${{ inputs.github_run_id_baseline }}
 
   dotnet-build:
     needs: [ version ]
-    uses: ritterim/public-github-actions/.github/workflows/dotnet-build-jfrog.yml@v1.15.0
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-build-jfrog.yml@v1.16.0
     #uses: ./.github/workflows/dotnet-build-jfrog.yml
     with:
       dotnet_restore_verbosity: ${{ inputs.dotnet_restore_verbosity }}
@@ -105,7 +105,7 @@ jobs:
 
   dotnet-test:
     needs: [ dotnet-build, version ]
-    uses: ritterim/public-github-actions/.github/workflows/dotnet-test-jfrog.yml@v1.15.0
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-test-jfrog.yml@v1.16.0
     #uses: ./.github/workflows/dotnet-test-jfrog.yml
     with:
       artifact_name: ${{ github.event.repository.name }}-testResults-${{ needs.version.outputs.informational_version }}
@@ -127,7 +127,7 @@ jobs:
       dotnet-test,
       version
       ]
-    uses: ritterim/public-github-actions/.github/workflows/dotnet-pack-jfrog.yml@v1.15.0
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-pack-jfrog.yml@v1.16.0
     #uses: ./.github/workflows/dotnet-pack-jfrog.yml
     with:
       artifact_name: ${{ github.event.repository.name }}-packages-${{ needs.version.outputs.informational_version }}
@@ -146,14 +146,14 @@ jobs:
 
   dotnet-push-github:
     needs: [ dotnet-pack ]
-    uses: ritterim/public-github-actions/.github/workflows/dotnet-push-github.yml@v1.15.0
+    uses: ritterim/public-github-actions/.github/workflows/dotnet-push-github.yml@v1.16.0
     #uses: ./.github/workflows/dotnet-push-github.yml
     with:
       artifact_name: ${{ needs.dotnet-pack.outputs.artifact_name }}
 
   jfrog-publish-aggregate-build-info:
     needs: [ dotnet-build, dotnet-test, dotnet-pack, version ]
-    uses: ritterim/public-github-actions/.github/workflows/jfrog-publish-aggregate-build-info.yml@v1.15.0
+    uses: ritterim/public-github-actions/.github/workflows/jfrog-publish-aggregate-build-info.yml@v1.16.0
     #uses: ./.github/workflows/jfrog-publish-aggregate-build-info.yml
     with:
       jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}

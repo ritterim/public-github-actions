@@ -24,12 +24,12 @@ runs:
   steps:
 
     - name: Validate inputs.npm_scope
-      uses: ritterim/public-github-actions/actions/npm-package-scope-validator@v1.15.0
+      uses: ritterim/public-github-actions/actions/npm-package-scope-validator@v1.16.0
       with:
         npm_scope: ${{ inputs.npm_scope }}
 
     - name: Validate inputs.npmjs_org_api_key
-      uses: ritterim/public-github-actions/actions/npmjs-access-token-validator@v1.15.0
+      uses: ritterim/public-github-actions/actions/npmjs-access-token-validator@v1.16.0
       with:
         token: ${{ inputs.npmjs_org_api_key }}
 
