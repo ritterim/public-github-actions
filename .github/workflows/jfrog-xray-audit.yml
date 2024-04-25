@@ -134,7 +134,7 @@ jobs:
 
       - name: Upload Artifacts
         if: steps.audit.outcome == 'success'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.REPORTARTIFACTNAME }}
           path: ${{ env.REPORTARTIFACTNAME }}.*

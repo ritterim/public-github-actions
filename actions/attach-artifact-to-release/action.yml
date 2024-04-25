@@ -74,7 +74,7 @@ runs:
     # with artifacts being fairly small, we should be okay to just download
     # all of the files.
     - name: Download artifacts from build job
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: ${{ inputs.artifact_name }}
 
