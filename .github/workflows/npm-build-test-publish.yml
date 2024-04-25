@@ -185,7 +185,7 @@ jobs:
 
       # See this for why setup-node can be slow: https://github.com/actions/setup-node/issues/726#issuecomment-1527198808
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node_version }}
           cache: 'npm'
