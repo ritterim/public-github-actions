@@ -161,7 +161,7 @@ jobs:
 
       - name: Upload Artifact
         id: upload-artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.set-outputs.outputs.artifact_name }}
           path: ${{ steps.set-outputs.outputs.artifact_file_path }}

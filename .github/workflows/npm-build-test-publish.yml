@@ -263,7 +263,7 @@ jobs:
 
       - name: Upload Artifact for Deployment
         id: upload-publish-artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.publish_artifact_name }}
           path: "${{ inputs.publish_working_directory }}output/${{ env.ZIPFILENAME }}"

@@ -133,7 +133,7 @@ jobs:
 
       - name: Upload Artifacts
         id: upload-artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact_name }}
           path: "${{ inputs.project_directory }}artifacts/*.*nupkg"

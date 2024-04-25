@@ -333,7 +333,7 @@ jobs:
 
       - name: Upload Artifacts
         id: upload-artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: inputs.run_tests == true
         with:
           name: ${{ inputs.artifact_name }}
