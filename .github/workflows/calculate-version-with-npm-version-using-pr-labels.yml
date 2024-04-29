@@ -68,6 +68,14 @@ on:
         description:  Was the version incremented?  Returns 'true' if it was. Should this PR result in a publish after it is merged?
         value: ${{ jobs.version.outputs.version_incremented }}
 
+      build_date:
+        description: The UTC build date in ISO-8601 format.
+        value: ${{ jobs.version.outputs.build_date }}
+
+      build_timestamp:
+        description: The UTC build date/time in ISO-8601 format.  Includes hours/minutes/seconds.
+        value: ${{ jobs.version.outputs.build_timestamp }}
+
 env:
   version_number_pattern: '[0-9]{1,5}\.[0-9]{1,5}\.[0-9]{1,5}'
   major_minor_version_number_pattern: '^[0-9]{1,5}\.[0-9]{1,5}'
@@ -103,6 +111,8 @@ jobs:
       informational_version: ${{ steps.set-outputs.outputs.informational_version }}
       version_suffix: ${{ steps.set-outputs.outputs.version_suffix }}
       version_incremented: ${{ steps.set-outputs.outputs.version_incremented }}
+      build_date: ${{ steps.set-outputs.outputs.build_date }}
+      build_timestamp: ${{ steps.set-outputs.outputs.build_timestamp }}
 
     steps:
 
@@ -223,6 +233,15 @@ jobs:
           echo "GH_SHORT_SHA_CALC=$GH_SHORT_SHA_CALC"
           echo "GH_SHORT_SHA_CALC=$GH_SHORT_SHA_CALC" >> $GITHUB_ENV
 
+      - name: Calculate build date/timestamp
+        run: |
+          BUILDDATE=$(date -u -Idate)
+          echo "BUILDDATE=$BUILDDATE"
+          echo "BUILDDATE=$BUILDDATE" >> $GITHUB_ENV
+          BUILDTIMESTAMP=$(date -u -Iseconds)
+          echo "BUILDTIMESTAMP=$BUILDTIMESTAMP"
+          echo "BUILDTIMESTAMP=$BUILDTIMESTAMP" >> $GITHUB_ENV
+
       - name: Set outputs
         id: set-outputs
         run: |
@@ -234,6 +253,8 @@ jobs:
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "informational_version=$VERSION+${GH_SHORT_SHA_CALC}" >> $GITHUB_OUTPUT
           echo "version_incremented=$VERSION_INCREMENTED" >> $GITHUB_OUTPUT
+          echo "build_date=${BUILDDATE}" >> $GITHUB_OUTPUT
+          echo "build_timestamp=${BUILDTIMESTAMP}" >> $GITHUB_OUTPUT
 
       - name: Echo Output Variables
         run: |
@@ -245,3 +266,5 @@ jobs:
           echo "git_hash=${{ steps.set-outputs.outputs.git_hash }}"
           echo "short_git_hash=${{ steps.set-outputs.outputs.short_git_hash }}"
           echo "version_incremented=${{ steps.set-outputs.outputs.version_incremented }}"
+          echo "build_date=${{ steps.set-outputs.outputs.build_date }}"
+          echo "build_timestamp=${{ steps.set-outputs.outputs.build_timestamp }}"
