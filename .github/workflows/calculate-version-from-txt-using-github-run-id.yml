@@ -52,6 +52,14 @@ on:
         description: The version suffix (e.g. "-pr123" or "-alpha1342") which was passed in.
         value: ${{ jobs.version.outputs.version_suffix }}
 
+      build_date:
+        description: The UTC build date in ISO-8601 format.
+        value: ${{ jobs.version.outputs.build_date }}
+
+      build_timestamp:
+        description: The UTC build date/time in ISO-8601 format.  Includes hours/minutes/seconds.
+        value: ${{ jobs.version.outputs.build_timestamp }}
+
 jobs:
 
   version:
@@ -66,6 +74,8 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       informational_version: ${{ steps.version.outputs.informational_version }}
       version_suffix: ${{ steps.version.outputs.version_suffix }}
+      build_date: ${{ steps.version.outputs.build_date }}
+      build_timestamp: ${{ steps.version.outputs.build_timestamp }}
 
     steps:
 
@@ -76,7 +86,7 @@ jobs:
 
       - name: Calculate Version
         id: version
-        uses: ritterim/public-github-actions/actions/calculate-version-from-txt-using-github-run-id@v1.16.0
+        uses: ritterim/public-github-actions/actions/calculate-version-from-txt-using-github-run-id@v1.16.2
         with:
           version_suffix: ${{ inputs.version_suffix }}
           github_run_id_baseline: ${{ inputs.github_run_id_baseline }}
