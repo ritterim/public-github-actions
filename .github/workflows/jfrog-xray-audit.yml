@@ -81,7 +81,7 @@ jobs:
     steps:
 
       - name: Validate inputs.jfrog_oidc_provider_name
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
         with: # This regex pattern is a bit of a guess
           regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
           value: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
@@ -89,12 +89,12 @@ jobs:
 #TODO: Validate inputs.jfrog_xray_watch_list
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.2
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: Validate inputs.report_artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.2
         with:
           file_name: ${{ env.REPORTARTIFACTNAME }}
 

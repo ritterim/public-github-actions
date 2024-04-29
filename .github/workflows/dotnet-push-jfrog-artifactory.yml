@@ -67,22 +67,22 @@ jobs:
     steps:
 
       - name: Validate inputs.artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.2
         with:
           file_name: ${{ inputs.artifact_name }}
 
       - name: Validate inputs.jfrog_artifactory_repository
-        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.16.2
         with:
           name: ${{ env.JFROG_ARTIFACTORY_REPOSITORY }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.2
         with:
           path_name: ${{ inputs.project_directory }}
 
       - name: Validate secrets.jfrog_api_key
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
         with:
           regex_pattern: '^[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*$'
           value: ${{ secrets.jfrog_api_key }}
