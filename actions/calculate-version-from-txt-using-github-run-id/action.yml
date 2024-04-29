@@ -54,6 +54,14 @@ outputs:
     description: The version suffix (e.g. "-pr123" or "-alpha1342") which was passed in.
     value: ${{ steps.calculate.outputs.version_suffix }}
 
+  build_date:
+    description: The UTC build date in ISO-8601 format.
+    value: ${{ steps.calculate.outputs.build_date }}
+
+  build_timestamp:
+    description: The UTC build date/time in ISO-8601 format.  Includes hours/minutes/seconds.
+    value: ${{ steps.calculate.outputs.build_timestamp }}
+
 runs:
   using: "composite"
 
@@ -123,6 +131,8 @@ runs:
         GH_SHA_CALC="${PULL_REQUEST_HEAD_SHA:-${GITHUB_SHA:-ERROR}}"
         GH_SHORT_SHA_CALC=$(echo ${GH_SHA_CALC} | cut -c1-8)
         GH_VER_PATCH_SUFFIX="$VER.$PATCH_VER$GH_VER_SUFFIX"
+        BUILDDATE=$(date -u -Idate)
+        BUILDTIMESTAMP=$(date -u -Iseconds)
         echo "git_hash=$GH_SHA_CALC" >> $GITHUB_OUTPUT
         echo "short_git_hash=$GH_SHORT_SHA_CALC" >> $GITHUB_OUTPUT
         echo "version_suffix=$GH_VER_SUFFIX" >> $GITHUB_OUTPUT
@@ -130,6 +140,8 @@ runs:
         echo "patch_version=$PATCH_VER" >> $GITHUB_OUTPUT
         echo "version=$GH_VER_PATCH_SUFFIX" >> $GITHUB_OUTPUT
         echo "informational_version=$GH_VER_PATCH_SUFFIX+$GH_SHORT_SHA_CALC" >> $GITHUB_OUTPUT
+        echo "build_date=$BUILDDATE" >> $GITHUB_OUTPUT
+        echo "build_timestamp=$BUILDTIMESTAMP" >> $GITHUB_OUTPUT
 
     - name: Echo Version Output Variables
       shell: bash
@@ -141,3 +153,5 @@ runs:
         echo "version=${{ steps.calculate.outputs.version }}"
         echo "git_hash=${{ steps.calculate.outputs.git_hash }}" 
         echo "short_git_hash=${{ steps.calculate.outputs.short_git_hash }}" 
+        echo "build_date=${{ steps.calculate.outputs.build_date }}" 
+        echo "build_timestamp=${{ steps.calculate.outputs.build_timestamp }}" 
