@@ -178,78 +178,78 @@ jobs:
     steps:
 
       - name: Validate inputs.publish_artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.2
         with:
           file_name: ${{ env.PUBLISHARTIFACTNAME }}
 
       - name: Validate inputs.test_results_artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.2
         with:
           file_name: ${{ env.TESTRESULTSARTIFACTNAME }}
 
       - name: Validate inputs.configuration
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
         with:
           case_sensitive: false
           regex_pattern: "^debug|release$"
           value: ${{ env.CONFIGURATION }}
 
       - name: Validate inputs.npm_package_json_filename
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.2
         with:
           file_name: ${{ env.NPMPACKAGEJSONFILENAME }}
 
       - name: Validate inputs.npm_project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.2
         with:
           path_name: ${{ env.NPMPROJECTDIRECTORY }}
 
       - name: Validate inputs.publish_working_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.2
         with:
           path_name: ${{ env.PUBLISHWORKINGDIRECTORY }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.2
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: Validate inputs.git_hash
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
         with:
           value: ${{ env.GIT_HASH }}
           regex_pattern: '^([a-fA-F0-9]{40})$'
 
       - name: Validate inputs.informational_version
-        uses: ritterim/public-github-actions/actions/version-number-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.16.2
         with:
           version: ${{ env.INFORMATIONALVERSION }}
 
       - name: Validate inputs.version
-        uses: ritterim/public-github-actions/actions/version-number-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.16.2
         with:
           version: ${{ env.VERSION }}
 
       - name: Validate inputs.astro_target_brand
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
         with:
           value: ${{ env.TARGET_BRAND }}
           regex_pattern: '^(standard|whitelabel)$'
 
       - name: Validate inputs.astro_target_environment
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
         with:
           value: ${{ env.TARGET_ENVIRONMENT }}
           regex_pattern: '^(development|staging|production)$'
 
       - name: Validate inputs.astro_target_configuration
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
         with:
           value: ${{ env.TARGET_CONFIGURATION }}
           regex_pattern: '^(release|debug)$'
 
       - name: Validate ZIPFILENAME
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.2
         with:
           file_name: ${{ env.ZIPFILENAME }}
 

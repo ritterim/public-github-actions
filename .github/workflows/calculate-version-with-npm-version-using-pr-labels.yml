@@ -117,12 +117,12 @@ jobs:
     steps:
 
       - name: Validate inputs.package_json_filename
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.2
         with:
           file_name: ${{ env.PACKAGEJSONFILENAME }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.0
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.2
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
