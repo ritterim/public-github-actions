@@ -1,8 +1,8 @@
 name: Extract NPM Package Version
 
-# Extract the version from the NPM package.json file.  Once the version 
-# is extracted this workflow returns ouput variables that can be used in 
-# later jobs.  There is support for package.json files that are named 
+# Extract the version from the NPM package.json file.  Once the version
+# is extracted this workflow returns ouput variables that can be used in
+# later jobs.  There is support for package.json files that are named
 # otherwise or do not exist at the root of the repository.
 
 on:
@@ -53,6 +53,14 @@ on:
         description: The version suffix (e.g. "-pr123" or "-alpha1342") which was passed in.
         value: ${{ jobs.version.outputs.version_suffix }}
 
+      build_date:
+        description: The UTC build date in ISO-8601 format.
+        value: ${{ jobs.version.outputs.build_date }}
+
+      build_timestamp:
+        description: The UTC build date/time in ISO-8601 format.  Includes hours/minutes/seconds.
+        value: ${{ jobs.version.outputs.build_timestamp }}
+
 env:
   major_minor_patch_version_number_pattern: '^[0-9]{1,5}\.[0-9]{1,5}\.[0-9]{1,5}'
   major_minor_version_number_pattern: '^[0-9]{1,5}\.[0-9]{1,5}'
@@ -86,6 +94,8 @@ jobs:
       version: ${{ steps.set-outputs.outputs.version }}
       informational_version: ${{ steps.set-outputs.outputs.informational_version }}
       version_suffix: ${{ steps.set-outputs.outputs.version_suffix }}
+      build_date: ${{ steps.set-outputs.outputs.build_date }}
+      build_timestamp: ${{ steps.set-outputs.outputs.build_timestamp }}
 
     steps:
 
@@ -144,6 +154,15 @@ jobs:
           echo "GH_SHORT_SHA_CALC=$GH_SHORT_SHA_CALC"
           echo "GH_SHORT_SHA_CALC=$GH_SHORT_SHA_CALC" >> $GITHUB_ENV
 
+      - name: Calculate build date/timestamp
+        run: |
+          BUILDDATE=$(date -u -Idate)
+          echo "BUILDDATE=$BUILDDATE"
+          echo "BUILDDATE=$BUILDDATE" >> $GITHUB_ENV
+          BUILDTIMESTAMP=$(date -u -Iseconds)
+          echo "BUILDTIMESTAMP=$BUILDTIMESTAMP"
+          echo "BUILDTIMESTAMP=$BUILDTIMESTAMP" >> $GITHUB_ENV
+
       - name: Set outputs
         id: set-outputs
         run: |
@@ -154,6 +173,8 @@ jobs:
           echo "patch_version=$PATCH_VERSION" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "informational_version=$VERSION+$GH_SHORT_SHA_CALC" >> $GITHUB_OUTPUT
+          echo "build_date=${BUILDDATE}" >> $GITHUB_OUTPUT
+          echo "build_timestamp=${BUILDTIMESTAMP}" >> $GITHUB_OUTPUT
 
       - name: Echo Version Variables
         run: |
@@ -164,3 +185,5 @@ jobs:
           echo "version=${{ steps.set-outputs.outputs.version }}"
           echo "git_hash=${{ steps.set-outputs.outputs.git_hash }}"
           echo "short_git_hash=${{ steps.set-outputs.outputs.short_git_hash }}"
+          echo "build_date=${{ steps.set-outputs.outputs.build_date }}"
+          echo "build_timestamp=${{ steps.set-outputs.outputs.build_timestamp }}"
