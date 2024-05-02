@@ -1,0 +1,274 @@
+name: Pack (NPM)
+
+# Execute `npm pack` against the package.json file. There is support for
+# package.json files that are named otherwise or do not exist at the root
+# of the repository.  This workflow *only* runs the pack command.
+
+# The resulting artifact (a `.tgz` file) will be uploaded to the workflow
+# run and output variables provide information on the archive name
+# (`artifact_name`) and file path (`artifact_file_path`).
+
+permissions:
+  contents: read
+  id-token: write
+  packages: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      artifact_retention_days:
+        required: false
+        type: number
+        default: 90
+
+      jfrog_api_base_url:
+        description: 'JFrog platform url (for example: https://rimdev.jfrog.io/)'
+        required: true
+        type: string
+
+      jfrog_artifactory_repository:
+        description: 'JFrog Artifactory repository identifier where artifacts will be uploaded to.'
+        required: true
+        type: string
+
+      jfrog_build_name:
+        description: 'JFrog build name.'
+        required: true
+        type: string
+
+      jfrog_build_number:
+        description: 'JFrog build number. Can be an integer, a semantic version, or a string.'
+        required: true
+        type: string
+
+      jfrog_cli_log_level:
+        description: 'Set the log level for the JFrog CLI. Default is ERROR. Values are: (DEBUG, INFO, WARN, ERROR).'
+        required: false
+        default: ERROR
+        type: string
+
+      jfrog_npm_feed_repo:
+        description: The 'virtual' JFrog Artifactory repository identifier for NPM package retrieval.
+        required: true
+        type: string
+
+      jfrog_oidc_provider_name:
+        description: The OIDC Integration Provider Name to use for authentication from the GitHub Action to the JFrog instance.
+        required: true
+        type: string
+
+      npm_scope:
+        description: The NPM 'scope' value to use.  Default is 'ritterim' as it needs to match the GitHub organization value.
+        type: string
+        required: false
+        default: ritterim
+
+      npm_package_name:
+        description: The package name such as 'content-search-component' or 'submissions-form'.
+        required: true
+        type: string
+
+      persisted_workspace_artifact_name:
+        description: Name of the artifact which contains the persisted workspace directory.
+        required: false
+        type: string
+        default:
+
+      project_directory:
+        description: Location of the package.json file for the NPM package.
+        required: false
+        type: string
+        default: ./
+
+      package_json_filename:
+        description: Name of the 'package.json' file if not the default name.
+        required: false
+        type: string
+        default: package.json
+
+      version:
+        required: true
+        type: string
+
+    outputs:
+
+      artifact_name:
+        value: ${{ jobs.pack.outputs.artifact_name }}
+
+      artifact_file_path:
+        value: ${{ jobs.pack.outputs.artifact_file_path }}
+
+      jfrog_build_name:
+        description: The JFrog build name for this job.
+        value: ${{ jobs.pack.outputs.jfrog_build_name }}
+
+jobs:
+
+  pack:
+    name: Pack (NPM)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.project_directory }}
+
+    outputs:
+      artifact_name: ${{ steps.set-outputs.outputs.artifact_name }}
+      artifact_file_path: ${{ steps.set-outputs.outputs.artifact_file_path }}
+      jfrog_build_name: ${{ env.JFROG_CLI_BUILD_NAME }}
+
+    env:
+      ARTIFACTFILEPATH: "not-set.tgz"
+      JFROG_API_BASE_URL: ${{ inputs.jfrog_api_base_url }}
+      JFROG_ARTIFACTORY_REPOSITORY: ${{ inputs.jfrog_artifactory_repository }}
+      JFROG_CLI_BUILD_NAME: "${{ inputs.jfrog_build_name }}-npm-pack"
+      JFROG_CLI_BUILD_NUMBER: ${{ inputs.jfrog_build_number }}
+      JFROG_CLI_LOG_LEVEL: ${{ inputs.jfrog_cli_log_level }}
+      JFROG_NPM_FEED_REPO: ${{ inputs.jfrog_npm_feed_repo }}
+      JFROG_OIDC_PROVIDER_NAME: ${{ inputs.jfrog_oidc_provider_name }}
+      NPMPACKAGENAME: ${{ inputs.npm_package_name }}
+      NPMSCOPE: ${{ inputs.npm_scope }}
+      NPMVERSION: ${{ inputs.version }}
+      PACKAGEJSONFILENAME: ${{ inputs.package_json_filename }}
+      PKGJSONVER: 0.0.0
+      PROJECTDIRECTORY: ${{ inputs.project_directory }}
+
+    steps:
+
+      - name: Validate inputs.jfrog_build_name
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
+        with: # This regex pattern is a bit of a guess
+          regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
+          value: ${{ inputs.jfrog_build_name }}
+
+      - name: Validate inputs.jfrog_npm_feed_repo
+        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.16.2
+        with:
+          name: ${{ env.JFROG_NPM_FEED_REPO }}
+
+      - name: Validate inputs.jfrog_oidc_provider_name
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
+        with: # This regex pattern is a bit of a guess
+          regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
+          value: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
+
+      - name: Validate inputs.npm_scope
+        uses: ritterim/public-github-actions/actions/npm-package-scope-validator@v1.16.2
+        with:
+          npm_scope: ${{ env.NPMSCOPE }}
+
+      - name: Validate inputs.npm_package_name
+        uses: ritterim/public-github-actions/actions/npm-package-name-validator@v1.16.2
+        with:
+          package_name: ${{ env.NPMPACKAGENAME }}
+
+      - name: Validate inputs.package_json_filename
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.2
+        with:
+          file_name: ${{ env.PACKAGEJSONFILENAME }}
+
+      - name: Validate inputs.project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.2
+        with:
+          path_name: ${{ env.PROJECTDIRECTORY }}
+
+      - name: Validate inputs.version
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.16.2
+        with:
+          version: ${{ env.NPMVERSION }}
+
+      - name: Checkout Project
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Restore Workspace
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.16.0
+        with:
+          action: retrieve
+          artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
+
+      - name: Verify package name in ${{ inputs.package_json_filename }}
+        run: |
+          NPMJSONPACKAGENAME=$(jq -r '.name' "${PACKAGEJSONFILENAME}")
+          echo "NPMJSONPACKAGENAME=${NPMJSONPACKAGENAME}"
+          echo "${NPMJSONPACKAGENAME}" | grep "@${NPMSCOPE}/${NPMPACKAGENAME}"
+
+      # This creates the setup-jfrog-cli-server server ID
+      - name: Install JFrog CLI
+        uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_URL: ${{ env.JFROG_API_BASE_URL }}
+        with:
+          oidc-provider-name: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
+
+      - name: jf config show
+        run: jf config show
+
+      - name: Check version in ${{ inputs.package_json_filename }}
+        run: jq -r '.version' "${PACKAGEJSONFILENAME}"
+
+      - name: Configure NPM using JFrog CLI
+        run: jf npm-config --global --server-id-resolve setup-jfrog-cli-server --repo-resolve "${JFROG_NPM_FEED_REPO}"
+
+      - name: Check NPM configuration, registry, etc.
+        run: |
+          npm config list
+          npm config get registry
+
+      - name: npm version config
+        run: |
+          npm config set allow-same-version=true
+          npm config set git-tag-version=false
+          npm config set sign-git-tag=false
+
+      # Note the use of '--ignore-scripts' here to prevent 'npm version' from running any scripts in the package.json
+      - run: npm version --ignore-scripts "${NPMVERSION}"
+
+      - name: Check version in ${{ inputs.package_json_filename }}
+        run: |
+          PKGJSONVER="$(jq -r '.version' "${PACKAGEJSONFILENAME}")"
+          echo "PKGJSONVER=$PKGJSONVER"
+          echo "PKGJSONVER=$PKGJSONVER" >> $GITHUB_ENV
+
+      - run: ls -la
+
+      - name: npm pack
+        run: npm pack
+
+      - run: ls -la
+
+      - name: Set Outputs
+        id: set-outputs
+        run: |
+          ARTIFACTNAME="${NPMSCOPE}-${NPMPACKAGENAME}-${PKGJSONVER}"
+          echo "artifact_name=${ARTIFACTNAME}"
+          echo "artifact_name=${ARTIFACTNAME}" >> $GITHUB_OUTPUT
+          ARTIFACTFILEPATH="${NPMSCOPE}-${NPMPACKAGENAME}-${PKGJSONVER}.tgz"
+          echo "artifact_file_path=${ARTIFACTFILEPATH}"
+          echo "artifact_file_path=${ARTIFACTFILEPATH}" >> $GITHUB_OUTPUT
+          echo "ARTIFACTFILEPATH=$ARTIFACTFILEPATH" >> $GITHUB_ENV
+
+      - name: Upload Artifact
+        id: upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.set-outputs.outputs.artifact_name }}
+          path: ${{ steps.set-outputs.outputs.artifact_file_path }}
+          retention-days: ${{ inputs.artifact_retention_days }}
+          if-no-files-found: error
+
+      - name: Collect JFrog Build Information
+        run: jf rt build-collect-env "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      - name: Collect JFrog 'git' Information
+        run: jf rt build-add-git "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      # jf rt upload --detailed-summary --fail-no-op  "$FILEPATHNAME" "${JFROG_ARTIFACTORY_REPOSITORY}/"
+      - name: Upload files to JFrog Artifactory
+        run: jf rt upload "${ARTIFACTFILEPATH}" "${JFROG_ARTIFACTORY_REPOSITORY}" --detailed-summary --fail-no-op --server-id="${JFROG_SERVER_ID}" --build-name="${JFROG_CLI_BUILD_NAME}" --build-number="${JFROG_CLI_BUILD_NUMBER}"
+
+      - name: Push JFrog Build Information
+        run: jf rt build-publish "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
