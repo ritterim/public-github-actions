@@ -1,0 +1,166 @@
+name: Test (NPM)
+
+# Execute '`npm run test`' against the package.json file.  There is support
+# for package.json files that are named otherwise or do not exist at the
+# root of the repository.  This workflow *only* runs the build script.
+#
+# Note: This restores the workspace created in the npm-build.yml job
+# before executing the test script.
+
+permissions:
+  contents: read
+  id-token: write
+  packages: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      jfrog_api_base_url:
+        description: 'JFrog platform url (for example: https://rimdev.jfrog.io/)'
+        required: true
+        type: string
+
+      jfrog_build_name:
+        description: 'JFrog build name.'
+        required: true
+        type: string
+
+      jfrog_build_number:
+        description: 'JFrog build number. Can be an integer, a semantic version, or a string.'
+        required: true
+        type: string
+
+      jfrog_cli_log_level:
+        description: 'Set the log level for the JFrog CLI. Default is ERROR. Values are: (DEBUG, INFO, WARN, ERROR).'
+        required: false
+        default: ERROR
+        type: string
+
+      jfrog_npm_feed_repo:
+        description: The 'virtual' JFrog Artifactory repository identifier for NPM package retrieval.
+        required: true
+        type: string
+
+      jfrog_oidc_provider_name:
+        description: The OIDC Integration Provider Name to use for authentication from the GitHub Action to the JFrog instance.
+        required: true
+        type: string
+
+      persisted_workspace_artifact_name:
+        description: Name of the artifact which contains the persisted workspace directory.
+        required: false
+        type: string
+        default:
+
+      project_directory:
+        description: Location of the package.json file for the NPM package.
+        required: false
+        type: string
+        default: ./
+
+      run_tests:
+        required: false
+        type: boolean
+        default: true
+
+    outputs:
+
+      jfrog_build_name:
+        description: The JFrog build name for this job.
+        value: ${{ jobs.test.outputs.jfrog_build_name }}
+
+jobs:
+
+  test:
+    name: Test (NPM)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+          working-directory: ${{ inputs.project_directory }}
+
+    outputs:
+      jfrog_build_name: ${{ env.JFROG_CLI_BUILD_NAME }}
+
+    env:
+      JFROG_API_BASE_URL: ${{ inputs.jfrog_api_base_url }}
+      JFROG_CLI_BUILD_NAME: "${{ inputs.jfrog_build_name }}-npm-test"
+      JFROG_CLI_BUILD_NUMBER: ${{ inputs.jfrog_build_number }}
+      JFROG_CLI_LOG_LEVEL: ${{ inputs.jfrog_cli_log_level }}
+      JFROG_NPM_FEED_REPO: ${{ inputs.jfrog_npm_feed_repo }}
+      JFROG_OIDC_PROVIDER_NAME: ${{ inputs.jfrog_oidc_provider_name }}
+      PROJECTDIRECTORY: ${{ inputs.project_directory }}
+
+    steps:
+
+      - name: Validate inputs.jfrog_build_name
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
+        with: # This regex pattern is a bit of a guess
+          regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
+          value: ${{ inputs.jfrog_build_name }}
+
+      - name: Validate inputs.jfrog_npm_feed_repo
+        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.16.2
+        with:
+          name: ${{ env.JFROG_NPM_FEED_REPO }}
+
+      - name: Validate inputs.jfrog_oidc_provider_name
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
+        with: # This regex pattern is a bit of a guess
+          regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
+          value: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
+
+      - name: Validate inputs.project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.2
+        with:
+          path_name: ${{ env.PROJECTDIRECTORY }}
+
+      - name: Bypass Tests
+        if: inputs.run_tests != true
+        working-directory: ./
+        run: echo "The 'inputs.run_tests' value is FALSE, skipping tests!"
+
+      - name: Checkout Project
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Restore Workspace
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.16.0
+        with:
+          action: retrieve
+          artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
+
+      # This creates the setup-jfrog-cli-server server ID
+      - name: Install JFrog CLI
+        uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_URL: ${{ env.JFROG_API_BASE_URL }}
+        with:
+          oidc-provider-name: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
+
+      - name: jf config show
+        run: jf config show
+
+      - name: Configure NPM using JFrog CLI
+        run: jf npm-config --global --server-id-resolve setup-jfrog-cli-server --repo-resolve "${JFROG_NPM_FEED_REPO}"
+
+      - name: Check NPM configuration, registry, etc.
+        run: |
+          npm config list
+          npm config get registry
+
+      - name: npm run test
+        if: inputs.run_tests == true
+        run: npm run test
+
+      - name: Collect JFrog Build Information
+        run: jf rt build-collect-env "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      - name: Collect JFrog 'git' Information
+        run: jf rt build-add-git "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      - name: Push JFrog Build Information
+        run: jf rt build-publish "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
