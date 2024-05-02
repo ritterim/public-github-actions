@@ -1,0 +1,222 @@
+name: NPM Package PR Tag
+
+# Designed to be called when a PR is merged against a branch in the repository. It creates a new commit and tag using the a GitHub App token upon completion.
+
+permissions:
+  contents: read # later on we use a GH App to generate the token needed to push (and bypass a Ruleset that protects the default branch)
+  id-token: write
+  packages: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      always_increment_patch_version:
+        description: Do we always bump the patch value?  Even if there is no such label on the PR?
+        required: true
+        type: boolean
+
+      gh_app_id:
+        description: The GitHub Application ID.
+        type: string
+        required: true
+
+      jfrog_api_base_url:
+        description: 'JFrog platform url (for example: https://rimdev.jfrog.io/)'
+        required: true
+        type: string
+
+      jfrog_artifactory_repository:
+        description: 'JFrog Artifactory repository identifier where artifacts will be uploaded to.'
+        required: true
+        type: string
+
+      jfrog_audit_xray_watch_list:
+        description: Comma-delimited list (with no spaces) of XRay watches to enforce.  Passed to "jf audit" via the "--watches" argument.
+        required: true
+        type: string
+
+      jfrog_build_basename:
+        description: 'JFrog build basename.  Pass in vars.JFROG_BUILD_BASENAME from GitHub Actions Variables.'
+        required: true
+        type: string
+
+      jfrog_cli_log_level:
+        description: 'Set the log level for the JFrog CLI. Default is ERROR. Values are: (DEBUG, INFO, WARN, ERROR).'
+        required: false
+        default: ERROR
+        type: string
+
+      jfrog_npm_feed_repo:
+        description: The 'virtual' JFrog Artifactory repository identifier for NPM package retrieval.
+        required: true
+        type: string
+
+      jfrog_npm_package_repo_basename:
+        description: 'JFrog Artifactory repository identifier where the package will be pushed to.  Pass in vars.JFROG_NPM_PACKAGE_REPO_BASENAME from GitHub Actions repository level variables.'
+        required: true
+        type: string
+
+      jfrog_oidc_provider_name:
+        description: The OIDC Integration Provider Name to use for authentication from the GitHub Action to the JFrog instance.
+        required: true
+        type: string
+
+      node_version:
+        required: false
+        type: string
+        default: '18.x'
+
+      npm_package_name:
+        required: true
+        type: string
+
+      package_json_filename:
+        description: Name of the 'package.json' file if not the default name.
+        required: false
+        type: string
+        default: package.json
+
+      project_directory:
+        description: Location of the package.json file for the NPM package.
+        required: false
+        type: string
+        default: ./
+
+      run_tests:
+        required: false
+        type: boolean
+        default: true
+
+      title:
+        description: Title for the commit.
+        required: false
+        type: string
+        default: Release
+
+    secrets:
+
+      gh_actions_secret_passing_passphrase:
+        description: The random password (usually secrets.ACTIONS_SECRET_PASSING_PASSPHRASE) used to encrypt values to be passed between job steps.
+        required: true
+
+      gh_app_private_key:
+        description: The private secret generated after creation of the GitHub Application.  It is generated in the "Private keys" section of the settings page for the application.
+        required: true
+
+jobs:
+
+  # debug:
+  #   if: true
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - run: env | sort
+  #     - name: Look at github.event object
+  #       env:
+  #         EVENTOBJECT: ${{ toJSON(github.event) }}
+  #       run: echo "EVENTOBJECT=$EVENTOBJECT"
+
+  version:
+    uses: ritterim/public-github-actions/.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml@v1.16.3
+    #uses: ./.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml
+    with:
+      always_increment_patch_version: ${{ inputs.always_increment_patch_version }}
+      package_json_filename: ${{ inputs.package_json_filename }}
+      project_directory: ${{ inputs.project_directory }}
+
+  npm-build:
+    uses: ritterim/public-github-actions/.github/workflows/npm-build-jfrog.yml@v1.16.4
+    #uses: ./.github/workflows/npm-build-jfrog.yml
+    needs: [ version ]
+    with:
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_build_name: "${{ inputs.jfrog_build_basename }}-merge"
+      jfrog_build_number: "${{ needs.version.outputs.version }}-alpha${{ github.run_number }}.${{ github.run_attempt }}"
+      jfrog_cli_log_level: ${{ inputs.jfrog_cli_log_level }}
+      jfrog_npm_feed_repo: ${{ inputs.jfrog_npm_feed_repo }}
+      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
+      node_version: ${{ inputs.node_version }}
+      project_directory: ${{ inputs.project_directory }}
+
+  # TODO: This spot will be good for adding enhanced security checks
+  # because this workflow will have access to secrets.
+
+  npm-test:
+    uses: ritterim/public-github-actions/.github/workflows/npm-test-jfrog.yml@v1.16.4
+    #uses: ./.github/workflows/npm-test-jfrog.yml
+    needs: [ npm-build, version ]
+    with:
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_build_name: "${{ inputs.jfrog_build_basename }}-merge"
+      jfrog_build_number: "${{ needs.version.outputs.version }}-alpha${{ github.run_number }}.${{ github.run_attempt }}"
+      jfrog_cli_log_level: ${{ inputs.jfrog_cli_log_level }}
+      jfrog_npm_feed_repo: ${{ inputs.jfrog_npm_feed_repo }}
+      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
+      persisted_workspace_artifact_name: ${{ needs.npm-build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.npm-build.outputs.project_directory }}
+      run_tests: ${{ inputs.run_tests }}
+
+  npm-pack:
+    uses: ritterim/public-github-actions/.github/workflows/npm-pack-jfrog.yml@v1.16.4
+    #uses: ./.github/workflows/npm-pack-jfrog.yml
+    needs: [ npm-build, npm-test, version ]
+    with:
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_artifactory_repository: ${{ inputs.jfrog_artifactory_repository }}
+      jfrog_build_name: "${{ inputs.jfrog_build_basename }}-merge"
+      jfrog_build_number: "${{ needs.version.outputs.version }}-alpha${{ github.run_number }}.${{ github.run_attempt }}"
+      jfrog_cli_log_level: ${{ inputs.jfrog_cli_log_level }}
+      jfrog_npm_feed_repo: ${{ inputs.jfrog_npm_feed_repo }}
+      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
+      npm_package_name: ${{ inputs.npm_package_name }}
+      persisted_workspace_artifact_name: ${{ needs.npm-build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.npm-build.outputs.project_directory }}
+      version: ${{ needs.version.outputs.version }}
+
+  # If the version was incremented, we should create a new annotated tag.
+
+  generate-token:
+    uses: ritterim/public-github-actions/.github/workflows/generate-github-token-from-github-app.yml@v1.16.3
+    #uses: ./.github/workflows/generate-github-token-from-github-app.yml
+    needs: [ version, npm-pack ]
+    if: |
+      needs.version.outputs.version_incremented == 'true'
+    with:
+      gh_app_id: ${{ inputs.gh_app_id }}
+    secrets:
+      gh_actions_secret_passing_passphrase: ${{ secrets.gh_actions_secret_passing_passphrase }}
+      gh_app_private_key: ${{ secrets.gh_app_private_key }}
+
+  npm-create-release-tag:
+    uses: ritterim/public-github-actions/.github/workflows/npm-create-version-tag.yml@v1.16.3
+    #uses: ./.github/workflows/npm-create-version-tag.yml
+    needs: [ generate-token, version ]
+    if: |
+      needs.version.outputs.version_incremented == 'true'
+    secrets:
+      gh_actions_secret_passing_passphrase: ${{ secrets.gh_actions_secret_passing_passphrase }}
+      gh_encrypted_token: ${{ needs.generate-token.outputs.gh_encrypted_token }}
+    with:
+      npm_package_name: ${{ inputs.npm_package_name }}
+      project_directory: ${{ inputs.project_directory }}
+      head_commit_message: ${{ github.event.pull_request.title }}
+      version: ${{ needs.version.outputs.version }}
+
+
+  jfrog-publish-aggregate-build-info:
+    needs: [ npm-build, npm-test, npm-pack, version ]
+    uses: ritterim/public-github-actions/.github/workflows/jfrog-publish-aggregate-build-info.yml@v1.16.4
+    #uses: ./.github/workflows/jfrog-publish-aggregate-build-info.yml
+    with:
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_build_name: "${{ inputs.jfrog_build_basename }}-merge"
+      jfrog_build_name_npm_build: ${{ needs.npm-build.outputs.jfrog_build_name }}
+      jfrog_build_name_npm_test: ${{ needs.npm-test.outputs.jfrog_build_name }}
+      jfrog_build_name_npm_pack: ${{ needs.npm-pack.outputs.jfrog_build_name }}
+      jfrog_build_number: "${{ needs.version.outputs.version }}-alpha${{ github.run_number }}.${{ github.run_attempt }}"
+      jfrog_nuget_feed_repo: ${{ inputs.jfrog_npm_feed_repo }}
+      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
+      persisted_workspace_artifact_name: ${{ needs.npm-build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.npm-build.outputs.project_directory }}

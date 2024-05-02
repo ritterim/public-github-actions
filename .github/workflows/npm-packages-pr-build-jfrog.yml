@@ -1,0 +1,170 @@
+name: NPM Package PR Build
+
+# Designed to be called when a PR is opened against a branch in the repository.  This operates with a read-only GitHub Token for safety.
+
+permissions:
+  contents: read
+  id-token: write
+  packages: read
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      always_increment_patch_version:
+        description: Do we always bump the patch value?  Even if there is no such label on the PR?
+        required: true
+        type: boolean
+
+      jfrog_api_base_url:
+        description: 'JFrog platform url (for example: https://rimdev.jfrog.io/)'
+        required: true
+        type: string
+
+      jfrog_artifactory_repository:
+        description: 'JFrog Artifactory repository identifier where artifacts will be uploaded to.'
+        required: true
+        type: string
+
+      jfrog_audit_xray_watch_list:
+        description: Comma-delimited list (with no spaces) of XRay watches to enforce.  Passed to "jf audit" via the "--watches" argument.
+        required: true
+        type: string
+
+      jfrog_build_basename:
+        description: 'JFrog build basename.  Pass in vars.JFROG_BUILD_BASENAME from GitHub Actions Variables.'
+        required: true
+        type: string
+
+      jfrog_cli_log_level:
+        description: 'Set the log level for the JFrog CLI. Default is ERROR. Values are: (DEBUG, INFO, WARN, ERROR).'
+        required: false
+        default: ERROR
+        type: string
+
+      jfrog_npm_feed_repo:
+        description: The 'virtual' JFrog Artifactory repository identifier for NPM package retrieval.
+        required: true
+        type: string
+
+      jfrog_npm_package_repo_basename:
+        description: 'JFrog Artifactory repository identifier where the package will be pushed to.  Pass in vars.JFROG_NPM_PACKAGE_REPO_BASENAME from GitHub Actions repository level variables.'
+        required: true
+        type: string
+
+      jfrog_oidc_provider_name:
+        description: The OIDC Integration Provider Name to use for authentication from the GitHub Action to the JFrog instance.
+        required: true
+        type: string
+
+      node_version:
+        required: false
+        type: string
+        default: '18.x'
+
+      npm_package_name:
+        required: true
+        type: string
+
+      package_json_filename:
+        description: Name of the 'package.json' file if not the default name.
+        required: false
+        type: string
+        default: package.json
+
+      project_directory:
+        description: Location of the package.json file for the NPM package.
+        required: false
+        type: string
+        default: ./
+
+      run_tests:
+        required: false
+        type: boolean
+        default: true
+
+    outputs:
+
+      artifact_name:
+        value: ${{ jobs.npm-pack.outputs.artifact_name }}
+
+      artifact_file_path:
+        value: ${{ jobs.npm-pack.outputs.artifact_file_path }}
+
+      version:
+        value: ${{ jobs.version.outputs.version }}
+
+jobs:
+
+  version:
+    uses: ritterim/public-github-actions/.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml@v1.16.3
+    #uses: ./.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml
+    with:
+      always_increment_patch_version: ${{ inputs.always_increment_patch_version }}
+      package_json_filename: ${{ inputs.package_json_filename }}
+      project_directory: ${{ inputs.project_directory }}
+      version_suffix: "-pr${{ github.event.number }}.${{ github.run_number }}.${{ github.run_attempt }}"
+
+  npm-build:
+    uses: ritterim/public-github-actions/.github/workflows/npm-build-jfrog.yml@v1.16.4
+    #uses: ./.github/workflows/npm-build-jfrog.yml
+    needs: [ version ]
+    with:
+      node_version: ${{ inputs.node_version }}
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_build_name: "${{ inputs.jfrog_build_basename }}-draft"
+      jfrog_build_number: ${{ needs.version.outputs.version }}
+      jfrog_cli_log_level: ${{ inputs.jfrog_cli_log_level }}
+      jfrog_npm_feed_repo: ${{ inputs.jfrog_npm_feed_repo }}
+      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
+      project_directory: ${{ inputs.project_directory }}
+
+  npm-test:
+    uses: ritterim/public-github-actions/.github/workflows/npm-test-jfrog.yml@v1.16.4
+    #uses: ./.github/workflows/npm-test-jfrog.yml
+    needs: [ npm-build, version ]
+    with:
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_build_name: "${{ inputs.jfrog_build_basename }}-draft"
+      jfrog_build_number: ${{ needs.version.outputs.version }}
+      jfrog_cli_log_level: ${{ inputs.jfrog_cli_log_level }}
+      jfrog_npm_feed_repo: ${{ inputs.jfrog_npm_feed_repo }}
+      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
+      persisted_workspace_artifact_name: ${{ needs.npm-build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.npm-build.outputs.project_directory }}
+      run_tests: ${{ inputs.run_tests }}
+
+  npm-pack:
+    uses: ritterim/public-github-actions/.github/workflows/npm-pack-jfrog.yml@v1.16.4
+    #uses: ./.github/workflows/npm-pack-jfrog.yml
+    needs: [ npm-build, npm-test, version ]
+    with:
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_artifactory_repository: ${{ inputs.jfrog_artifactory_repository }}
+      jfrog_build_name: "${{ inputs.jfrog_build_basename }}-draft"
+      jfrog_build_number: ${{ needs.version.outputs.version }}
+      jfrog_cli_log_level: ${{ inputs.jfrog_cli_log_level }}
+      jfrog_npm_feed_repo: ${{ inputs.jfrog_npm_feed_repo }}
+      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
+      npm_package_name: ${{ inputs.npm_package_name }}
+      persisted_workspace_artifact_name: ${{ needs.npm-build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.npm-build.outputs.project_directory }}
+      version: ${{ needs.version.outputs.version }}
+
+  jfrog-publish-aggregate-build-info:
+    needs: [ npm-build, npm-test, npm-pack, version ]
+    uses: ritterim/public-github-actions/.github/workflows/jfrog-publish-aggregate-build-info.yml@v1.16.4
+    #uses: ./.github/workflows/jfrog-publish-aggregate-build-info.yml
+    with:
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_build_name: "${{ inputs.jfrog_build_basename }}-draft"
+      jfrog_build_name_npm_build: ${{ needs.npm-build.outputs.jfrog_build_name }}
+      jfrog_build_name_npm_test: ${{ needs.npm-test.outputs.jfrog_build_name }}
+      jfrog_build_name_npm_pack: ${{ needs.npm-pack.outputs.jfrog_build_name }}
+      jfrog_build_number: ${{ needs.version.outputs.version }}
+      jfrog_nuget_feed_repo: ${{ inputs.jfrog_npm_feed_repo }}
+      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
+      persisted_workspace_artifact_name: ${{ needs.npm-build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.npm-build.outputs.project_directory }}

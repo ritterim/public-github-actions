@@ -1,0 +1,226 @@
+name: NPM Package Release on Tag
+
+# Builds and releases the NPM package.  The version number is pulled
+# from the package.json file (or the file specified by inputs.package_json_filename).
+
+# Tags which are not created on the correct branch will result in workflow failure.
+
+# This is designed to be fired when a tag is pushed to the repo which matches the pattern.
+# The checkout command looks like:
+#   /usr/bin/git checkout --progress --force refs/tags/v2.4.24
+# Which puts us into a "detached HEAD" status.
+# The remote is named 'origin' and points at the main GitHub repo.
+
+permissions:
+  contents: write
+  id-token: write
+  packages: write
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      allowed_branches:
+        description: A list of branches on which the tag is allowed to appear.
+        required: true
+        type: string
+
+      jfrog_api_base_url:
+        description: 'JFrog platform url (for example: https://rimdev.jfrog.io/)'
+        required: true
+        type: string
+
+      jfrog_artifactory_repository:
+        description: 'JFrog Artifactory repository identifier where artifacts will be uploaded to.'
+        required: true
+        type: string
+
+      jfrog_audit_xray_watch_list:
+        description: Comma-delimited list (with no spaces) of XRay watches to enforce.  Passed to "jf audit" via the "--watches" argument.
+        required: true
+        type: string
+
+      jfrog_build_basename:
+        description: 'JFrog build basename.  Pass in vars.JFROG_BUILD_BASENAME from GitHub Actions Variables.'
+        required: true
+        type: string
+
+      jfrog_cli_log_level:
+        description: 'Set the log level for the JFrog CLI. Default is ERROR. Values are: (DEBUG, INFO, WARN, ERROR).'
+        required: false
+        default: ERROR
+        type: string
+
+      jfrog_npm_feed_repo:
+        description: The 'virtual' JFrog Artifactory repository identifier for NPM package retrieval.
+        required: true
+        type: string
+
+      jfrog_npm_package_repo_basename:
+        description: 'JFrog Artifactory repository identifier where the package will be pushed to.  Pass in vars.JFROG_NPM_PACKAGE_REPO_BASENAME from GitHub Actions repository level variables.'
+        required: true
+        type: string
+
+      jfrog_oidc_provider_name:
+        description: The OIDC Integration Provider Name to use for authentication from the GitHub Action to the JFrog instance.
+        required: true
+        type: string
+
+      node_version:
+        required: false
+        type: string
+        default: '18.x'
+
+      npm_package_name:
+        required: true
+        type: string
+
+      npmjs_org_access_public:
+        description: Whether to publish to NPM registry (npmjs.org) as '--access=public' (true) or '--access=restricted' (false).
+        required: false
+        type: boolean
+        default: false
+
+      package_json_filename:
+        description: Name of the 'package.json' file if not the default name.
+        required: false
+        type: string
+        default: package.json
+
+      project_directory:
+        description: Location of the package.json file for the NPM package.
+        required: false
+        type: string
+        default: ./
+
+      publish_to_github:
+        description: Whether the artifact should be published to the GitHub Package registry.
+        required: false
+        type: boolean
+        default: true
+
+      publish_to_npmjs_org:
+        description: Whether the artifact should be published to the NPM (npmjs.org) registry.
+        required: false
+        type: boolean
+        default: false
+
+      run_tests:
+        required: false
+        type: boolean
+        default: true
+
+    secrets:
+
+      npmjs_org_api_key:
+        description: The secret API key needed in order to access the NPM (npmjs.org) registry.
+        required: false
+
+jobs:
+
+  verify-tag-branch:
+    uses: ritterim/public-github-actions/.github/workflows/verify-tag-is-on-allowed-branch.yml@v1.16.3
+    #uses: ./.github/workflows/verify-tag-is-on-allowed-branch.yml
+    with:
+      allowed_branches: ${{ inputs.allowed_branches }}
+
+  version:
+    uses: ritterim/public-github-actions/.github/workflows/extract-version-from-npm-package-json.yml@v1.16.3
+    #uses: ./.github/workflows/extract-version-from-npm-package-json.yml
+    needs: [ verify-tag-branch ]
+    with:
+      package_json_filename: ${{ inputs.package_json_filename }}
+      project_directory: ${{ inputs.project_directory }}
+
+  npm-build:
+    uses: ritterim/public-github-actions/.github/workflows/npm-build-jfrog.yml@v1.16.4
+    #uses: ./.github/workflows/npm-build-jfrog.yml
+    needs: [ verify-tag-branch, version ]
+    with:
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_build_name: "${{ inputs.jfrog_build_basename }}-prod"
+      jfrog_build_number: ${{ needs.version.outputs.version }}
+      jfrog_cli_log_level: ${{ inputs.jfrog_cli_log_level }}
+      jfrog_npm_feed_repo: ${{ inputs.jfrog_npm_feed_repo }}
+      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
+      node_version: ${{ inputs.node_version }}
+      project_directory: ${{ inputs.project_directory }}
+
+  npm-test:
+    uses: ritterim/public-github-actions/.github/workflows/npm-test-jfrog.yml@v1.16.4
+    #uses: ./.github/workflows/npm-test-jfrog.yml
+    needs: [ npm-build, version ]
+    with:
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_build_name: "${{ inputs.jfrog_build_basename }}-prod"
+      jfrog_build_number: ${{ needs.version.outputs.version }}
+      jfrog_cli_log_level: ${{ inputs.jfrog_cli_log_level }}
+      jfrog_npm_feed_repo: ${{ inputs.jfrog_npm_feed_repo }}
+      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
+      persisted_workspace_artifact_name: ${{ needs.npm-build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.npm-build.outputs.project_directory }}
+      run_tests: ${{ inputs.run_tests }}
+
+  npm-pack:
+    uses: ritterim/public-github-actions/.github/workflows/npm-pack-jfrog.yml@v1.16.4
+    #uses: ./.github/workflows/npm-pack-jfrog.yml
+    needs: [ npm-build, npm-test, version ]
+    with:
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_artifactory_repository: ${{ inputs.jfrog_artifactory_repository }}
+      jfrog_build_name: "${{ inputs.jfrog_build_basename }}-prod"
+      jfrog_build_number: ${{ needs.version.outputs.version }}
+      jfrog_cli_log_level: ${{ inputs.jfrog_cli_log_level }}
+      jfrog_npm_feed_repo: ${{ inputs.jfrog_npm_feed_repo }}
+      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
+      npm_package_name: ${{ inputs.npm_package_name }}
+      persisted_workspace_artifact_name: ${{ needs.npm-build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.npm-build.outputs.project_directory }}
+      version: ${{ needs.version.outputs.version }}
+
+  npm-publish-to-github-packages:
+    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-github-packages.yml@v1.16.3
+    #uses: ./.github/workflows/npm-publish-to-github-packages.yml
+    if: inputs.publish_to_github == true
+    needs: [ npm-pack ]
+    with:
+      artifact_name: ${{ needs.npm-pack.outputs.artifact_name }}
+      artifact_file_path: ${{ needs.npm-pack.outputs.artifact_file_path }}
+
+  npm-publish-to-npmjs-org:
+    uses: ritterim/public-github-actions/.github/workflows/npm-publish-to-npmjs-org.yml@v1.16.3
+    #uses: ./.github/workflows/npm-publish-to-npmjs-org.yml
+    needs: [ npm-pack ]
+    if: inputs.publish_to_npmjs_org == true
+    secrets:
+      npmjs_org_api_key: ${{ secrets.npmjs_org_api_key }}
+    with:
+      artifact_name: ${{ needs.npm-pack.outputs.artifact_name }}
+      artifact_file_path: ${{ needs.npm-pack.outputs.artifact_file_path }}
+      access_public: ${{ inputs.npmjs_org_access_public }}
+
+  create-github-release:
+    uses: ritterim/public-github-actions/.github/workflows/npm-create-github-release-with-artifact.yml@v1.16.3
+    #uses: ./.github/workflows/npm-create-github-release-with-artifact.yml
+    needs: [ npm-pack ]
+    with:
+      artifact_name: ${{ needs.npm-pack.outputs.artifact_name }}
+      artifact_file_path: ${{ needs.npm-pack.outputs.artifact_file_path }}
+
+  jfrog-publish-aggregate-build-info:
+    needs: [ npm-build, npm-test, npm-pack, version ]
+    uses: ritterim/public-github-actions/.github/workflows/jfrog-publish-aggregate-build-info.yml@v1.16.4
+    #uses: ./.github/workflows/jfrog-publish-aggregate-build-info.yml
+    with:
+      jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
+      jfrog_build_name: "${{ inputs.jfrog_build_basename }}-prod"
+      jfrog_build_name_npm_build: ${{ needs.npm-build.outputs.jfrog_build_name }}
+      jfrog_build_name_npm_test: ${{ needs.npm-test.outputs.jfrog_build_name }}
+      jfrog_build_name_npm_pack: ${{ needs.npm-pack.outputs.jfrog_build_name }}
+      jfrog_build_number: ${{ needs.version.outputs.version }}
+      jfrog_nuget_feed_repo: ${{ inputs.jfrog_npm_feed_repo }}
+      jfrog_oidc_provider_name: ${{ inputs.jfrog_oidc_provider_name }}
+      persisted_workspace_artifact_name: ${{ needs.npm-build.outputs.persisted_workspace_artifact_name }}
+      project_directory: ${{ needs.npm-build.outputs.project_directory }}
