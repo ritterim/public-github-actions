@@ -50,6 +50,24 @@ on:
         default: null
         type: string
 
+      jfrog_build_name_npm_build:
+        description: 'JFrog npm-build step build-info name.'
+        required: false
+        default: null
+        type: string
+
+      jfrog_build_name_npm_pack:
+        description: 'JFrog npm-pack step build-info name.'
+        required: false
+        default: null
+        type: string
+
+      jfrog_build_name_npm_test:
+        description: 'JFrog npm-test step build-info name.'
+        required: false
+        default: null
+        type: string
+
       jfrog_build_number:
         description: 'JFrog build number. Can be an integer, a semantic version, or a string.'
         required: true
@@ -97,6 +115,9 @@ jobs:
       JFROG_CLI_BUILD_NAME_DOTNET_TEST: ${{ inputs.jfrog_build_name_dotnet_test }}
       JFROG_CLI_BUILD_NAME_DOTNET_PACK: ${{ inputs.jfrog_build_name_dotnet_pack }}
       JFROG_CLI_BUILD_NAME_DOTNET_PUBLISH: ${{ inputs.jfrog_build_name_dotnet_publish }}
+      JFROG_CLI_BUILD_NAME_NPM_BUILD: ${{ inputs.jfrog_build_name_npm_build }}
+      JFROG_CLI_BUILD_NAME_NPM_TEST: ${{ inputs.jfrog_build_name_npm_test }}
+      JFROG_CLI_BUILD_NAME_NPM_PACK: ${{ inputs.jfrog_build_name_npm_pack }}
       JFROG_CLI_BUILD_NUMBER: ${{ inputs.jfrog_build_number }}
       JFROG_CLI_LOG_LEVEL: ${{ inputs.jfrog_cli_log_level }}
       JFROG_NUGET_FEED_REPO: ${{ inputs.jfrog_nuget_feed_repo }}
@@ -193,6 +214,18 @@ jobs:
       - name: Append "dotnet-publish" build-info JSON
         if: env.JFROG_CLI_BUILD_NAME_DOTNET_PUBLISH != null
         run: jf rt build-append "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}" "${JFROG_CLI_BUILD_NAME_DOTNET_PUBLISH}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      - name: Append "npm-build" build-info JSON
+        if: env.JFROG_CLI_BUILD_NAME_NPM_BUILD != null
+        run: jf rt build-append "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}" "${JFROG_CLI_BUILD_NAME_NPM_BUILD}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      - name: Append "npm-test" build-info JSON
+        if: env.JFROG_CLI_BUILD_NAME_NPM_TEST != null
+        run: jf rt build-append "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}" "${JFROG_CLI_BUILD_NAME_NPM_TEST}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      - name: Append "npm-pack" build-info JSON
+        if: env.JFROG_CLI_BUILD_NAME_NPM_PACK != null
+        run: jf rt build-append "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}" "${JFROG_CLI_BUILD_NAME_NPM_PACK}" "${JFROG_CLI_BUILD_NUMBER}"
 
       - name: Push JFrog Build Information
         run: jf rt build-publish "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
