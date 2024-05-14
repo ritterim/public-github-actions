@@ -61,6 +61,14 @@ on:
         description: The UTC build date/time in ISO-8601 format.  Includes hours/minutes/seconds.
         value: ${{ jobs.version.outputs.build_timestamp }}
 
+      git_commit_date:
+        description: The UTC date of the git commit in ISO-8601 format.
+        value: ${{ jobs.version.outputs.git_commit_date }}
+
+      git_commit_timestamp:
+        description: The UTC date/time of the git commit in ISO-8601 format.  Includes hours/minutes/seconds.
+        value: ${{ jobs.version.outputs.git_commit_timestamp }}
+
 env:
   major_minor_patch_version_number_pattern: '^[0-9]{1,5}\.[0-9]{1,5}\.[0-9]{1,5}'
   major_minor_version_number_pattern: '^[0-9]{1,5}\.[0-9]{1,5}'
@@ -96,6 +104,8 @@ jobs:
       version_suffix: ${{ steps.set-outputs.outputs.version_suffix }}
       build_date: ${{ steps.set-outputs.outputs.build_date }}
       build_timestamp: ${{ steps.set-outputs.outputs.build_timestamp }}
+      git_commit_date: ${{ steps.set-outputs.outputs.git_commit_date }}
+      git_commit_timestamp: ${{ steps.set-outputs.outputs.git_commit_timestamp }}
 
     steps:
 
@@ -163,6 +173,15 @@ jobs:
           echo "BUILDTIMESTAMP=$BUILDTIMESTAMP"
           echo "BUILDTIMESTAMP=$BUILDTIMESTAMP" >> $GITHUB_ENV
 
+      - name: Calculate git commit date/timestamp
+        run: |
+          GITCOMMITDATE=$(TZ=UTC0 git show --no-patch --no-notes --pretty='%cs' HEAD)
+          echo "GITCOMMITDATE=$GITCOMMITDATE"
+          echo "GITCOMMITDATE=$GITCOMMITDATE" >> $GITHUB_ENV
+          GITCOMMITTIMESTAMP=$(TZ=UTC0 git show --no-patch --no-notes --pretty='%cI' HEAD)
+          echo "GITCOMMITTIMESTAMP=$GITCOMMITTIMESTAMP"
+          echo "GITCOMMITTIMESTAMP=$GITCOMMITTIMESTAMP" >> $GITHUB_ENV
+
       - name: Set outputs
         id: set-outputs
         run: |
@@ -175,6 +194,8 @@ jobs:
           echo "informational_version=$VERSION+$GH_SHORT_SHA_CALC" >> $GITHUB_OUTPUT
           echo "build_date=${BUILDDATE}" >> $GITHUB_OUTPUT
           echo "build_timestamp=${BUILDTIMESTAMP}" >> $GITHUB_OUTPUT
+          echo "git_commit_date=${GITCOMMITDATE}" >> $GITHUB_OUTPUT
+          echo "git_commit_timestamp=${GITCOMMITTIMESTAMP}" >> $GITHUB_OUTPUT
 
       - name: Echo Version Variables
         run: |
@@ -187,3 +208,5 @@ jobs:
           echo "short_git_hash=${{ steps.set-outputs.outputs.short_git_hash }}"
           echo "build_date=${{ steps.set-outputs.outputs.build_date }}"
           echo "build_timestamp=${{ steps.set-outputs.outputs.build_timestamp }}"
+          echo "git_commit_date=${{ steps.set-outputs.outputs.git_commit_date }}"
+          echo "git_commit_timestamp=${{ steps.set-outputs.outputs.git_commit_timestamp }}"
