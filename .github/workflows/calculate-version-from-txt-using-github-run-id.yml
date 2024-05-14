@@ -60,6 +60,14 @@ on:
         description: The UTC build date/time in ISO-8601 format.  Includes hours/minutes/seconds.
         value: ${{ jobs.version.outputs.build_timestamp }}
 
+      git_commit_date:
+        description: The UTC date of the git commit in ISO-8601 format.
+        value: ${{ jobs.version.outputs.git_commit_date }}
+
+      git_commit_timestamp:
+        description: The UTC date/time of the git commit in ISO-8601 format.  Includes hours/minutes/seconds.
+        value: ${{ jobs.version.outputs.git_commit_timestamp }}
+
 jobs:
 
   version:
@@ -76,6 +84,8 @@ jobs:
       version_suffix: ${{ steps.version.outputs.version_suffix }}
       build_date: ${{ steps.version.outputs.build_date }}
       build_timestamp: ${{ steps.version.outputs.build_timestamp }}
+      git_commit_date: ${{ steps.version.outputs.git_commit_date }}
+      git_commit_timestamp: ${{ steps.version.outputs.git_commit_timestamp }}
 
     steps:
 
@@ -86,7 +96,7 @@ jobs:
 
       - name: Calculate Version
         id: version
-        uses: ritterim/public-github-actions/actions/calculate-version-from-txt-using-github-run-id@v1.16.2
+        uses: ritterim/public-github-actions/actions/calculate-version-from-txt-using-github-run-id@v1.16.5
         with:
           version_suffix: ${{ inputs.version_suffix }}
           github_run_id_baseline: ${{ inputs.github_run_id_baseline }}
