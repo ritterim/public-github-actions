@@ -254,10 +254,10 @@ jobs:
 
       - name: Calculate git commit date/timestamp
         run: |
-          GITCOMMITDATE=$(TZ=UTC0 git show --no-patch --no-notes --pretty='%cs' $GH_SHA_CALC)
+          GITCOMMITDATE=$(TZ=UTC0 git show --no-patch --no-notes --pretty='%cs' HEAD)
           echo "GITCOMMITDATE=$GITCOMMITDATE"
           echo "GITCOMMITDATE=$GITCOMMITDATE" >> $GITHUB_ENV
-          GITCOMMITTIMESTAMP=$(TZ=UTC0 git show --no-patch --no-notes --pretty='%cI' $GH_SHA_CALC)
+          GITCOMMITTIMESTAMP=$(TZ=UTC0 git show --no-patch --no-notes --pretty='%cI' HEAD)
           echo "GITCOMMITTIMESTAMP=$GITCOMMITTIMESTAMP"
           echo "GITCOMMITTIMESTAMP=$GITCOMMITTIMESTAMP" >> $GITHUB_ENV
 
