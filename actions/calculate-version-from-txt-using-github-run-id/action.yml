@@ -62,6 +62,14 @@ outputs:
     description: The UTC build date/time in ISO-8601 format.  Includes hours/minutes/seconds.
     value: ${{ steps.calculate.outputs.build_timestamp }}
 
+  git_commit_date:
+    description: The UTC date of the git commit in ISO-8601 format.
+    value: ${{ steps.calculate.outputs.git_commit_date }}
+
+  git_commit_timestamp:
+    description: The UTC date/time of the git commit in ISO-8601 format.  Includes hours/minutes/seconds.
+    value: ${{ steps.calculate.outputs.git_commit_timestamp }}
+
 runs:
   using: "composite"
 
@@ -133,6 +141,8 @@ runs:
         GH_VER_PATCH_SUFFIX="$VER.$PATCH_VER$GH_VER_SUFFIX"
         BUILDDATE=$(date -u -Idate)
         BUILDTIMESTAMP=$(date -u -Iseconds)
+        GITCOMMITDATE=$(TZ=UTC0 git show --no-patch --no-notes --pretty='%cs' HEAD)
+        GITCOMMITTIMESTAMP=$(TZ=UTC0 git show --no-patch --no-notes --pretty='%cI' HEAD)
         echo "git_hash=$GH_SHA_CALC" >> $GITHUB_OUTPUT
         echo "short_git_hash=$GH_SHORT_SHA_CALC" >> $GITHUB_OUTPUT
         echo "version_suffix=$GH_VER_SUFFIX" >> $GITHUB_OUTPUT
@@ -142,6 +152,8 @@ runs:
         echo "informational_version=$GH_VER_PATCH_SUFFIX+$GH_SHORT_SHA_CALC" >> $GITHUB_OUTPUT
         echo "build_date=$BUILDDATE" >> $GITHUB_OUTPUT
         echo "build_timestamp=$BUILDTIMESTAMP" >> $GITHUB_OUTPUT
+        echo "git_commit_date=$GITCOMMITDATE" >> $GITHUB_OUTPUT
+        echo "git_commit_timestamp=$GITCOMMITTIMESTAMP" >> $GITHUB_OUTPUT
 
     - name: Echo Version Output Variables
       shell: bash
@@ -155,3 +167,5 @@ runs:
         echo "short_git_hash=${{ steps.calculate.outputs.short_git_hash }}" 
         echo "build_date=${{ steps.calculate.outputs.build_date }}" 
         echo "build_timestamp=${{ steps.calculate.outputs.build_timestamp }}" 
+        echo "git_commit_date=${{ steps.calculate.outputs.git_commit_date }}" 
+        echo "git_commit_timestamp=${{ steps.calculate.outputs.git_commit_timestamp }}" 
