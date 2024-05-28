@@ -119,7 +119,7 @@ jobs:
   #       run: echo "EVENTOBJECT=$EVENTOBJECT"
 
   version:
-    uses: ritterim/public-github-actions/.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml@v1.16.3
+    uses: ritterim/public-github-actions/.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml@v1.16.5
     #uses: ./.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml
     with:
       always_increment_patch_version: ${{ inputs.always_increment_patch_version }}
@@ -127,7 +127,7 @@ jobs:
       project_directory: ${{ inputs.project_directory }}
 
   npm-build:
-    uses: ritterim/public-github-actions/.github/workflows/npm-build-jfrog.yml@v1.16.4
+    uses: ritterim/public-github-actions/.github/workflows/npm-build-jfrog.yml@v1.16.5
     #uses: ./.github/workflows/npm-build-jfrog.yml
     needs: [ version ]
     with:
@@ -144,7 +144,7 @@ jobs:
   # because this workflow will have access to secrets.
 
   npm-test:
-    uses: ritterim/public-github-actions/.github/workflows/npm-test-jfrog.yml@v1.16.4
+    uses: ritterim/public-github-actions/.github/workflows/npm-test-jfrog.yml@v1.16.5
     #uses: ./.github/workflows/npm-test-jfrog.yml
     needs: [ npm-build, version ]
     with:
@@ -159,7 +159,7 @@ jobs:
       run_tests: ${{ inputs.run_tests }}
 
   npm-pack:
-    uses: ritterim/public-github-actions/.github/workflows/npm-pack-jfrog.yml@v1.16.4
+    uses: ritterim/public-github-actions/.github/workflows/npm-pack-jfrog.yml@v1.16.5
     #uses: ./.github/workflows/npm-pack-jfrog.yml
     needs: [ npm-build, npm-test, version ]
     with:
@@ -178,7 +178,7 @@ jobs:
   # If the version was incremented, we should create a new annotated tag.
 
   generate-token:
-    uses: ritterim/public-github-actions/.github/workflows/generate-github-token-from-github-app.yml@v1.16.3
+    uses: ritterim/public-github-actions/.github/workflows/generate-github-token-from-github-app.yml@v1.16.5
     #uses: ./.github/workflows/generate-github-token-from-github-app.yml
     needs: [ version, npm-pack ]
     if: |
@@ -190,7 +190,7 @@ jobs:
       gh_app_private_key: ${{ secrets.gh_app_private_key }}
 
   npm-create-release-tag:
-    uses: ritterim/public-github-actions/.github/workflows/npm-create-version-tag.yml@v1.16.3
+    uses: ritterim/public-github-actions/.github/workflows/npm-create-version-tag.yml@v1.16.5
     #uses: ./.github/workflows/npm-create-version-tag.yml
     needs: [ generate-token, version ]
     if: |
@@ -207,7 +207,7 @@ jobs:
 
   jfrog-publish-aggregate-build-info:
     needs: [ npm-build, npm-test, npm-pack, version ]
-    uses: ritterim/public-github-actions/.github/workflows/jfrog-publish-aggregate-build-info.yml@v1.16.4
+    uses: ritterim/public-github-actions/.github/workflows/jfrog-publish-aggregate-build-info.yml@v1.16.5
     #uses: ./.github/workflows/jfrog-publish-aggregate-build-info.yml
     with:
       jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
