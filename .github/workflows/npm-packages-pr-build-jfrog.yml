@@ -99,7 +99,7 @@ on:
 jobs:
 
   version:
-    uses: ritterim/public-github-actions/.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml@v1.16.3
+    uses: ritterim/public-github-actions/.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml@v1.16.5
     #uses: ./.github/workflows/calculate-version-with-npm-version-using-pr-labels.yml
     with:
       always_increment_patch_version: ${{ inputs.always_increment_patch_version }}
@@ -108,7 +108,7 @@ jobs:
       version_suffix: "-pr${{ github.event.number }}.${{ github.run_number }}.${{ github.run_attempt }}"
 
   npm-build:
-    uses: ritterim/public-github-actions/.github/workflows/npm-build-jfrog.yml@v1.16.4
+    uses: ritterim/public-github-actions/.github/workflows/npm-build-jfrog.yml@v1.16.5
     #uses: ./.github/workflows/npm-build-jfrog.yml
     needs: [ version ]
     with:
@@ -122,7 +122,7 @@ jobs:
       project_directory: ${{ inputs.project_directory }}
 
   npm-test:
-    uses: ritterim/public-github-actions/.github/workflows/npm-test-jfrog.yml@v1.16.4
+    uses: ritterim/public-github-actions/.github/workflows/npm-test-jfrog.yml@v1.16.5
     #uses: ./.github/workflows/npm-test-jfrog.yml
     needs: [ npm-build, version ]
     with:
@@ -137,7 +137,7 @@ jobs:
       run_tests: ${{ inputs.run_tests }}
 
   npm-pack:
-    uses: ritterim/public-github-actions/.github/workflows/npm-pack-jfrog.yml@v1.16.4
+    uses: ritterim/public-github-actions/.github/workflows/npm-pack-jfrog.yml@v1.16.5
     #uses: ./.github/workflows/npm-pack-jfrog.yml
     needs: [ npm-build, npm-test, version ]
     with:
@@ -155,7 +155,7 @@ jobs:
 
   jfrog-publish-aggregate-build-info:
     needs: [ npm-build, npm-test, npm-pack, version ]
-    uses: ritterim/public-github-actions/.github/workflows/jfrog-publish-aggregate-build-info.yml@v1.16.4
+    uses: ritterim/public-github-actions/.github/workflows/jfrog-publish-aggregate-build-info.yml@v1.16.5
     #uses: ./.github/workflows/jfrog-publish-aggregate-build-info.yml
     with:
       jfrog_api_base_url: ${{ inputs.jfrog_api_base_url }}
