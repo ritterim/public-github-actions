@@ -1,0 +1,22 @@
+name: Linux Autoswap
+author: RIMdev <RIMdev@RitterIM.com>
+description: Check the health of a Azure slot and swaps staging and production once the application is warmed up
+inputs:
+  azure_web_app_name:
+    description:  Azure Web App instance name.
+    required: true
+  azure_web_app_slot_name:
+    description: The name of the slot to monitor for eventual swap to production slot.
+    require: true
+  resource_group_name:
+    description: The name of the resource group.
+    required: true
+  health_uri:
+    description: URL to monitor
+    default: /_health
+  health_timeout_seconds:
+    description: Seconds to wait for slot to become healthy.
+    default: 300
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
