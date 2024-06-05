@@ -8,9 +8,6 @@ inputs:
   azure_web_app_slot_name:
     description: The name of the slot to monitor for eventual swap to production slot.
     require: true
-  resource_group_name:
-    description: The name of the resource group.
-    required: true
   health_uri:
     description: URL to monitor
     default: /_health
