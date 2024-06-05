@@ -15,7 +15,7 @@ try {
     const healthTimeoutSeconds = getInput('health_timeout_seconds');
     info(`input.health_timeout_seconds: ${healthTimeoutSeconds}`);
 
-    info('Checking status of of slows')
+    info('Checking status of of slots')
     const convertedTimerNumber = parseInt(healthTimeoutSeconds);
     var initialHealthCheck = await CheckWebAppHealth(webAppName, healthUri, convertedTimerNumber);
 
