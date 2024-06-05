@@ -1,7 +1,7 @@
-import { getInput, info, setFailed } from "@actions/core";
-import ensureError from "ensure-error";
-import { CheckWebAppHealth } from "./health-check.js";
-import { SwapApps } from "./swap-slot.js";
+import { getInput, info, setFailed } from '@actions/core';
+import ensureError from 'ensure-error';
+import { CheckWebAppHealth } from './health-check.js';
+import { SwapApps } from './swap-slot.js';
 
 try {
     const webAppName = getInput('azure_web_app_name');
@@ -15,15 +15,15 @@ try {
     const healthTimeoutSeconds = getInput('health_timeout_seconds');
     info(`input.health_timeout_seconds: ${healthTimeoutSeconds}`);
 
-    info('Checking status of of slots')
+    info('Checking status of of slots');
     const convertedTimerNumber = parseInt(healthTimeoutSeconds);
     var initialHealthCheck = await CheckWebAppHealth(webAppName, healthUri, convertedTimerNumber);
 
     if (!initialHealthCheck) {
-        setFailed('initial health check failed')
+        setFailed('initial health check failed');
     }
 
-    info(`health check for ${webAppName} passed...`)
+    info(`health check for ${webAppName} passed...`);
     info(`starting swap for ${webAppName}`);
     await SwapApps(webAppName, subscriptionId, webAppSlotName);
 
@@ -31,7 +31,7 @@ try {
     var healthStatus = await CheckWebAppHealth(webAppName, healthUri, convertedTimerNumber);
 
     if (!healthStatus) {
-        setFailed('Error: health check timed out')
+        setFailed('Error: health check timed out');
     }
 
     info(`${webAppSlotName} was swapped`);

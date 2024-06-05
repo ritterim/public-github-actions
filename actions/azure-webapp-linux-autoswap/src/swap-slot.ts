@@ -1,23 +1,27 @@
 import { WebSiteManagementClient } from '@azure/arm-appservice';
-import { ResourceManagementClient } from "@azure/arm-resources";
+import { ResourceManagementClient } from '@azure/arm-resources';
 import { DefaultAzureCredential } from '@azure/identity';
 
-export async function SwapApps(webAppName: string, subscriptionId: string, slot: string): Promise<void> {
+export async function SwapApps(
+  webAppName: string,
+  subscriptionId: string,
+  slot: string): Promise<void> {
     const credential = new DefaultAzureCredential();
-    const client = new WebSiteManagementClient(credential, subscriptionId);
+    const managementClient = new WebSiteManagementClient(credential, subscriptionId);
     const resourceClient = new ResourceManagementClient(credential, subscriptionId);
-    let result = []
+    let resourceGroups = [];
     for await (const item of resourceClient.resourceGroups.list()) {
-      result.push(item);
+      resourceGroups.push(item);
     }
     
-    const app = result.find(x => x.name == webAppName)
+    // TODO: The webAppName is the App Service name and needs to be more generic to get the proper resource group
+    const app = resourceGroups.find(x => x.name == webAppName);
 
     if (app == null) {
-      return
+      return;
     }
 
-    return await client.webApps.beginSwapSlotAndWait(
+    return await managementClient.webApps.beginSwapSlotAndWait(
         /* resourceGroupName: */ `${app?.name}`,
         /* appName: */ `${webAppName}`,
         /* slot */ 'staging',

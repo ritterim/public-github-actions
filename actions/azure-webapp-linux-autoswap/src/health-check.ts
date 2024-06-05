@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios from 'axios';
 
 let numberOfPolls: number;
 const pollIntervals = 10;
@@ -20,10 +20,10 @@ async function checkHealth(url: string, poll?: number) {
     }
 
     if (poll > numberOfPolls) {
-        return false
+        return false;
     }
 
-    await new SleepTimer().sleep(pollIntervals * 500)
+    await new SleepTimer().sleep(pollIntervals * 500);
     const result = await axios.get(url);
 
     if (result.status != 200) {
@@ -35,7 +35,7 @@ async function checkHealth(url: string, poll?: number) {
 
 class SleepTimer {
     public sleep (ms: number) {
-      return new Promise(resolve => setTimeout(resolve, ms))
+      return new Promise(resolve => setTimeout(resolve, ms));
     }
 }
 
