@@ -1,4 +1,4 @@
-name: Linux Autoswap
+name: azure-web-app-swap-when-healthy
 author: RIMdev <RIMdev@RitterIM.com>
 description: Check the health of a Azure slot and swaps staging and production once the application is warmed up
 inputs:
