@@ -11,6 +11,8 @@ try {
     const subscriptionId = getInput('azure_web_app__deploy_subscription_id');
     info(`input.azure_web_app__deploy_subscription_id: ${subscriptionId}`);
     const healthUri = getInput('health_uri');
+    const resourceGroup = getInput('azure_web_app_resource_group_name');
+    info(`input.azure_web_app_resource_group_name: ${resourceGroup}`)
     info(`input.health_uri: ${healthUri}`);
     const healthTimeoutSeconds = getInput('health_timeout_seconds');
     info(`input.health_timeout_seconds: ${healthTimeoutSeconds}`);
@@ -25,7 +27,7 @@ try {
 
     info(`health check for ${webAppName} passed...`);
     info(`starting swap for ${webAppName}`);
-    await SwapApps(webAppName, subscriptionId, webAppSlotName);
+    await SwapApps(webAppName, subscriptionId, resourceGroup, webAppSlotName);
 
     info(`Checking health status for ${webAppName}`);
     var healthStatus = await CheckWebAppHealth(webAppName, healthUri, convertedTimerNumber);
