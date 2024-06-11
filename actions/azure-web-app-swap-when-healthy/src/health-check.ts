@@ -8,7 +8,7 @@ export async function CheckWebAppHealth(
     healthUri: string,
     monitorTime: number): Promise<boolean> {
     numberOfPolls = monitorTime * (60 / pollIntervals)
-    const url = `https://${webAppName}.azurewebsite.net${healthUri}`;
+    const url = `https://${webAppName}.azurewebsites.net${healthUri}`;
     const result = await checkHealth(url);
 
     return result;
