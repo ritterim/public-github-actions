@@ -23,6 +23,7 @@ try {
 
     if (!initialHealthCheck) {
         setFailed('initial health check failed');
+        throw new Error;
     }
 
     info(`health check for ${webAppName} passed...`);
@@ -34,6 +35,7 @@ try {
 
     if (!healthStatus) {
         setFailed('Error: health check timed out');
+        throw new Error;
     }
 
     info(`${webAppSlotName} was swapped`);

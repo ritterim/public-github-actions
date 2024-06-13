@@ -1,36 +1,41 @@
+import { info } from '@actions/core';
 import axios from 'axios';
-
-let numberOfPolls: number;
-const pollIntervals = 10;
 
 export async function CheckWebAppHealth(
     webAppName: string, 
     healthUri: string,
-    monitorTime: number): Promise<boolean> {
-    numberOfPolls = monitorTime * (60 / pollIntervals)
-    const url = `https://${webAppName}.azurewebsites.net${healthUri}`;
-    const result = await checkHealth(url);
+    numberOfSeconds?: number): Promise<boolean> {
+        if(!numberOfSeconds) numberOfSeconds = 300;
 
-    return result;
+        const url = `https://${webAppName}.azurewebsites.net${healthUri}`;
+        return await checkHealth(url, webAppName, numberOfSeconds);
 }
 
-async function checkHealth(url: string, poll?: number) {
-    if (!poll) {
-        poll = 0;
-    }
+async function checkHealth(
+    url: string,
+    webAppName: string,
+    numberOfSeconds: number): Promise<boolean> {
+        const attempts = Math.round(numberOfSeconds / 10);
+        let result = false;
 
-    if (poll > numberOfPolls) {
-        return false;
-    }
+        for (let index = 1; index < attempts; index++) {
+            info(`Checking ${webAppName}'s health status`)
+            const appStatus = await axios.get(url, { validateStatus(status) {
+                return (status >= 200 && status < 300) || status == 404
+            }});
 
-    await new SleepTimer().sleep(pollIntervals * 500);
-    const result = await axios.get(url);
+            if (appStatus.status != 200) {
+                info(`${webAppName} isn't ready yet`);
+                info(`${webAppName} status code: ${appStatus.status}`)
+                await new SleepTimer().sleep(10000);
+                continue;
+            }
 
-    if (result.status != 200) {
-        checkHealth(url, poll + 1);
-    }
+            result = true;
+            break;
+        }
 
-    return true;
+        return result;
 }
 
 class SleepTimer {
