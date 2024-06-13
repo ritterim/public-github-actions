@@ -12,7 +12,10 @@ inputs:
     description: URL to monitor
     default: /_health
   azure_web_app_resource_group_name:
-    description: The name of the the Azure resource group
+    description: The name of the the Azure resource group.
+    required: true
+  azure_web_app_deploy_subscription_id:
+    description: The Azure Subscription GUID.
     required: true
   health_timeout_seconds:
     description: Seconds to wait for slot to become healthy.

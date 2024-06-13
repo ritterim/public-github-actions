@@ -8,8 +8,8 @@ try {
     info(`input.azure_web_app_name: ${webAppName}`);
     const webAppSlotName = getInput('azure_web_app_slot_name');
     info(`input.azure_web_app_slot_name: ${webAppSlotName}`);
-    const subscriptionId = getInput('azure_web_app__deploy_subscription_id');
-    info(`input.azure_web_app__deploy_subscription_id: ${subscriptionId}`);
+    const subscriptionId = getInput('azure_web_app_deploy_subscription_id');
+    info(`input.azure_web_app_deploy_subscription_id: ${subscriptionId}`);
     const healthUri = getInput('health_uri');
     const resourceGroup = getInput('azure_web_app_resource_group_name');
     info(`input.azure_web_app_resource_group_name: ${resourceGroup}`)
