@@ -11,6 +11,9 @@ inputs:
   health_uri:
     description: URL to monitor
     default: /_health
+  azure_web_app_resource_group_name:
+    description: The name of the the Azure resource group
+    required: true
   health_timeout_seconds:
     description: Seconds to wait for slot to become healthy.
     default: 300
