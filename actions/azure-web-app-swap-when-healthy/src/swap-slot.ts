@@ -12,6 +12,6 @@ export async function SwapApps(
     return await managementClient.webApps.beginSwapSlotAndWait(
         /* resourceGroupName: */ `${resourceGroup}`,
         /* appName: */ `${webAppName}`,
-        /* slot */ 'staging',
-        /* slotSwapEntity */ { preserveVnet: false, targetSlot: slot });
+        /* slot */ slot,
+        /* slotSwapEntity */ { preserveVnet: false, targetSlot: 'production'});
 }
