@@ -1,0 +1,95 @@
+name: Azure Zip Deploy
+
+# This version of the deploy step is designed for situations where the Azure
+# Web App service does not support "auto swap once healthy".  It uses our
+# custom GitHub Action to monitor the azure_web_app_slot_name and swap it
+# to the 'production' slot once the endpoint (default '/_health') reports 
+# healthy.
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      artifact_name:
+        required: true
+        type: string
+
+      artifact_filename:
+        required: true
+        type: string
+
+      azure_web_app_slot_name:
+        description: The slot to which we will deploy, then monitor, before swapping to the 'production' slot.  Defaults to the 'staging' slot.
+        required: false
+        type: string
+        default: 'staging'
+
+      azure_web_app_deploy_subscription_id:
+        required: true
+        type: string
+
+      azure_web_app_name:
+        required: true
+        type: string
+
+      azure_web_app_resource_group_name:
+        required: true
+        type: string
+
+      environment_name:
+        required: false
+        type: string
+        default: ''
+
+jobs:
+
+  azure-webapps-zip-deploy:
+    name: Azure Zip Deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment_name }}
+
+    env:
+      AZUREDEPLOYSUBSCRIPTIONID: ${{ inputs.azure_web_app_deploy_subscription_id }}
+
+    steps:
+
+      - name: Validate inputs.azure_web_app_deploy_subscription_id
+        uses: ritterim/public-github-actions/actions/guid-validator@v1.16.2
+        with:
+          guid: ${{ env.AZUREDEPLOYSUBSCRIPTIONID }}
+
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+
+      - run: ls -la
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.ARTIFACT_DEPLOYER_AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.ARTIFACT_DEPLOYER_AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.ARTIFACT_DEPLOYER_AZURE_SUBSCRIPTION_ID }}
+
+      # The azure/webapps-deploy action doesn't seem to provide a way to specify the subscription ID.
+      # Unless we change the default subscription, it will fail to find the app-name.
+      - run: az account set --subscription "${AZUREDEPLOYSUBSCRIPTIONID}"
+
+      - name: Zip Deploy to Azure
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ inputs.azure_web_app_name }}
+          slot-name: ${{ inputs.azure_web_app_slot_name }}
+          package: ${{ inputs.artifact_filename }}
+
+      - name: Swap Slots Once Healthy
+        uses: ritterim/public-github-actions/actions/azure-web-app-swap-when-healthy@v1.17.0
+        with:
+          azure_web_app_name: ${{ inputs.azure_web_app_name }}
+          azure_web_app_resource_group_name: ${{ inputs.azure_web_app_resource_group_name }}
+          azure_web_app_slot_name: ${{ inputs.azure_web_app_slot_name }}
+          azure_web_app_deploy_subscription_id: ${{ inputs.azure_web_app_deploy_subscription_id }}
+        
