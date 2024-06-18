@@ -20,6 +20,7 @@ async function checkHealth(
 
         for (let index = 1; index < attempts; index++) {
             info(`Checking ${webAppName}'s health status`)
+            info(`url: ${url}`)
             const appStatus = await axios.get(url, { validateStatus(status) {
                 return (status >= 200 && status < 300) || status == 404
             }});
