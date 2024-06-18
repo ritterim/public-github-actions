@@ -3,12 +3,11 @@ import axios from 'axios';
 
 export async function CheckWebAppHealth(
     webAppName: string, 
-    webAppSlotName: string,
     healthUri: string,
     numberOfSeconds?: number): Promise<boolean> {
         if(!numberOfSeconds) numberOfSeconds = 300;
 
-        const url = `https://${webAppName}-${webAppSlotName}.azurewebsites.net${healthUri}`;
+        const url = `https://${webAppName}.azurewebsites.net${healthUri}`;
         return await checkHealth(url, webAppName, numberOfSeconds);
 }
 
