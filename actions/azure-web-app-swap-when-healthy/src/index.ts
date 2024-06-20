@@ -1,7 +1,7 @@
 import { getInput, info, setFailed } from '@actions/core';
 import ensureError from 'ensure-error';
 import { CheckWebAppHealth } from './health-check.js';
-import { SwapApps } from './swap-slot.js';
+import { SwapApps, swapResult } from './swap-slot.js';
 
 try {
     const webAppName = getInput('azure_web_app_name');
@@ -28,7 +28,13 @@ try {
 
     info(`health check for ${webAppName} passed...`);
     info(`starting swap for ${webAppName}`);
-    await SwapApps(webAppName, subscriptionId, resourceGroup, webAppSlotName);
+    var result: swapResult = await SwapApps(webAppName, subscriptionId, resourceGroup, webAppSlotName, convertedTimerNumber);
+    info(`Swap Result: ${result.status}`)
+
+    if (!result.status) {
+        setFailed(result.message)
+        throw new Error;
+    }
 
     info(`Checking health status for ${webAppName}`);
     var healthStatus = await CheckWebAppHealth(`${webAppName}-${webAppSlotName}`, healthUri, convertedTimerNumber);
