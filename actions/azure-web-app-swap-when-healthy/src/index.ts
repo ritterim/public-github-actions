@@ -37,7 +37,7 @@ try {
     }
 
     info(`Checking health status for ${webAppName}`);
-    var healthStatus = await CheckWebAppHealth(`${webAppName}-${webAppSlotName}`, healthUri, convertedTimerNumber);
+    var healthStatus = await CheckWebAppHealth(webAppName, healthUri, convertedTimerNumber);
 
     if (!healthStatus) {
         setFailed('Error: health check timed out');
