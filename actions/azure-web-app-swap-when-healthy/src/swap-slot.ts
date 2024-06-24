@@ -13,21 +13,21 @@ export async function SwapApps(
     const credential = new DefaultAzureCredential();
     const managementClient = new WebSiteManagementClient(credential, subscriptionId);
 
-    var task = await managementClient.webApps.beginSwapSlotAndWait(
+    const task = await managementClient.webApps.beginSwapSlotAndWait(
         /* resourceGroupName: */ `${resourceGroup}`,
         /* appName: */ `${webAppName}`,
         /* slot */ slot,
         /* slotSwapEntity */ { preserveVnet: false, targetSlot: 'production'});
 
-    var message: swapResult = { status: false, message: `The swap API call failed to complete within ${timer} seconds.` };
-    var convertedTimer = timer * 100;
+    let message: swapResult = { status: false, message: `The swap API call failed to complete within ${timer} seconds.` };
+    const convertedTimer = timer * 100;
     info(`Swap timer: ${convertedTimer} milliseconds`);
     var result = await swapSlotWithTimeLimit(convertedTimer, task, message);
 
     return result;
 }
 
-async function swapSlotWithTimeLimit(timeLimit: number, task: any, messageStatus: swapResult) {
+async function swapSlotWithTimeLimit(timeLimit: number, task: any, message: swapResult) {
   let timeout;
   const timeoutPromise = new Promise((resolve) => {
     timeout = setTimeout(() => {
@@ -41,10 +41,10 @@ async function swapSlotWithTimeLimit(timeLimit: number, task: any, messageStatus
   }
 
   if (!response) {
-    return messageStatus
+    return message;
   }
 
-  messageStatus.status = true;
-  messageStatus.message = response;
-  return messageStatus
+  message.status = true;
+  message.message = response;
+  return message;
 }

@@ -5,7 +5,7 @@ export async function CheckWebAppHealth(
     webAppName: string, 
     healthUri: string,
     numberOfSeconds?: number): Promise<boolean> {
-        if(!numberOfSeconds) numberOfSeconds = 300;
+        if (!numberOfSeconds) numberOfSeconds = 300;
 
         const url = `https://${webAppName}.azurewebsites.net${healthUri}`;
         return await checkHealth(url, webAppName, numberOfSeconds);
@@ -19,15 +19,15 @@ async function checkHealth(
         let result = false;
 
         for (let index = 1; index < attempts; index++) {
-            info(`Checking ${webAppName}'s health status`)
-            info(`url: ${url}`)
+            info(`Checking ${webAppName}'s health status`);
+            info(`Url: ${url}`);
             const appStatus = await axios.get(url, { validateStatus(status) {
-                return (status >= 200 && status < 300) || status == 404
+                return (status >= 200 && status < 300) || status == 404;
             }});
 
             if (appStatus.status != 200) {
                 info(`${webAppName} isn't ready yet`);
-                info(`${webAppName} status code: ${appStatus.status}`)
+                info(`${webAppName} status code: ${appStatus.status}`);
                 await new SleepTimer().sleep(10000);
                 continue;
             }
