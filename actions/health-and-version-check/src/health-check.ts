@@ -1,7 +1,8 @@
 import { info } from '@actions/core';
 import axios from 'axios';
 
-export type HealthResult = { statues: boolean, response: string}
+export type HealthResult = { statues: boolean, response: string }
+
 export async function CheckWebAppHealth(
     webAppName: string, 
     healthUri: string,
