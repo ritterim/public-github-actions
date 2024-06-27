@@ -1,7 +1,7 @@
 
 name: health-and-version-check
 author: RIMdev <RIMdev@RitterIM.com>
-description: Check the health of a Azure slot and restarts the slot if not
+description: Check the health and version of a Azure slot and restarts the slot if they don't match
 inputs:
   azure_web_app_name:
     description:  Azure Web App instance name.
@@ -21,6 +21,9 @@ inputs:
   health_timeout_seconds:
     description: Seconds to wait for slot to become healthy.
     default: 300
+  expected_version_string:
+    description: Expected result from Azure web app's version endpoint
+    required: true
 runs:
   using: 'node20'
   main: 'dist/index.js'
