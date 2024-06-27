@@ -21,16 +21,10 @@ async function checkHealth(
         const attempts = Math.round(numberOfSeconds / 10);
         let result: HealthResult = { status: false, response: '' };
 
-        const https = require('https')
-        const instance = axios.create({
-        httpsAgent: new https.Agent({
-            rejectUnauthorized: false
-        })
-        }) 
         for (let index = 1; index < attempts; index++) {
             info(`Checking ${webAppName}'s health status`);
             info(`Url: ${url}`);
-            const appStatus = await instance.get(url, { validateStatus(status) {
+            const appStatus = await axios.get(url, { validateStatus(status) {
                 return (status >= 200 && status < 300) || status == 404;
             }});
 
