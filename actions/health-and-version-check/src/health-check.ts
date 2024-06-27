@@ -24,9 +24,7 @@ async function checkHealth(
         for (let index = 1; index < attempts; index++) {
             info(`Checking ${webAppName}'s health status`);
             info(`Url: ${url}`);
-            const appStatus = await axios.get(url, { validateStatus(status) {
-                return (status >= 200 && status < 300) || status == 404;
-            }});
+            const appStatus = await axios.get(url);
 
             if (appStatus.status != 200) {
                 info(`${webAppName} isn't ready yet`);
