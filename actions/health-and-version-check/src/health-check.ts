@@ -1,7 +1,7 @@
 import { info } from '@actions/core';
 import axios from 'axios';
 
-export type HealthResult = { statues: boolean, response: string }
+export type HealthResult = { status: boolean, response: string }
 
 export async function CheckWebAppHealth(
     webAppName: string, 
@@ -19,12 +19,18 @@ async function checkHealth(
     webAppName: string,
     numberOfSeconds: number): Promise<HealthResult> {
         const attempts = Math.round(numberOfSeconds / 10);
-        let result: HealthResult = { statues: false, response: '' };
+        let result: HealthResult = { status: false, response: '' };
 
+        const https = require('https')
+        const instance = axios.create({
+        httpsAgent: new https.Agent({
+            rejectUnauthorized: false
+        })
+        }) 
         for (let index = 1; index < attempts; index++) {
             info(`Checking ${webAppName}'s health status`);
             info(`Url: ${url}`);
-            const appStatus = await axios.get(url, { validateStatus(status) {
+            const appStatus = await instance.get(url, { validateStatus(status) {
                 return (status >= 200 && status < 300) || status == 404;
             }});
 
@@ -35,8 +41,8 @@ async function checkHealth(
                 continue;
             }
 
-            result.response = appStatus.data;
-            result.statues = true;
+            result.response = JSON.stringify(appStatus.data);
+            result.status = true;
             break;
         }
 
