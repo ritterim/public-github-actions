@@ -1,6 +1,6 @@
 import { getInput, info, setFailed } from '@actions/core';
 import ensureError from 'ensure-error';
-import { CheckWebAppHealth } from './health-check.js';
+import { CheckWebAppHealth, CompareVersionStrings } from './health-check.js';
 import { WebSiteManagementClient } from '@azure/arm-appservice';
 import { DefaultAzureCredential } from '@azure/identity';
 
@@ -19,42 +19,54 @@ try {
     info(`Input.health_timeout_seconds: ${healthTimeoutSeconds}`);
     const expectedVersionString = getInput('expected_version_string');
     info(`Input: ${expectedVersionString}`);
-    
-    info(`Checking status of web app: ${webAppName}`);
     const convertedTimerNumber = parseInt(healthTimeoutSeconds);
     const initialHealthCheck = await CheckWebAppHealth(`${webAppName}`, healthUri, convertedTimerNumber);
 
-    if (!initialHealthCheck.status || initialHealthCheck.response.trim() != expectedVersionString.trim()) {
-        if (!initialHealthCheck.status) {
-            info(`Info: ${webAppName}'s health check came back as unhealthy`);
-        } else {
-            info(`Info: ${webAppName}'s version string did not match the expected result`);
-            info(`Info: expected result: ${expectedVersionString}`);
-            info(`Info: ${webAppName}'s response: ${initialHealthCheck.response}`);
-        }
+    if (!initialHealthCheck) {
+        setFailed(`Error: ${webAppName} was never became health`);
+        throw new Error;
+    }
 
+    var versionResults = await CompareVersionStrings(webAppName, expectedVersionString);
+
+    if (!versionResults.status) {
         const credential = new DefaultAzureCredential();
         const managementClient = new WebSiteManagementClient(credential, subscriptionId);
 
         managementClient.webApps.restartSlot(resourceGroup, webAppName, webAppSlotName);
-        const finalHealthCheck = await CheckWebAppHealth(`${webAppName}`, healthUri, convertedTimerNumber);
 
-        if (!finalHealthCheck.status) {
-            setFailed(`Error: ${webAppName} was not able to restart`);
+        const healthCheck= await CheckWebAppHealth(`${webAppName}`, healthUri, convertedTimerNumber);
+
+        if (!healthCheck) {
+            setFailed(`Error: ${webAppName} was never became health`);
             throw new Error;
         }
 
-        if (finalHealthCheck.response.trim() != expectedVersionString.trim())  {
-            setFailed(`Error: ${webAppName}'s doesn't match ${expectedVersionString}`);
-            setFailed(`Error: expected result: ${expectedVersionString}`);
-            setFailed(`Error: ${webAppName}'s response: ${initialHealthCheck.response}`);
+        var followUpVersionResult = await CompareVersionStrings(webAppName, expectedVersionString);
+
+        if (!followUpVersionResult.status) {
+            setFailed(`Error: failed to get ${webAppName}'s version endpoint.`);
             throw new Error;
         }
 
-        info(`${webAppName}'s hash matches expected results`);
+        if (expectedVersionString != followUpVersionResult.response) {
+            setFailed(`Error: ${webAppName} version doesn't match the expected result`);
+            setFailed(`Error: Expect ${expectedVersionString}`);
+            setFailed(`Error: Received ${followUpVersionResult.response}`);
+            throw new Error;
+        }
+    }
+
+    if (expectedVersionString != versionResults.response) {
+        setFailed(`Error: ${webAppName} version doesn't match the expected result`);
+        setFailed(`Error: Expect ${expectedVersionString}`);
+        setFailed(`Error: Actual ${versionResults.response}`);
+        throw new Error;
     }
 
     info(`${webAppName}'s hash matches expected results`);
+    info(`Error: Expect ${expectedVersionString}`);
+    info(`Error: Actual ${versionResults.response}`);
 } catch(_error: unknown) {
     const error = ensureError(_error);
     setFailed(error);
