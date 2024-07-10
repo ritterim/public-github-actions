@@ -25,7 +25,7 @@ try {
     const initialHealthCheck = await CheckWebAppHealth(`${webAppName}`, healthUri, convertedTimerNumber);
 
     if (!initialHealthCheck) {
-        setFailed(`Error: ${webAppName} never became healthly`);
+        setFailed(`Error: ${webAppName} never became healthy`);
         throw new Error;
     }
 
@@ -40,7 +40,7 @@ try {
         const healthCheck= await CheckWebAppHealth(`${webAppName}`, healthUri, convertedTimerNumber);
 
         if (!healthCheck) {
-            setFailed(`Error: ${webAppName} never became healthly`);
+            setFailed(`Error: ${webAppName} never became healthy`);
             throw new Error;
         }
 
