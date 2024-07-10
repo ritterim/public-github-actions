@@ -9,8 +9,11 @@ inputs:
   azure_web_app_slot_name:
     description: The name of the slot to monitor for eventual swap to production slot.
     require: true
+  version_uri:
+    description: URL to display web app's version
+    default: /_version
   health_uri:
-    description: URL to monitor
+    description: URL to monitor the web app
     default: /_health
   azure_web_app_resource_group_name:
     description: The name of the the Azure resource group.

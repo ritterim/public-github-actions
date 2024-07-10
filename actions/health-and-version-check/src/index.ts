@@ -15,6 +15,8 @@ try {
     info(`Input.azure_web_app_resource_group_name: ${resourceGroup}`);
     const healthUri = getInput('health_uri');
     info(`Input.health_uri: ${healthUri}`);
+    const versionUri = getInput('version_uri');
+    info(`Input.health_uri: ${versionUri}`);
     const healthTimeoutSeconds = getInput('health_timeout_seconds');
     info(`Input.health_timeout_seconds: ${healthTimeoutSeconds}`);
     const expectedVersionString = getInput('expected_version_string');
@@ -27,7 +29,7 @@ try {
         throw new Error;
     }
 
-    var versionResults = await CompareVersionStrings(webAppName, expectedVersionString);
+    var versionResults = await CompareVersionStrings(webAppName, versionUri, expectedVersionString);
 
     if (!versionResults.status) {
         const credential = new DefaultAzureCredential();
@@ -42,7 +44,7 @@ try {
             throw new Error;
         }
 
-        var followUpVersionResult = await CompareVersionStrings(webAppName, expectedVersionString);
+        var followUpVersionResult = await CompareVersionStrings(webAppName, versionUri, expectedVersionString);
 
         if (!followUpVersionResult.status) {
             setFailed(`Error: failed to get ${webAppName}'s version endpoint.`);

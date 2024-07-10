@@ -14,9 +14,9 @@ export async function CheckWebAppHealth(
         return await checkHealth(url, webAppName, numberOfSeconds);
 }
 
-export async function CompareVersionStrings(webAppName: string, expectedVersionString: string): Promise<VersionResult> {
+export async function CompareVersionStrings(webAppName: string, versionUri: string, expectedVersionString: string): Promise<VersionResult> {
     let result: VersionResult = { status: false, response: '' };
-    const url = `https://${webAppName}.azurewebsites.net/_version`
+    const url = `https://${webAppName}.azurewebsites.net/${versionUri}`
 
     const response = await axios.get(url);
    
