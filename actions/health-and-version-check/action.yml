@@ -1,0 +1,32 @@
+
+name: health-and-version-check
+author: RIMdev <RIMdev@RitterIM.com>
+description: Check the health and version of a Azure slot and restarts the slot if they don't match
+inputs:
+  azure_web_app_name:
+    description:  Azure Web App instance name.
+    required: true
+  azure_web_app_slot_name:
+    description: The name of the slot to monitor for eventual swap to production slot.
+    require: true
+  version_uri:
+    description: URL to display web app's version
+    default: /_version
+  health_uri:
+    description: URL to monitor the web app
+    default: /_health
+  azure_web_app_resource_group_name:
+    description: The name of the the Azure resource group.
+    required: true
+  azure_web_app_deploy_subscription_id:
+    description: The Azure Subscription GUID.
+    required: true
+  health_timeout_seconds:
+    description: Seconds to wait for slot to become healthy.
+    default: 300
+  expected_version_string:
+    description: Expected string to find in the version check endpoint.  This could be a git commit has, build identifier, version number or any substring that will appear in the output of that endpoint.
+    required: true
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
