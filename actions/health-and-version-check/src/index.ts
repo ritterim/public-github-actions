@@ -25,7 +25,7 @@ try {
     const initialHealthCheck = await CheckWebAppHealth(`${webAppName}`, healthUri, convertedTimerNumber);
 
     if (!initialHealthCheck) {
-        setFailed(`Error: ${webAppName} was never became health`);
+        setFailed(`Error: ${webAppName} never became healthly`);
         throw new Error;
     }
 
@@ -40,7 +40,7 @@ try {
         const healthCheck= await CheckWebAppHealth(`${webAppName}`, healthUri, convertedTimerNumber);
 
         if (!healthCheck) {
-            setFailed(`Error: ${webAppName} was never became health`);
+            setFailed(`Error: ${webAppName} never became healthly`);
             throw new Error;
         }
 
@@ -66,7 +66,7 @@ try {
         throw new Error;
     }
 
-    info(`${webAppName}'s hash matches expected results`);
+    info(`${webAppName}'s expected_version_string was found in the response body`);
     info(`Error: Expect ${expectedVersionString}`);
     info(`Error: Actual ${versionResults.response}`);
 } catch(_error: unknown) {
