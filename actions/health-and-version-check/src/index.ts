@@ -1,6 +1,6 @@
 import { getInput, info, setFailed } from '@actions/core';
 import ensureError from 'ensure-error';
-import { CheckVersion, CheckWebAppHealth, CompareVersionStrings } from './health-check.js';
+import { CheckVersion, CheckWebAppHealth } from './health-check.js';
 import { WebSiteManagementClient } from '@azure/arm-appservice';
 import { DefaultAzureCredential } from '@azure/identity';
 
