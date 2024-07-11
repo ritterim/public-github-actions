@@ -1,7 +1,7 @@
 import { info } from '@actions/core';
 import axios from 'axios';
 
-export type VersionResult = { status: boolean, response: string }
+export type VersionResult = { status: number | undefined, isMatched: boolean, response: string }
 
 export async function CheckWebAppHealth(
     webAppName: string,
@@ -18,16 +18,17 @@ export async function CheckVersion(
 ): Promise<VersionResult> {
     info(`Checking version at: ${versionUrl}`);
     info(`Searching for: '${expectedVersionString}'`);
-    let result: VersionResult = { status: false, response: '' };
     const response = await axios.get(versionUrl);
+    let result: VersionResult = { status: undefined, response: '', isMatched: false };
+    result.status = response.status;
 
     if (response.status == 200) {
         info(`Status Code from ${versionUrl}: 200`);
         const formattedResponse = JSON.stringify(response.data);
-        result.status = true;
         result.response = formattedResponse;
         if (formattedResponse.includes(expectedVersionString)) {
             info(`Found '${expectedVersionString}' in the response.`);
+            result.isMatched = true;
             return result;
         } 
         

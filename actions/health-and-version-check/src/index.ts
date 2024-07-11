@@ -55,7 +55,12 @@ try {
 
         var followUpVersionResult = await CheckVersion(versionUrl, expectedVersionString);
 
-        if (!followUpVersionResult.status) {
+        if (followUpVersionResult.status != 200) {
+            setFailed(`Error: ${webAppName} version endpoint returned a ${followUpVersionResult.status} status code`);
+            throw new Error;
+        }
+
+        if (!followUpVersionResult.isMatched) {
             setFailed(`Error: ${webAppName} version doesn't match the expected result`);
             setFailed(`Error: Expect ${expectedVersionString}`);
             setFailed(`Error: Received ${followUpVersionResult.response}`);
@@ -67,7 +72,12 @@ try {
         info(`Actual ${versionResults.response}`);
     }
 
-    if (!versionResults.status) {
+    if (versionResults.status != 200) {
+        setFailed(`Error: ${webAppName} version endpoint returned a ${versionResults.status} status code`);
+        throw new Error;
+    }
+
+    if (!versionResults.isMatched) {
         setFailed(`Error: ${webAppName} version doesn't match the expected result.`);
         setFailed(`Error: Expect ${expectedVersionString}`);
         setFailed(`Error: Actual ${versionResults.response}`);
