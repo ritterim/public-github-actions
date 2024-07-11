@@ -9,7 +9,6 @@ export async function CheckWebAppHealth(
     numberOfSeconds?: number
 ): Promise<boolean> {
     if (!numberOfSeconds) numberOfSeconds = 300;
-    await new SleepTimer().sleep(10000);
     return await checkHealth(healthUrl, webAppName, numberOfSeconds);
 }
 
