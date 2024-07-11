@@ -17,18 +17,25 @@ export async function CheckVersion(
     expectedVersionString: string
 ): Promise<VersionResult> {
     info(`Checking version at: ${versionUrl}`);
-    info(`Searching for: '${expectedVersionString}'`)
+    info(`Searching for: '${expectedVersionString}'`);
     let result: VersionResult = { status: false, response: '' };
     const response = await axios.get(versionUrl);
 
-    if (response.data.includes(expectedVersionString)) {
-        info(`Found '${expectedVersionString}' in the response.`);
+    if (response.status == 200) {
+        info(`Status Code from ${versionUrl}: 200`);
+        const formattedResponse = JSON.stringify(response.data);
         result.status = true;
-        result.response = response.data;
+        result.response = formattedResponse;
+        if (formattedResponse.includes(expectedVersionString)) {
+            info(`Found '${expectedVersionString}' in the response.`);
+            return result;
+        } 
+        
+        info(`Did not find '${expectedVersionString}' in the response.`);
+        return result;
     }
-
-    info(`Did not find '${expectedVersionString}' in the response.`);
-
+    
+    info(`Could not get response from ${versionUrl}`);
     return result;
 }
 

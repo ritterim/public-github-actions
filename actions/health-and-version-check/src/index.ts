@@ -56,19 +56,18 @@ try {
         var followUpVersionResult = await CheckVersion(versionUrl, expectedVersionString);
 
         if (!followUpVersionResult.status) {
-            setFailed(`Error: failed to get ${webAppName}'s version endpoint.`);
-            throw new Error;
-        }
-
-        if (expectedVersionString != followUpVersionResult.response) {
             setFailed(`Error: ${webAppName} version doesn't match the expected result`);
             setFailed(`Error: Expect ${expectedVersionString}`);
             setFailed(`Error: Received ${followUpVersionResult.response}`);
             throw new Error;
         }
+
+        info(`${webAppName}'s expected_version_string was found in the response body`);
+        info(`Expect ${expectedVersionString}`);
+        info(`Actual ${versionResults.response}`);
     }
 
-    if (expectedVersionString != versionResults.response) {
+    if (!versionResults.status) {
         setFailed(`Error: ${webAppName} version doesn't match the expected result.`);
         setFailed(`Error: Expect ${expectedVersionString}`);
         setFailed(`Error: Actual ${versionResults.response}`);
@@ -76,8 +75,8 @@ try {
     }
 
     info(`${webAppName}'s expected_version_string was found in the response body`);
-    info(`Error: Expect ${expectedVersionString}`);
-    info(`Error: Actual ${versionResults.response}`);
+    info(`Expect ${expectedVersionString}`);
+    info(`Actual ${versionResults.response}`);
 } catch(_error: unknown) {
     const error = ensureError(_error);
     setFailed(error);
