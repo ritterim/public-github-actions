@@ -28,7 +28,9 @@ try {
         baseUrl = `https://${webAppName}-${webAppSlotName}.azurewebsites.net`;
     }
     const healthUrl = `${baseUrl}${healthUri}`;
+    info(`Health URL: ${healthUrl}`);
     const versionUrl = `${baseUrl}${versionUri}`;
+    info(`Version URL: ${versionUrl}`);
 
     const initialHealthCheck = await CheckWebAppHealth(`${webAppName}`, healthUrl, convertedTimerNumber);
     if (!initialHealthCheck) {
@@ -39,7 +41,6 @@ try {
     var versionResults = await CheckVersion(versionUrl, expectedVersionString);
 
     if (!versionResults.status) {
-        info()
         const credential = new DefaultAzureCredential();
         const managementClient = new WebSiteManagementClient(credential, subscriptionId);
 
@@ -59,7 +60,7 @@ try {
             throw new Error;
         }
 
-        if (expectedVersionString != followUpVersionResult.response) {.
+        if (expectedVersionString != followUpVersionResult.response) {
             setFailed(`Error: ${webAppName} version doesn't match the expected result`);
             setFailed(`Error: Expect ${expectedVersionString}`);
             setFailed(`Error: Received ${followUpVersionResult.response}`);
