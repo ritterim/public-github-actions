@@ -53,7 +53,7 @@ async function checkHealth(
     for (let index = 1; index < attempts; index++) {
         await new SleepTimer().sleep(10000);
         const appStatus = await axios.get(url, { validateStatus(status) {
-            return (status >= 200 && status < 300) || status == 404;
+            return (status >= 200 && status < 600)
         }});
 
         if (appStatus.status != 200) {
