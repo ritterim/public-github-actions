@@ -44,7 +44,9 @@ try {
         const credential = new DefaultAzureCredential();
         const managementClient = new WebSiteManagementClient(credential, subscriptionId);
 
+        info(`Sending restart command for ${webAppName}`);
         managementClient.webApps.restartSlot(resourceGroup, webAppName, webAppSlotName);
+        info(`Restart command sent`);
 
         const healthCheck= await CheckWebAppHealth(`${webAppName}`, healthUri, convertedTimerNumber);
 
