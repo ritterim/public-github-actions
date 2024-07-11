@@ -1,7 +1,7 @@
 import { info } from '@actions/core';
 import axios from 'axios';
 
-export type VersionResult = { status: boolean, response: string }
+export type VersionResult = { status: number | undefined, isMatched: boolean, response: string }
 
 export async function CheckWebAppHealth(
     webAppName: string,
@@ -17,18 +17,26 @@ export async function CheckVersion(
     expectedVersionString: string
 ): Promise<VersionResult> {
     info(`Checking version at: ${versionUrl}`);
-    info(`Searching for: '${expectedVersionString}'`)
-    let result: VersionResult = { status: false, response: '' };
+    info(`Searching for: '${expectedVersionString}'`);
     const response = await axios.get(versionUrl);
+    let result: VersionResult = { status: undefined, response: '', isMatched: false };
+    result.status = response.status;
 
-    if (response.data.includes(expectedVersionString)) {
-        info(`Found '${expectedVersionString}' in the response.`);
-        result.status = true;
-        result.response = response.data;
+    if (response.status == 200) {
+        info(`Status Code from ${versionUrl}: 200`);
+        const formattedResponse = JSON.stringify(response.data);
+        result.response = formattedResponse;
+        if (formattedResponse.includes(expectedVersionString)) {
+            info(`Found '${expectedVersionString}' in the response.`);
+            result.isMatched = true;
+            return result;
+        } 
+        
+        info(`Did not find '${expectedVersionString}' in the response.`);
+        return result;
     }
-
-    info(`Did not find '${expectedVersionString}' in the response.`);
-
+    
+    info(`Could not get response from ${versionUrl}`);
     return result;
 }
 
