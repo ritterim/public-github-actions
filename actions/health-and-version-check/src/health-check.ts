@@ -18,14 +18,17 @@ export async function CheckVersion(
     expectedVersionString: string
 ): Promise<VersionResult> {
     info(`Checking version at: ${versionUrl}`);
-    info(`Searching for: ${expectedVersionString}`)
+    info(`Searching for: '${expectedVersionString}'`)
     let result: VersionResult = { status: false, response: '' };
     const response = await axios.get(versionUrl);
 
     if (response.data.includes(expectedVersionString)) {
+        info(`Found '${expectedVersionString}' in the response.`);
         result.status = true;
         result.response = response.data;
     }
+
+    info(`Did not find '${expectedVersionString}' in the response.`);
 
     return result;
 }
@@ -37,15 +40,15 @@ async function checkHealth(
     const attempts = Math.round(numberOfSeconds / 10);
     let result = false;
 
+    info(`Checking ${webAppName} health status`);
+    info(`Url: ${url}`);
+
     for (let index = 1; index < attempts; index++) {
-        info(`Checking ${webAppName} health status`);
-        info(`Url: ${url}`);
+        await new SleepTimer().sleep(10000);
         const appStatus = await axios.get(url);
 
         if (appStatus.status != 200) {
-            info(`${webAppName} isn't ready yet`);
-            info(`${webAppName} status code: ${appStatus.status}`);
-            await new SleepTimer().sleep(10000);
+            info(`${webAppName} isn't ready yet, status code: ${appStatus.status}`);
             continue;
         }
 
