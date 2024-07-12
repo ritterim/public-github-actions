@@ -40,14 +40,23 @@ try {
 
     var versionResults = await CheckVersion(versionUrl, expectedVersionString);
 
-    if (!versionResults.status) {
-        const credential = new DefaultAzureCredential();
-        const managementClient = new WebSiteManagementClient(credential, subscriptionId);
+    if (versionResults.status != 200 || !versionResults.isMatched) {
+        if (versionResults.status != 200) {
+            info(`Error: ${webAppName}'s status was not 200`);
+        }
+
+        if (!versionResults.isMatched) {
+            info(`Error: ${webAppName} version doesn't match the expected result`);
+        }
 
         info('Sending restart command for:');
         info(`  WebApp: ${webAppName}`);
         info(`  Slot: ${webAppSlotName}`);
+
+        const credential = new DefaultAzureCredential();
+        const managementClient = new WebSiteManagementClient(credential, subscriptionId);
         managementClient.webApps.restartSlot(resourceGroup, webAppName, webAppSlotName);
+
         info(`Restart command sent`);
 
         const healthCheck= await CheckWebAppHealth(`${webAppName}`, healthUri, convertedTimerNumber);
@@ -78,13 +87,6 @@ try {
 
     if (versionResults.status != 200) {
         setFailed(`Error: ${webAppName} version endpoint returned a ${versionResults.status} status code`);
-        throw new Error;
-    }
-
-    if (!versionResults.isMatched) {
-        setFailed(`Error: ${webAppName} version doesn't match the expected result.`);
-        setFailed(`Error: Expect ${expectedVersionString}`);
-        setFailed(`Error: Actual ${versionResults.response}`);
         throw new Error;
     }
 
