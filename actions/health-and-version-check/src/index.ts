@@ -59,7 +59,7 @@ try {
 
         info(`Restart command sent`);
 
-        const healthCheck= await CheckWebAppHealth(`${webAppName}`, healthUri, convertedTimerNumber);
+        const healthCheck = await CheckWebAppHealth(`${webAppName}`, healthUrl, convertedTimerNumber);
 
         if (!healthCheck) {
             setFailed(`Error: ${webAppName} never became healthy.`);
