@@ -1,39 +1,28 @@
 name: Azure Zip Deploy
 
-# This version of the deploy step is designed for situations where the Azure
-# Web App service does not support "auto swap once healthy".  It uses our
-# custom GitHub Action to monitor the azure_web_app_slot_name and swap it
-# to the 'production' slot once the endpoint (default '/_health') reports 
-# healthy.
+# Push the zip file artifact to an Azure Web App slot using a federated Entra ID.
+# This also checks for a version string or git hash at a given endpoint to validate
+# that the slot is running the correct version.  If the slot is healthy, but running
+# the wrong version, this will reboot the slot then check again.
 
-# It also uses a new GitHub Action which monitors a version endpoint for 
-# the version string (the git hash is a good choice, or a version number).
-# If the application reports healthy, but the slot does not show the correct
-# version, it will reboot once and check again.
-
-# Why? We've found that sometimes the Linux Web App instances does not restart
-# properly to load the new code from the ZIP deploy package.  This is an attempt
-# to fix that bad behavior on the Azure side.
+# Sometimes Azure Web App instances (mostly under Linux) go into zombie mode where
+# the zip deploy doesn't trigger a restart to load the new artifact.
 
 on:
-
   workflow_call:
-
     inputs:
-
       artifact_name:
         required: true
         type: string
-
+        
       artifact_filename:
         required: true
         type: string
 
       azure_web_app_slot_name:
-        description: The slot to which we will deploy, then monitor, before swapping to the 'production' slot.  Defaults to the 'staging' slot.
         required: false
         type: string
-        default: 'staging'
+        default: 'production'
 
       azure_web_app_deploy_subscription_id:
         required: true
@@ -99,7 +88,10 @@ jobs:
           slot-name: ${{ inputs.azure_web_app_slot_name }}
           package: ${{ inputs.artifact_filename }}
 
-      - name: Check for expected version in staging slot.
+      # Validate that the expected version is actually running in the slot post-deploy.
+      # This catches any problems where the application slot did not restart as expected post-deploy.
+      # Tends to only happen on Linux Azure Web App instances.
+      - name: Check for expected version in the deployed slot.
         uses: ritterim/public-github-actions/actions/health-and-version-check@v1.17.0
         with:
           azure_web_app_name: ${{ inputs.azure_web_app_name }}
@@ -107,21 +99,3 @@ jobs:
           azure_web_app_slot_name: ${{ inputs.azure_web_app_slot_name }}
           azure_web_app_deploy_subscription_id: ${{ inputs.azure_web_app_deploy_subscription_id }}
           expected_version_string: ${{ inputs.expected_version_string }}
-
-      - name: Swap Slots Once Healthy
-        uses: ritterim/public-github-actions/actions/azure-web-app-swap-when-healthy@v1.17.0
-        with:
-          azure_web_app_name: ${{ inputs.azure_web_app_name }}
-          azure_web_app_resource_group_name: ${{ inputs.azure_web_app_resource_group_name }}
-          azure_web_app_slot_name: ${{ inputs.azure_web_app_slot_name }}
-          azure_web_app_deploy_subscription_id: ${{ inputs.azure_web_app_deploy_subscription_id }}
-        
-      - name: Check for expected version in production slot.
-        uses: ritterim/public-github-actions/actions/health-and-version-check@v1.17.0
-        with:
-          azure_web_app_name: ${{ inputs.azure_web_app_name }}
-          azure_web_app_resource_group_name: ${{ inputs.azure_web_app_resource_group_name }}
-          azure_web_app_slot_name: production
-          azure_web_app_deploy_subscription_id: ${{ inputs.azure_web_app_deploy_subscription_id }}
-          expected_version_string: ${{ inputs.expected_version_string }}
-
