@@ -96,7 +96,7 @@ jobs:
 
       - name: Calculate Version
         id: version
-        uses: ritterim/public-github-actions/actions/calculate-version-from-txt-using-github-run-id@v1.16.5
+        uses: ritterim/public-github-actions/actions/calculate-version-from-txt-using-github-run-id@v1.17.1
         with:
           version_suffix: ${{ inputs.version_suffix }}
           github_run_id_baseline: ${{ inputs.github_run_id_baseline }}
