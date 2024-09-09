@@ -83,7 +83,7 @@ on:
 jobs:
 
   version:
-    uses: ritterim/public-github-actions/.github/workflows/calculate-version-from-txt-using-github-run-id.yml@v1.16.2
+    uses: ritterim/public-github-actions/.github/workflows/calculate-version-from-txt-using-github-run-id.yml@v1.17.1
     #uses: ./.github/workflows/calculate-version-from-txt-using-github-run-id.yml
     with:
       github_run_id_baseline: ${{ inputs.github_run_id_baseline }}
