@@ -1,0 +1,125 @@
+name: Deploy (IIS)
+
+# Deploy a IIS web deploy package (zip file) to IIS via Web Deploy.
+# Uses Basic authentication.  
+# NTLM authentication doesn't seem to function properly in our testing.
+# Does not delete any existing files on the server (DoNotDeleteRule).
+
+# Requires a parameter XML file such as:
+
+# <?xml version="1.0" encoding="utf-8"?>
+# <parameters>
+#   <setParameter name="IIS Web Application Name" value="Default Web Site/Example Site Name" />
+# </parameters>
+
+# Why a parameter XML file?
+# - IIS site names often have spaces, which makes it difficult to put on the command-line.
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      artifact_name:
+        required: true
+        type: string
+
+      artifact_filename:
+        required: true
+        type: string
+
+      github_job_runner_spec:
+        description: Which GitHub Runner to use.
+        required: true
+        type: string
+
+      iis_deploy_server_fqdn:
+        description: The fully qualified domain name (FQDN) of the IIS server.
+        required: true
+        type: string
+
+      iis_deploy_server_port:
+        type: number
+        default: 8172
+
+      msdeploy_param_filepath:
+        description: A relative path to the XML file containing MSDeploy parameters.  Sometimes it's easier to do it this way instead of fighting with Powershell's encoding of spaces in values.
+        required: true
+        type: string
+
+      msdeploy_username:
+        description: The username which will be used to deploy to the IIS server.  This user must be part of the local Administrators group on the target server.
+        required: true
+        type: string
+
+    secrets:
+
+      msdeploy_password:
+        description: The password for the deployment user.  Only 'Basic' authentication is supported via this workflow.
+        required: true
+
+jobs:
+
+  deploy:
+    # Note that changing either the 'build:' label or the value of the 'name:' can cause breakage for the GitHub branch protection rules.
+    name: Build (.NET)
+    runs-on: ${{ inputs.github_job_runner_spec }}
+    defaults:
+      run:
+        shell: pwsh    
+
+    env:
+      ARTIFACT_FILENAME: ${{ inputs.artifact_filename }}
+      IIS_DEPLOY_SERVER_FQDN: ${{ inputs.iis_deploy_server_fqdn }}
+      IIS_DEPLOY_SERVER_PORT: ${{ inputs.iis_deploy_server_port }}
+      MSDEPLOY_PARAM_FILEPATH: ${{ inputs.msdeploy_param_filepath }}
+      MSDEPLOY_PASSWORD: ${{ secrets.msdeploy_password }}
+      MSDEPLOY_USERNAME: ${{ inputs.msdeploy_username }}
+
+    steps:
+
+      - name: Checkout Project
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - run: ipconfig
+
+      - run: whoami
+
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+
+      - run: Get-Childitem -Force | Sort-Object
+
+      - name: MSDeploy
+        env:
+          IIS_DEPLOY_URL: "https://${{ env.IIS_DEPLOY_SERVER_FQDN }}:${{ env.IIS_DEPLOY_SERVER_PORT }}/msdeploy.axd"
+        run: |
+          Write-Host "Deploy URL:" $env:IIS_DEPLOY_URL
+          Write-Host "MSDeploy Username:" $env:MSDEPLOY_USERNAME
+          Write-Host "Looking for artifact:" $env:ARTIFACT_FILENAME
+          if (!(Test-Path $env:ARTIFACT_FILENAME -PathType Leaf)) {
+            Write-Host "NOT FOUND: $env:ARTIFACT_FILENAME"
+            exit 1
+          }
+          Write-Host "Looking for MSDeploy Param File:" $env:MSDEPLOY_PARAM_FILEPATH
+          if (!(Test-Path $env:MSDEPLOY_PARAM_FILEPATH -PathType Leaf)) {
+            Write-Host "NOT FOUND: $env:MSDEPLOY_PARAM_FILEPATH"
+            exit 1
+          }
+          $msDeployParams = @{
+          # WhatIf is used for debugging if set to $true
+          # WhatIf = $true
+          Verbose = "Verbose"
+          Source = "package=$env:ARTIFACT_FILENAME"
+          Dest = "auto,computerName=$env:IIS_DEPLOY_URL,username=$env:MSDEPLOY_USERNAME,password=$env:MSDEPLOY_PASSWORD,authtype=Basic,includeAcls=False"
+          Verb = "sync"
+          enableRule = "DoNotDeleteRule"
+          SetParamFile = "$env:MSDEPLOY_PARAM_FILEPATH"
+          }
+          msdeploy.exe @msDeployParams -disableLink:AppPoolExtension -disableLink:ContentExtension
+  
