@@ -1,0 +1,299 @@
+name: Build (.NET)
+
+# Note: This still uses MSBuild PublishProfiles to figure out which Web.config
+# files get parsed during the publish steps.  We will probably move to using
+# 'configuration' to do this but it requires to setup additional configurations
+# in the solution file.
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      artifact_basename:
+        required: true
+        type: string
+
+      configuration:
+        description: Should be 'Debug' or 'Release'.
+        required: false
+        type: string
+        default: "Release"
+
+      git_hash:
+        required: true
+        type: string
+
+      informational_version:
+        required: true
+        type: string
+
+      jfrog_api_base_url:
+        description: 'JFrog platform url (for example: https://rimdev.jfrog.io/)'
+        required: true
+        type: string
+
+      jfrog_build_name:
+        description: 'JFrog build name.'
+        required: true
+        type: string
+
+      jfrog_build_number:
+        description: 'JFrog build number. Can be an integer, a semantic version, or a string.'
+        required: true
+        type: string
+
+      jfrog_cli_log_level:
+        description: 'Set the log level for the JFrog CLI. Default is ERROR. Values are: (DEBUG, INFO, WARN, ERROR).'
+        required: false
+        default: ERROR
+        type: string
+
+      jfrog_nuget_feed_repo:
+        description: The 'virtual' JFrog Artifactory repository identifier for NuGet package retrieval.
+        required: true
+        type: string
+
+      jfrog_oidc_provider_name:
+        description: The OIDC Integration Provider Name to use for authentication from the GitHub Action to the JFrog instance.
+        required: true
+        type: string
+
+      major_minor_version:
+        required: true
+        type: string
+
+      msbuild_publish_profile:
+        required: true
+        type: string
+
+      patch_version:
+        required: true
+        type: string
+
+      solution_file:
+        required: true
+        type: string
+
+      version:
+        required: true
+        type: string
+
+      website_project_directory:
+        required: true
+        type: string
+
+      website_project_file:
+        required: true
+        type: string
+
+    outputs:
+
+      artifact_name:
+        value: ${{ jobs.build.outputs.artifact_name }}
+
+      artifact_filename:
+        value: ${{ jobs.build.outputs.artifact_filename }}
+
+jobs:
+
+  build:
+    # Note that changing either the 'build:' label or the value of the 'name:' can cause breakage for the GitHub branch protection rules.
+    name: Build (.NET)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+
+    outputs:
+      artifact_name: ${{ env.ARTIFACT_NAME }}
+      artifact_filename: ${{ env.ARTIFACT_ZIP_FILENAME }}
+      jfrog_build_name: ${{ env.JFROG_CLI_BUILD_NAME }}
+
+    env:
+      ARTIFACT_NAME: "${{ inputs.artifact_basename }}-${{ inputs.version }}-website"
+      ARTIFACT_ZIP_FILENAME: "${{ inputs.artifact_basename }}-${{ inputs.version }}-iis-deploy.zip"
+      ARTIFACT_ZIP_PATHNAME: "${{ github.workspace }}\\artifacts\\${{ inputs.artifact_basename }}-${{ inputs.version }}-iis-deploy.zip"
+      BUILDLOGARTIFACT_NAME: "${{ inputs.artifact_basename }}-${{ inputs.version }}-build-log"
+      BUILDLOGARTIFACT_FILENAME: "${{ inputs.artifact_basename }}-${{ inputs.version }}-build-log.txt"
+      CONFIGURATION: ${{ inputs.configuration }}
+      GH_SHA: ${{ inputs.git_hash }}
+      GH_WORKSPACE: ${{ github.workspace }}
+      INFORMATIONAL_VERSION: ${{ inputs.informational_version }}
+      JFROG_API_BASE_URL: ${{ inputs.jfrog_api_base_url }}
+      JFROG_CLI_BUILD_NAME: "${{ inputs.jfrog_build_name }}-dotnet-build"
+      JFROG_CLI_BUILD_NUMBER: ${{ inputs.jfrog_build_number }}
+      JFROG_CLI_LOG_LEVEL: ${{ inputs.jfrog_cli_log_level }}
+      JFROG_NUGET_FEED_REPO: ${{ inputs.jfrog_nuget_feed_repo }}
+      JFROG_OIDC_PROVIDER_NAME: ${{ inputs.jfrog_oidc_provider_name }}
+      JFROG_SETUP_DEFAULT_SERVER_ID: setup-jfrog-cli-server
+      MSBUILD_PUBLISH_PROFILE: ${{ inputs.msbuild_publish_profile }}
+      OUTPUTDIR: bin
+      PUBLISHDIR: artifacts
+      PUBLISHLOGARTIFACT_NAME: "${{ inputs.artifact_basename }}-${{ inputs.version }}-publish-log"
+      PUBLISHLOGARTIFACT_FILENAME: "${{ inputs.artifact_basename }}-${{ inputs.version }}-publish-log.txt"
+      SOLUTION_FILE: ${{ inputs.solution_file }}
+      VERSION: ${{ inputs.version }}
+      WEBSITE_PROJECT_FILE: ${{ inputs.website_project_file }}
+
+    steps:
+
+      - name: Checkout Project
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Overwrite version.json file
+        working-directory: ${{ inputs.website_project_directory }}
+        run: |
+          $buildDate = $(Get-Date -AsUTC -Format 'yyyy-MM-dd')
+          Write-Host "buildDate:" $buildDate
+          $buildTimestamp = $(Get-Date  -Format 'yyyy-MM-ddTHH:mm:ssZ')
+          Write-Host "buildTimestamp:" $buildTimestamp
+          $version = @"
+          {
+          "buildDate": "$($buildDate)",
+          "buildTimestamp": "$($buildTimestamp)",
+          "gitHash": "$($env:GH_SHA)",
+          "informationalVersion": "$($env:INFORMATIONAL_VERSION)",
+          "version": "$($env:VERSION)"
+          }
+          "@
+          Write-Host "VERSION OBJECT (EXPECTED):"
+          Write-Host $version
+          Write-Host 
+          Write-Host "Check for existing version.json file (it should exist)."
+          $versionJsonFileName = 'version.json'
+          if (!(Test-Path $versionJsonFileName -PathType Leaf)) {
+            Write-Host "NOT FOUND: $versionJsonFileName"
+            exit 1
+          }
+          Write-Host 
+          $version_json = $version | ConvertTo-Json
+          $version_json | Out-File -FilePath $versionJsonFileName
+          Write-Host "Look for $versionJsonFileName files"
+          Get-Childitem -File -Recurse -ErrorAction SilentlyContinue -Include $versionJsonFileName
+          Write-Host "Content of $versionJsonFileName"
+          Write-Host "--------------------"
+          Get-Content $versionJsonFileName
+          Write-Host "--------------------"
+          Write-Host
+
+      # This creates the setup-jfrog-cli-server server ID
+      - name: Install JFrog CLI
+        uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_URL: ${{ env.JFROG_API_BASE_URL }}
+        with:
+          oidc-provider-name: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
+
+      - name: jf config show JFROG_SETUP_DEFAULT_SERVER_ID
+        run: jf config show "$env:JFROG_SETUP_DEFAULT_SERVER_ID"
+
+      - run: Get-Childitem -Force | Sort-Object
+
+      - run: echo $env:PATH
+
+      - name: Setup MSBuild.exe
+        uses: microsoft/setup-msbuild@v1.3
+        with:
+          vswhere-path: 'C:\Program Files (x86)\Microsoft Visual Studio\Installer'
+
+      - run: echo $env:PATH
+
+      - uses: nuget/setup-nuget@v2
+        with:
+          nuget-version: '6.x'      
+
+      - run: echo $env:PATH
+
+      - name: Configure .NET / NuGet using JFrog CLI
+        run: jf nuget-config --repo-resolve="$env:JFROG_NUGET_FEED_REPO" --server-id-resolve="$env:JFROG_SETUP_DEFAULT_SERVER_ID"
+
+      - run: Get-Childitem -Force | Sort-Object
+
+      - run: Get-Childitem -Force -Recurse -Path .jfrog
+
+      - run: cat .jfrog/projects/nuget.yaml
+
+      - name: Restore packages using JFrog
+        run: jf nuget restore
+
+      - name: .NET Framework Build
+        id: dotnet-framework-build
+        run: |
+          msbuild `
+            $env:SOLUTION_FILE `
+            /p:Configuration=$env:CONFIGURATION `
+            /p:VersionAssembly=$env:VERSION `
+            /fileLoggerParameters:LogFile=$env:BUILDLOGARTIFACT_FILENAME`;Verbosity=diagnostic `
+            /p:OutDir=$env:OUTPUTDIR
+        continue-on-error: true
+
+      - run: Get-Childitem -Force | Sort-Object
+  
+      - run: Get-Childitem -Force -Recurse -Path "$env:OUTPUTDIR" | Sort-Object
+  
+      - name: Upload MSBuild Build Log
+        id: upload-build-log
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUILDLOGARTIFACT_NAME }}
+          path: "./${{ env.BUILDLOGARTIFACT_FILENAME }}"
+          if-no-files-found: error
+
+      - name: Stop on Build Failure
+        env: 
+          BUILDOUTCOME: ${{ steps.dotnet-framework-build.outcome }}
+        if: steps.dotnet-framework-build.outcome != 'success'
+        run: |
+          Write-Host "Build outcome:" $env:BUILDOUTCOME
+          exit 1
+
+      - name: .NET Framework Publish
+        id: dotnet-framework-publish
+        run: |
+          msbuild `
+            $env:WEBSITE_PROJECT_FILE `
+            /p:Configuration=$env:CONFIGURATION `
+            /p:VersionAssembly=$env:VERSION `
+            /fileLoggerParameters:LogFile=$env:PUBLISHLOGARTIFACT_FILENAME`;Verbosity=diagnostic `
+            /p:DeployOnBuild=true `
+            /p:DeployTarget=Package `
+            /p:PackageAsSingleFile=true `
+            /p:PackageFileName=$env:ARTIFACT_ZIP_PATHNAME `
+            /p:IncludeSetAclProviderOnDestination=False `
+            /p:AutoParameterizationWebConfigConnectionStrings=False `
+            /p:PublishProfile=$env:MSBUILD_PUBLISH_PROFILE `
+            /p:OutDir=$env:PUBLISHDIR
+        shell: powershell
+        continue-on-error: true
+
+      - run: Get-Childitem -Force -Recurse | Sort-Object
+  
+      - run: Get-Childitem -Force -Recurse -Path "$env:PUBLISHDIR" | Sort-Object
+  
+      - name: Upload MSBuild Publish Log
+        id: upload-publish-log
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PUBLISHLOGARTIFACT_NAME }}
+          path: "./${{ env.PUBLISHLOGARTIFACT_FILENAME }}"
+          if-no-files-found: error
+
+      - name: Stop on Publish Failure
+        env: 
+          PUBLISHOUTCOME: ${{ steps.dotnet-framework-publish.outcome }}
+        if: steps.dotnet-framework-publish.outcome != 'success'
+        run: |
+          Write-Host "Publish outcome:" $env:PUBLISHOUTCOME
+          exit 1
+
+      - name: Upload MSBuild Artifact Zip File
+        id: upload-artifact-zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_ZIP_PATHNAME }}
+          if-no-files-found: error
