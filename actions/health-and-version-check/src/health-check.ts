@@ -14,29 +14,34 @@ export async function CheckWebAppHealth(
 
 export async function CheckVersion(
     versionUrl: string,
-    expectedVersionString: string
-): Promise<VersionResult> {
+    expectedVersionString: string,): Promise<VersionResult> {
+    const attempts = 5;
+    let result: VersionResult = { status: undefined, response: '', isMatched: false };
+
     info(`Checking version at: ${versionUrl}`);
     info(`Searching for: '${expectedVersionString}'`);
-    const response = await axios.get(versionUrl);
-    let result: VersionResult = { status: undefined, response: '', isMatched: false };
-    result.status = response.status;
 
-    if (response.status == 200) {
+    for (let index = 1; index < attempts; index++) {
+        await new SleepTimer().sleep(10000);
+        const response = await axios.get(versionUrl);
+        info(`Status: ${response.status}`);
+        result.status = response.status;
+        
+        if (response.status != 200) {
+            info(`Did not find '${expectedVersionString}' in the response.`);
+            continue;
+        }
+
         info(`Status Code from ${versionUrl}: 200`);
         const formattedResponse = JSON.stringify(response.data);
         result.response = formattedResponse;
         if (formattedResponse.includes(expectedVersionString)) {
             info(`Found '${expectedVersionString}' in the response.`);
             result.isMatched = true;
-            return result;
+            break;
         } 
-        
-        info(`Did not find '${expectedVersionString}' in the response.`);
-        return result;
     }
     
-    info(`Could not get response from ${versionUrl}`);
     return result;
 }
 
