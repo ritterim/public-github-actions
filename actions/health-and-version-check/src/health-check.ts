@@ -41,7 +41,7 @@ export async function CheckVersion(
             break;
         } else {
             info(`'${expectedVersionString}' was not found in the response.`);
-            info(`response: '${response.request}'.`);
+            info(`response: '${result.response}'.`);
         }
     }
     
