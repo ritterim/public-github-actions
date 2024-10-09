@@ -39,7 +39,10 @@ export async function CheckVersion(
             info(`Found '${expectedVersionString}' in the response.`);
             result.isMatched = true;
             break;
-        } 
+        } else {
+            info(`'${expectedVersionString}' was not found in the response.`);
+            info(`response: '${result.response}'.`);
+        }
     }
     
     return result;
