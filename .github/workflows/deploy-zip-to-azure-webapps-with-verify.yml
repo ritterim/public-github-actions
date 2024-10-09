@@ -92,7 +92,7 @@ jobs:
       # This catches any problems where the application slot did not restart as expected post-deploy.
       # Tends to only happen on Linux Azure Web App instances.
       - name: Check for expected version in the deployed slot.
-        uses: ritterim/public-github-actions/actions/health-and-version-check@v1.17.0
+        uses: ritterim/public-github-actions/actions/health-and-version-check@v1.17.3
         with:
           azure_web_app_name: ${{ inputs.azure_web_app_name }}
           azure_web_app_resource_group_name: ${{ inputs.azure_web_app_resource_group_name }}
