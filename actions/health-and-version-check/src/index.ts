@@ -79,10 +79,6 @@ try {
             setFailed(`Error: Received ${followUpVersionResult.response}`);
             throw new Error;
         }
-
-        info(`${webAppName}'s expected_version_string was found in the response body`);
-        info(`Expect ${expectedVersionString}`);
-        info(`Actual ${versionResults.response}`);
     }
 
     if (versionResults.status != 200) {
