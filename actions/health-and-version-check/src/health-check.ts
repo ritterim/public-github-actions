@@ -24,25 +24,24 @@ export async function CheckVersion(
     for (let index = 1; index < attempts; index++) {
         await new SleepTimer().sleep(10000);
         const response = await axios.get(versionUrl);
-        info(`Status: ${response.status}`);
         result.status = response.status;
-        
+        info(`Status Code from ${versionUrl}: ${response.status}`);
+
         if (response.status != 200) {
             info(`Did not find '${expectedVersionString}' in the response.`);
             continue;
         }
-
-        info(`Status Code from ${versionUrl}: 200`);
+        
         const formattedResponse = JSON.stringify(response.data);
         result.response = formattedResponse;
         if (formattedResponse.includes(expectedVersionString)) {
             info(`Found '${expectedVersionString}' in the response.`);
             result.isMatched = true;
             break;
-        } else {
-            info(`'${expectedVersionString}' was not found in the response.`);
-            info(`response: '${result.response}'.`);
-        }
+        } 
+
+        info(`'${expectedVersionString}' was not found in the response.`);
+        info(`response: '${result.response}'.`);
     }
     
     return result;
