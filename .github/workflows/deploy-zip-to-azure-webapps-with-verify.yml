@@ -46,6 +46,18 @@ on:
         required: true
         type: string
 
+      health_uri:
+        description: The health endpoint for the site.
+        required: false
+        type: string
+        default: '/_health'
+
+      version_uri:
+        description: The URL which returns content containing the 'expected_version_string'.
+        required: false
+        type: string
+        default: '/_version'
+
 jobs:
 
   azure-webapps-zip-deploy:
@@ -99,3 +111,5 @@ jobs:
           azure_web_app_slot_name: ${{ inputs.azure_web_app_slot_name }}
           azure_web_app_deploy_subscription_id: ${{ inputs.azure_web_app_deploy_subscription_id }}
           expected_version_string: ${{ inputs.expected_version_string }}
+          health_uri: ${{ inputs.health_uri }}
+          version_uri: ${{ inputs.version_uri }}
