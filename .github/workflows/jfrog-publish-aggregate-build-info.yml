@@ -8,7 +8,6 @@ name: Publish Aggregate JFrog Build-Info
 permissions:
   contents: read
   id-token: write
-  packages: read
 
 on:
 
@@ -172,9 +171,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ inputs.dotnet_version }}
-          source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
-        env:
-          NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Setup ~/.nuget/packages cache
         uses: actions/cache@v4
