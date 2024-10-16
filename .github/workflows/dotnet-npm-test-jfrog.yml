@@ -1,0 +1,463 @@
+name: Test (.NET/NPM)
+
+# A combined workflow that does both 'dotnet test' and 'npm run test'.
+# Note that the NPM side only handles a single package.json file, so
+# the 'npm_project_directory' input is generally going to be required
+# but the 'dotnet build' command can usually be run from the solution folder.
+
+# Uses JFrog Artifactory as the sole upstream repository for resolving packages.
+# It's expected that you point at a 'virtual' Artifactory repository which can also
+# resolve any NuGet / NPM packages which you consume.
+
+# The "jfrog/setup-jfrog-cli" action requires "id-token: write" or else you will get
+# an error about: "Unable to get ACTIONS_ID_TOKEN_REQUEST_URL env variable".
+
+permissions:
+  contents: read
+  id-token: write
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      artifact_name:
+        required: true
+        type: string
+
+      artifact_retention_days:
+        required: false
+        type: number
+        default: 90
+
+      configuration:
+        required: false
+        type: string
+        default: "Release"
+
+      docker_azurite_image:
+        description: Supply an image/tag string if you need to startup the Azurite service for tests.  Leave this input blank if you do not need the service.  The service will be started on the standard 10000-10002 ports.
+        type: string
+        required: false
+        default: ''
+
+      docker_elasticsearch_image:
+        description: Supply an image/tag string if you need to startup the Elasticsearch service for tests.  Leave this input blank if you do not need the service.
+        type: string
+        required: false
+        default: ''
+
+      docker_elasticsearch_http_port:
+        description: The port on which the Elasticsearch service will listen for http.
+        required: false
+        default: 9206
+        type: number
+
+      docker_elasticsearch_transport_port:
+        description: The port on which the Elasticsearch service will listen for transport.
+        required: false
+        default: 9306
+        type: number
+
+      docker_mssql_image:
+        description: Supply an image/tag string if you need to startup the SQL for Docker service for tests.  Leave this input blank if you do not need the service.
+        type: string
+        required: false
+        default: ''
+
+      docker_mssql_port:
+        description: The port on which the SQL for Docker container will listen.
+        required: false
+        default: 11435
+        type: number
+
+      docker_redis_image:
+        description: Supply an image/tag string if you need to startup the Redis Docker service for tests.  Leave this input blank if you do not need the service.
+        type: string
+        required: false
+        default: ''
+
+      docker_redis_port:
+        description: The port on which the Redis Docker container will listen.
+        required: false
+        default: 6379
+        type: number
+
+      dotnet_project_directory:
+        description: Location of the solution file for the dotnet solution.  Defaults to the root directory.
+        required: false
+        type: string
+        default: ./
+
+      dotnet_restore_verbosity:
+        description: 'The dotnet restore "--verbosity=" flag.  Allowed values are q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]. The default is minimal.'
+        required: false
+        type: string
+        default: minimal
+
+      dotnet_version:
+        required: false
+        type: string
+        default: "6.0"
+
+      github_job_runner_spec:
+        description: Which GitHub Runner to use.  Default is 'ubuntu-latest'.
+        type: string
+        default: "ubuntu-latest"
+
+      jfrog_api_base_url:
+        description: 'JFrog platform url (for example: https://rimdev.jfrog.io/)'
+        required: true
+        type: string
+
+      jfrog_build_name:
+        description: 'JFrog build name.'
+        required: true
+        type: string
+
+      jfrog_build_number:
+        description: 'JFrog build number. Can be an integer, a semantic version, or a string.'
+        required: true
+        type: string
+
+      jfrog_cli_log_level:
+        description: 'Set the log level for the JFrog CLI. Default is ERROR. Values are: (DEBUG, INFO, WARN, ERROR).'
+        required: false
+        default: ERROR
+        type: string
+
+      jfrog_npm_feed_repo:
+        description: The 'virtual' JFrog Artifactory repository identifier for NPM package retrieval.
+        required: true
+        type: string
+
+      jfrog_nuget_feed_repo:
+        description: The 'virtual' JFrog Artifactory repository identifier for NuGet package retrieval.
+        required: true
+        type: string
+
+      jfrog_oidc_provider_name:
+        description: The OIDC Integration Provider Name to use for authentication from the GitHub Action to the JFrog instance.
+        required: true
+        type: string
+
+      node_version:
+        description: The node version to install such as '18.x'.  It is best to stick to LTS releases of nodejs to avoid slow build times.
+        required: false
+        type: string
+        default: '18.x'
+
+      npm_package_json_filename:
+        description: Name of the 'package.json' file if not the default name.
+        required: false
+        type: string
+        default: package.json
+
+      npm_project_directory:
+        description: Location of the package.json file for the NPM package.
+        required: false
+        type: string
+        default: ./
+
+      npm_version:
+        description: 'NPM version string for package.json file.'
+        required: true
+        type: string
+
+      persisted_workspace_artifact_name:
+        description: Name of the artifact which contains the persisted workspace directory.
+        required: true
+        type: string
+
+      run_tests:
+        required: false
+        type: boolean
+        default: true
+
+    outputs:
+
+      jfrog_build_name:
+        description: The JFrog build name for the 'dotnet-test' step is suffixed with '-dotnet-test'.
+        value: ${{ jobs.test.outputs.jfrog_build_name }}
+
+jobs:
+
+  test:
+    name: Test (.NET/NPM)
+    runs-on: ${{ inputs.github_job_runner_spec }}
+    defaults:
+      run:
+          working-directory: ${{ inputs.dotnet_project_directory }}
+
+    outputs:
+      jfrog_build_name: ${{ env.JFROG_CLI_BUILD_NAME }}
+
+    env:
+      ARTIFACTNAME: ${{ inputs.artifact_name }}
+      CONFIGURATION: ${{ inputs.configuration }}
+      DOTNET_RESTORE_VERBOSITY: ${{ inputs.dotnet_restore_verbosity }}
+      JFROG_API_BASE_URL: ${{ inputs.jfrog_api_base_url }}
+      JFROG_CLI_BUILD_NAME: "${{ inputs.jfrog_build_name }}-dotnet-test"
+      JFROG_CLI_BUILD_NUMBER: ${{ inputs.jfrog_build_number }}
+      JFROG_CLI_LOG_LEVEL: ${{ inputs.jfrog_cli_log_level }}
+      JFROG_NPM_FEED_REPO: ${{ inputs.jfrog_npm_feed_repo }}
+      JFROG_NUGET_FEED_REPO: ${{ inputs.jfrog_nuget_feed_repo }}
+      JFROG_OIDC_PROVIDER_NAME: ${{ inputs.jfrog_oidc_provider_name }}
+      NPMPACKAGEJSONFILENAME: ${{ inputs.npm_package_json_filename }}
+      NPMPROJECTDIRECTORY: ${{ inputs.npm_project_directory }}
+      NPMVERSION: ${{ inputs.npm_version }}
+      NUGETHASHFILES: "${{ inputs.dotnet_project_directory }}**/*.csproj"
+      PROJECTDIRECTORY: ${{ inputs.dotnet_project_directory }}
+      RIMDEVTESTS__ELASTICSEARCH__PORT: ${{ inputs.docker_elasticsearch_http_port }}
+      RIMDEVTESTS__ELASTICSEARCH__TRANSPORTPORT: ${{ inputs.docker_elasticsearch_transport_port }}
+      RIMDEVTESTS__SQL__PORT: ${{ inputs.docker_mssql_port }}
+      # The SQL password just needs to be not-empty, it's a temporary database
+      RIMDEVTESTS__SQL__PASSWORD: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+      # Elasticsearch
+      discovery.type: single-node
+      ES_JAVA_OPTS: -Xms256m -Xmx256m
+
+    services:
+
+      azurite:
+        image: ${{ inputs.docker_azurite_image }}
+        ports:
+          - 10000:10000
+          - 10001:10001
+          - 10002:10002
+
+      elasticsearch:
+        image: ${{ inputs.docker_elasticsearch_image }}
+        ports:
+          - ${{ inputs.docker_elasticsearch_http_port }}:9200
+          - ${{ inputs.docker_elasticsearch_transport_port }}:9300
+
+      mssql:
+        image: ${{ inputs.docker_mssql_image }}
+        env:
+          SA_PASSWORD: ${{ env.RIMDEVTESTS__SQL__PASSWORD }}
+          ACCEPT_EULA: 'Y'
+        ports:
+          - ${{ inputs.docker_mssql_port }}:1433
+
+      redis:
+        image: ${{ inputs.docker_redis_image }}
+        ports:
+          - ${{ inputs.docker_redis_port }}:6379
+
+    steps:
+
+      - name: Validate inputs.artifact_name
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.2
+        with:
+          file_name: ${{ env.ARTIFACTNAME }}
+
+      - name: Validate inputs.configuration
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
+        with:
+          case_sensitive: false
+          regex_pattern: "^debug|release$"
+          value: ${{ env.CONFIGURATION }}
+
+      - name: Validate inputs.jfrog_build_name
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
+        with: # This regex pattern is a bit of a guess
+          regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
+          value: ${{ inputs.jfrog_build_name }}
+
+      - name: Validate inputs.jfrog_npm_feed_repo
+        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.16.2
+        with:
+          name: ${{ env.JFROG_NPM_FEED_REPO }}
+
+      - name: Validate inputs.jfrog_nuget_feed_repo
+        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.16.2
+        with:
+          name: ${{ env.JFROG_NUGET_FEED_REPO }}
+
+      - name: Validate inputs.jfrog_oidc_provider_name
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
+        with: # This regex pattern is a bit of a guess
+          regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
+          value: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
+
+      - name: Validate inputs.npm_package_json_filename
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.2
+        with:
+          file_name: ${{ env.NPMPACKAGEJSONFILENAME }}
+
+      - name: Validate inputs.npm_project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.2
+        with:
+          path_name: ${{ env.NPMPROJECTDIRECTORY }}
+
+      - name: Validate inputs.project_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.2
+        with:
+          path_name: ${{ env.PROJECTDIRECTORY }}
+
+      - name: Validate RIMDEVTESTS__SQL__PASSWORD (must be 8-250 chars)
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
+        if: inputs.docker_mssql_image != ''
+        with:
+          value: ${{ env.RIMDEVTESTS__SQL__PASSWORD }}
+          regex_pattern: "^.{8,250}$"
+
+      - name: Bypass Tests
+        if: inputs.run_tests != true
+        working-directory: ./
+        run: echo "The 'inputs.run_tests' value is FALSE, skipping tests!"
+
+      - name: Checkout Project
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Restore Workspace
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.16.0
+        if: inputs.run_tests == true
+        with:
+          action: retrieve
+          artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
+
+      - name: github context debug information
+        working-directory: ./
+        run: |
+          echo "github.base_ref=${{ github.base_ref }}"
+          echo "github.head_ref=${{ github.head_ref }}"
+          echo "github.ref=${{ github.ref }}"
+          echo "github.ref_name=${{ github.ref_name }}"
+          echo "github.repository=${{ github.repository }}"
+          echo "github.repository_owner=${{ github.repository_owner }}"
+          echo "github.run_id=${{ github.run_id }}"
+          echo "github.run_number=${{ github.run_number }}"
+          echo "github.run_attempt=${{ github.run_attempt }}"
+          echo "github.sha=${{ github.sha }}"
+
+      # This creates the setup-jfrog-cli-server server ID
+      - name: Install JFrog CLI
+        uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_URL: ${{ env.JFROG_API_BASE_URL }}
+        with:
+          oidc-provider-name: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
+
+      - name: jf config show
+        run: jf config show
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ inputs.dotnet_version }}
+
+      - name: Setup ~/.nuget/packages cache
+        uses: actions/cache@v4
+        if: inputs.run_tests == true
+        with:
+          key: nuget-packages-${{ runner.os }}-${{ hashFiles(env.NUGETHASHFILES) }}
+          path: |
+            ~/.nuget/packages
+
+      - run: dotnet nuget list source
+
+      - name: Remove any pre-defined NuGet sources
+        run: |
+          sources=$(dotnet nuget list source | grep '\[Enabled\]' | awk '{print $2}')
+          echo "$sources"
+          echo "$sources" | xargs -I % dotnet nuget remove source %
+
+      - run: dotnet nuget list source
+
+      - name: Configure .NET / NuGet using JFrog CLI
+        run: jf dotnet-config --server-id-resolve setup-jfrog-cli-server --repo-resolve "${JFROG_NUGET_FEED_REPO}"
+
+      # See this for why setup-node can be slow: https://github.com/actions/setup-node/issues/726#issuecomment-1527198808
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: 'npm'
+          cache-dependency-path: ${{ inputs.npm_project_directory }}/${{ inputs.npm_package_json_filename }}
+
+      - name: Check NPM configuration, registry, etc.
+        run: |
+          npm config list
+          npm config get registry
+
+      - name: Configure NPM using JFrog CLI
+        run: jf npm-config --global --server-id-resolve setup-jfrog-cli-server --repo-resolve "${JFROG_NPM_FEED_REPO}"
+
+      - name: Check NPM configuration, registry, etc.
+        run: |
+          npm config list
+          npm config get registry
+
+      - name: .NET Restore using JFrog CLI
+        if: inputs.run_tests == true
+        run: jf dotnet restore --build-name="${JFROG_CLI_BUILD_NAME}" --build-number="${JFROG_CLI_BUILD_NUMBER}" --verbosity="${DOTNET_RESTORE_VERBOSITY}"
+
+      - name: npm version config
+        working-directory: ${{ env.NPMPROJECTDIRECTORY }}
+        run: |
+          npm config set allow-same-version=true
+          npm config set git-tag-version=false
+          npm config set sign-git-tag=false
+
+      # Note the use of '--ignore-scripts' here to prevent 'npm version' from running any scripts in the package.json
+      - run: npm version --ignore-scripts "${NPMVERSION}"
+        working-directory: ${{ env.NPMPROJECTDIRECTORY }}
+
+      # https://jfrog.com/help/r/artifactory-how-to-troubleshoot-long-npm-install-times-with-s3-redirect-enabled/artifactory-how-to-troubleshoot-long-npm-install-times-with-s3-redirect-enabled
+      # > sometimes the npm install process will appear to hang for several minutes, causing long build times for npm projects
+      # > Any npm configuration flag that disables the progress bar will alleviate this issue
+      - run: jf npm ci --npm-args="--no-progress"
+        if: inputs.run_tests == true
+        working-directory: ${{ env.NPMPROJECTDIRECTORY }}
+
+      - name: npm run test
+        if: inputs.run_tests == true
+        working-directory:  ${{ env.NPMPROJECTDIRECTORY }}
+        run: npm run test
+
+      # https://github.com/dotnet/core/issues/7412
+      # We can't feed in --no-build or --no-restore or else the test command will just fail silently
+      # instead of throwing an error when it fails to restore the dependencies.
+      - name: dotnet test
+        if: inputs.run_tests == true
+        run: |
+          dotnet test \
+            --logger "console;verbosity=normal" \
+            --logger "trx;logfilename=testResults.trx" \
+            --configuration "${CONFIGURATION}"
+
+      - name: Find .trx files
+        if: inputs.run_tests == true
+        run: find . -name '*.trx' -type f
+
+      - name: Upload Artifacts
+        id: upload-artifact
+        uses: actions/upload-artifact@v4
+        if: inputs.run_tests == true
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: "${{ inputs.project_directory }}**/*.trx"
+          retention-days: ${{ inputs.artifact_retention_days }}
+          if-no-files-found: error
+
+      - name: Collect JFrog Build Information
+        if: inputs.run_tests == true
+        run: jf rt build-collect-env "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      - name: Collect JFrog 'git' Information
+        if: inputs.run_tests == true
+        run: jf rt build-add-git "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
+
+      # TODO: Upload the TRX files to an Artifactory repo?
+      # - name: Upload Artifact to JFrog Artifactory
+      #   run: jf rt upload "${ZIPFILENAME}" "${JFROG_ARTIFACTORY_REPOSITORY}" --fail-no-op --server-id="${JFROG_SERVER_ID}" --build-name="${JFROG_CLI_BUILD_NAME}" --build-number="${JFROG_CLI_BUILD_NUMBER}"
+      #   working-directory: "${{ inputs.project_directory }}output/"
+
+      - name: Push JFrog Build Information
+        if: inputs.run_tests == true
+        run: jf rt build-publish "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}"
