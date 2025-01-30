@@ -24,7 +24,7 @@ runs:
   steps:
 
     - name: Validate
-      uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
+      uses: ritterim/public-github-actions/actions/regex-validator@v1.17
       with:
         value: ${{ inputs.path_name }}
         regex_pattern: '^[A-Za-z0-9_\.\+\/-]{1,70}\/$'
