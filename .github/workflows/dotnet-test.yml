@@ -151,24 +151,24 @@ jobs:
     steps:
 
       - name: Validate inputs.artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
         with:
           file_name: ${{ env.ARTIFACTNAME }}
 
       - name: Validate inputs.configuration
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
         with:
           case_sensitive: false
           regex_pattern: "^debug|release$"
           value: ${{ env.CONFIGURATION }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: Validate RIMDEVTESTS__SQL__PASSWORD (must be 8-250 chars)
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
         if: inputs.docker_mssql_image != ''
         with:
           value: ${{ env.RIMDEVTESTS__SQL__PASSWORD }}
@@ -180,7 +180,7 @@ jobs:
         run: echo "The 'inputs.run_tests' value is FALSE, skipping tests!"
 
       - name: Restore Workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.16.0
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17
         if: inputs.run_tests == true
         with:
           action: retrieve
