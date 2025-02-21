@@ -75,12 +75,12 @@ jobs:
     steps:
 
       - name: Validate inputs.package_json_filename
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
         with:
           file_name: ${{ env.PACKAGEJSONFILENAME }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
@@ -107,7 +107,7 @@ jobs:
       - run: git rev-parse --verify HEAD
 
       - name: npm-config-github-packages-repository
-        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@v1.16.0
+        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@v1.17
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -119,6 +119,6 @@ jobs:
 
       - name: Persist Workspace
         id: persist-workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.16.0
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17
         with:
           artifact_name_suffix: ${{ inputs.persisted_workspace_artifact_suffix }}
