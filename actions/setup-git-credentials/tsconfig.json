@@ -1,0 +1,27 @@
+{
+  "extends": "../tsconfig.json", //inherit from root tsconfig
+
+  "compilerOptions": {
+    "target": "ES2022",
+    "types": ["node"],
+    "useDefineForClassFields": true,
+    "module": "node16",
+    "lib": ["ES2022"],
+    "skipLibCheck": true,
+    "outDir": "./dist", // Redirect output structure to the directory.
+    "rootDir": "./src", // Specify the root directory of input files. Use to control the output directory structure with --outDir.
+
+    /* Bundler mode */
+    "moduleResolution": "Node16",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"]
+}

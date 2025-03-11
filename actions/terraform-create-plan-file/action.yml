@@ -1,0 +1,208 @@
+name: terraform-create-plan-file
+description: Executes 'terraform plan' creating a '.tfplan' file and captures a summary to post to the pull request.
+author: tgharold
+branding:
+  icon: 'file'  
+  color: 'gray-dark'
+
+inputs:
+
+  artifact_filename:
+    required: true
+
+  artifact_filepath:
+    required: true
+
+  detail_summary_lines: 
+    description: The maximum number of lines included in the detail summary block.  This keeps the GitHub PR comment and any GitHub notification emails from becoming too large.
+    required: false
+    default: 100
+
+  github_event_name:
+    required: true
+
+  plan_file_name: 
+    required: false
+    default: terraform.tfplan
+
+  workflow_run_title: 
+    required: true
+
+  working_directory: 
+    required: true
+
+  working_directory_name:
+    required: true
+
+outputs:
+  plan_file_name: 
+    description: The file created by 'terraform plan'.  Note that this file contains sensitive values / secrets and should never be pushed into an artifact.
+    value: ${{ inputs.plan_file_name }}
+
+# https://dev.to/github/the-githubtoken-in-github-actions-how-it-works-change-permissions-customizations-3cgp
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - name: Validate inputs.artifact_filename
+      uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
+      with:
+        file_name: ${{ inputs.artifact_filename }}
+
+    - name: Validate inputs.artifact_filepath
+      uses: ritterim/public-github-actions/actions/file-path-name-validator@v1.17
+      with:
+        file_path_name: ${{ inputs.artifact_filepath }}
+
+    - name: Validate inputs.detail_summary_lines
+      uses: ritterim/public-github-actions/actions/regex-validator@v1.17
+      with:
+        value: ${{ inputs.detail_summary_lines }}
+        regex_pattern: '^([0-9]{1,6})$'
+
+    - name: Validate inputs.working_directory
+      uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
+      with:
+        path_name: ${{ inputs.working_directory }}
+
+    - name: Validate inputs.working_directory_name
+      uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
+      with:
+        file_name: ${{ inputs.working_directory_name }}
+
+    - name: Validate inputs.plan_file_name
+      uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
+      with:
+        file_name: ${{ inputs.plan_file_name }}
+
+    - name: Initialize artifact files
+      shell: bash
+      env:
+        DEFAULTCONTENT: "No output captured.  See GitHub Actions runs in the repository."
+        RAWSTDERRFILE: "${{ inputs.artifact_filename }}-create-plan-file-stderr.raw"
+        STDERRFILE: "${{ inputs.artifact_filename }}-create-plan-file-stderr.txt"
+        RAWSTDOUTFILE: "${{ inputs.artifact_filename }}-create-plan-file-stdout.raw"
+        STDOUTFILE: "${{ inputs.artifact_filename }}-create-plan-file-stdout.txt"
+      run: |
+        set -o pipefail
+        echo "${DEFAULTCONTENT}" > "${RAWSTDERRFILE}"
+        echo "${DEFAULTCONTENT}" > "${STDERRFILE}"
+        echo "${DEFAULTCONTENT}" > "${RAWSTDOUTFILE}"
+        echo "${DEFAULTCONTENT}" > "${STDOUTFILE}"
+
+    - name: Create Terraform Plan File
+      id: plan
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+      env:
+        RAWSTDOUTFILE: "${{ inputs.artifact_filename }}-create-plan-file-stdout.raw"
+        PLANFILENAME: ${{ inputs.plan_file_name }}
+      run: |
+        set -o pipefail
+        terraform plan -input=false -out "${PLANFILENAME}" | tee "${RAWSTDOUTFILE}"
+      continue-on-error: true
+    
+    - name: Clean stdout file
+      # removes ANSI terminal color coding from the file
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+      env:
+        RAWSTDOUTFILE: "${{ inputs.artifact_filename }}-create-plan-file-stdout.raw"
+        STDOUTFILE: "${{ inputs.artifact_filename }}-create-plan-file-stdout.txt"
+      run: |
+        set -o pipefail
+        sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" \
+          < "${RAWSTDOUTFILE}" \
+          > "${STDOUTFILE}"
+
+    - name: Create Terraform Plan Output Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact_filename }}
+        path: ${{ inputs.artifact_filepath }}-create-plan-file-stdout.txt
+        if-no-files-found: error        
+
+# NOTE: I'm not sure we can reliably capture stderr and still have all the lines 
+# output in the same ordering within the GitHub Actions UI.  So we're not going to.
+# We'll pull it from the wrapper script, if possible.  If it's too large, this step
+# will just quietly fail.
+
+    - name: Capture Terraform Plan Error Output to File
+      if: steps.plan.outcome == 'failure'
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+      env:
+        RAWSTDERRFILE: "${{ inputs.artifact_filename }}-create-plan-file-stderr.raw"
+      run: |
+        set -o pipefail
+        cat > "${RAWSTDERRFILE}" << 'TFPLANOUTPUTEOF'
+        ${{ steps.plan.outputs.stderr }}
+        TFPLANOUTPUTEOF
+      continue-on-error: true
+
+    - name: Clean stderr file
+      # removes ANSI terminal color coding from the file
+      if: steps.plan.outcome == 'failure'
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+      env:
+        RAWSTDERRFILE: "${{ inputs.artifact_filename }}-create-plan-file-stderr.raw"
+        STDERRFILE: "${{ inputs.artifact_filename }}-create-plan-file-stderr.txt"
+      run: |
+        set -o pipefail
+        sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" \
+          < "${RAWSTDERRFILE}" \
+          > "${STDERRFILE}"
+
+    - name: Create Terraform Plan Error Output Artifact
+      uses: actions/upload-artifact@v4
+      if: steps.plan.outcome == 'failure'
+      with:
+        name: ${{ inputs.artifact_filename }}
+        path: ${{ inputs.artifact_filepath }}-create-plan-file-stderr.txt
+        if-no-files-found: error        
+
+    - name: Populate DETAIL_SUMMARY_CONTENT
+      if: steps.plan.outcome == 'failure'
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+      env:
+        STDERRFILE: "${{ inputs.artifact_filename }}-create-plan-file-stderr.txt"
+        HEADLINES: ${{ inputs.detail_summary_lines }}
+      run: |
+        EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64 | tr -dc A-Za-z0-9)
+        echo "DETAIL_SUMMARY_CONTENT<<$EOF" >> "$GITHUB_ENV"
+        grep -v '\:\:debug\:\:' "${STDERRFILE}" | head -n ${HEADLINES} >> "$GITHUB_ENV"
+        echo "$EOF" >> "$GITHUB_ENV"
+
+    - name: Report on Terraform Plan Failure to GitHub PR
+      uses: actions/github-script@v6
+      if: steps.plan.outcome == 'failure'
+      with:
+        github-token: ${{ env.GITHUB_TOKEN }}
+        script: |
+          const output = `### 🚨 Terraform Create Plan (${{ inputs.working_directory_name }}) 🚨 \`${{ steps.plan.outcome }}\` 🚨
+          Workflow Run: ${{ inputs.workflow_run_title }}
+          *Pushed by: @${{ github.actor }}, Action: \`${{ inputs.github_event_name }}\`*
+          \n
+          Summary:\n
+          \n
+          <details><summary>Show Errors (only first ${{ inputs.detail_summary_lines }} lines displayed)</summary>\n
+          \`\`\`\n
+          ${process.env.DETAIL_SUMMARY_CONTENT}
+          \`\`\`\n
+          </details>\n
+          `;
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
+
+    - name: Stop on Failure
+      if: steps.plan.outcome == 'failure'
+      shell: bash
+      run: exit 1

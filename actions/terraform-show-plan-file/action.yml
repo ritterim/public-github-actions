@@ -1,0 +1,183 @@
+name: terraform-show-plan-file
+description: Executes 'terraform plan show' from a '.tfplan' file and captures a summary to post to the pull request.
+author: tgharold
+branding:
+  icon: 'file-text'  
+  color: 'gray-dark'
+
+inputs:
+
+  artifact_filename:
+    required: true
+
+  artifact_filepath:
+    required: true
+
+  detail_summary_lines: 
+    description: The maximum number of lines included in the detail summary block.  This keeps the GitHub PR comment and any GitHub notification emails from becoming too large.
+    required: false
+    default: 5000
+
+  github_event_name:
+    required: true
+
+  plan_file_name: 
+    required: false
+    default: terraform.tfplan
+
+  workflow_run_title: 
+    required: true
+
+  working_directory: 
+    required: true
+
+  working_directory_name:
+    required: true
+
+# https://dev.to/github/the-githubtoken-in-github-actions-how-it-works-change-permissions-customizations-3cgp
+
+runs:
+  using: "composite"
+
+  steps:
+
+    - name: Validate inputs.artifact_filename
+      uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
+      with:
+        file_name: ${{ inputs.artifact_filename }}
+
+    - name: Validate inputs.artifact_filepath
+      uses: ritterim/public-github-actions/actions/file-path-name-validator@v1.17
+      with:
+        file_path_name: ${{ inputs.artifact_filepath }}
+
+    - name: Validate inputs.detail_summary_lines
+      uses: ritterim/public-github-actions/actions/regex-validator@v1.17
+      with:
+        value: ${{ inputs.detail_summary_lines }}
+        regex_pattern: '^([0-9]{1,6})$'
+
+    - name: Validate inputs.working_directory
+      uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
+      with:
+        path_name: ${{ inputs.working_directory }}
+
+    - name: Validate inputs.working_directory_name
+      uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
+      with:
+        file_name: ${{ inputs.working_directory_name }}
+
+    - name: Validate inputs.plan_file_name
+      uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
+      with:
+        file_name: ${{ inputs.plan_file_name }}
+        
+    - name: Set environment variables
+      shell: bash
+      env:
+        ARTIFACT_FILENAME: ${{ inputs.artifact_filename }}
+        ARTIFACT_NAME: "${{ inputs.artifact_filename }}-plan-show"
+        PLANFILENAME: ${{ inputs.plan_file_name }}
+        PLANREPORTFILENAME: "${{ inputs.artifact_filename }}-plan.txt"
+        PLANSUMMARYFILENAME: "${{ inputs.artifact_filename }}-plan-summary.txt"
+        TRIMMEDPLANREPORTFILENAME: "_${{ inputs.artifact_filename }}-plan-trimmed.txt"
+        WORKING_DIRECTORY: ${{ inputs.working_directory }}
+      run: |
+        echo "ARTIFACT_FILENAME=$ARTIFACT_FILENAME" >> "$GITHUB_ENV"
+        echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"
+        echo "PLANFILENAME=$PLANFILENAME" >> "$GITHUB_ENV"
+        echo "PLANREPORTFILENAME=$PLANREPORTFILENAME" >> "$GITHUB_ENV"
+        echo "PLANSUMMARYFILENAME=$PLANSUMMARYFILENAME" >> "$GITHUB_ENV"
+        echo "TRIMMEDPLANREPORTFILENAME=$TRIMMEDPLANREPORTFILENAME" >> "$GITHUB_ENV"
+        echo "WORKING_DIRECTORY=$WORKING_DIRECTORY" >> "$GITHUB_ENV"
+
+    - name: Terraform Plan Show
+      id: plan-show
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+      run: |
+        terraform show "${PLANFILENAME}" 
+      continue-on-error: true
+
+    - name: Export Terraform Plan Show
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+      if: steps.plan-show.outcome == 'success'
+      run: |
+        terraform show -no-color "${PLANFILENAME}" > "${PLANREPORTFILENAME}"
+        head --bytes=32000 "${PLANREPORTFILENAME}" > "${TRIMMEDPLANREPORTFILENAME}"
+
+    - name: Inspect the working directory
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+      run: |
+        pwd
+        ls -l
+
+    - name: Create Terraform Plan Output Artifact
+      uses: actions/upload-artifact@v4
+      if: steps.plan-show.outcome == 'success'
+      with:
+        name: ${{ env.ARTIFACT_NAME }}
+        path: "${{ env.WORKING_DIRECTORY }}${{ env.ARTIFACT_FILENAME }}*.txt"
+        if-no-files-found: error        
+
+    - name: Grep Plan Summary Line(s)
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+      if: steps.plan-show.outcome == 'success'
+      run: |
+        grep -e '^Plan\:' -e '^No changes\.' -e '^Changes to Outputs\:' -e '^You can apply this plan to save these new output values' "${PLANREPORTFILENAME}" >> "${PLANSUMMARYFILENAME}"
+
+    - name: Populate SUMMARY_LINES
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+      if: steps.plan-show.outcome == 'success'
+      run: |
+        EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64 | tr -dc A-Za-z0-9)
+        echo "SUMMARY_LINES<<$EOF" >> "$GITHUB_ENV"
+        grep -v '\:\:debug\:\:' "${PLANSUMMARYFILENAME}" | head -n 5 >> "$GITHUB_ENV"
+        echo "$EOF" >> "$GITHUB_ENV"
+
+    - name: Populate DETAIL_SUMMARY_CONTENT
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+      if: steps.plan-show.outcome == 'success'
+      env:
+        HEADLINES: ${{ inputs.detail_summary_lines }}
+      run: |
+        EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64 | tr -dc A-Za-z0-9)
+        echo "DETAIL_SUMMARY_CONTENT<<$EOF" >> "$GITHUB_ENV"
+        grep -v '\:\:debug\:\:' "${TRIMMEDPLANREPORTFILENAME}" | grep -v '\[command\]' | head -n ${HEADLINES} >> "$GITHUB_ENV"
+        echo "$EOF" >> "$GITHUB_ENV"
+
+    - name: Report Plan to GitHub PR
+      uses: actions/github-script@v6
+      if: steps.plan-show.outcome == 'success'
+      with:
+        github-token: ${{ env.GITHUB_TOKEN }}
+        script: |
+          const output = `### Terraform Plan 📋 (${{ inputs.working_directory_name }})
+          Workflow Run: ${{ inputs.workflow_run_title }}
+          *Pushed by: @${{ github.actor }}, Action: \`${{ inputs.github_event_name }}\`*
+          \n
+          Summary:\n
+          ${process.env.SUMMARY_LINES}\n
+          \n
+          <details><summary>Show Plan (only first ${{ inputs.detail_summary_lines }} lines displayed)</summary>\n
+          \`\`\`\n
+          ${process.env.DETAIL_SUMMARY_CONTENT}
+          \`\`\`\n
+          </details>\n
+          `;
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
+
+    - name: Stop on Failure
+      if: steps.plan-show.outcome != 'success'
+      shell: bash
+      run: exit 1
