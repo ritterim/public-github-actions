@@ -1,0 +1,12 @@
+name: setup-git-credentials
+description: Allow cloning private repositories
+author: Maarten de Vries
+branding:
+  icon: lock
+  color: orange
+inputs:
+  credentials:
+    description: git credentials to use
+runs:
+  using: node16
+  main: 'dist/index.js'
