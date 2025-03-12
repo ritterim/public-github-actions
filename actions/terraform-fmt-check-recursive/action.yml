@@ -105,7 +105,7 @@ runs:
     - name: Create Terraform Format Check Output Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ inputs.artifact_filename }}
+        name: ${{ inputs.artifact_filename }}-fmt-check-stdout
         path: ${{ inputs.artifact_filepath }}-fmt-check-stdout.txt
         if-no-files-found: error        
 
@@ -145,7 +145,7 @@ runs:
       uses: actions/upload-artifact@v4
       if: steps.fmt-check.outcome == 'failure'
       with:
-        name: ${{ inputs.artifact_filename }}
+        name: ${{ inputs.artifact_filename }}-fmt-check-stderr
         path: ${{ inputs.artifact_filepath }}-fmt-check-stderr.txt
         if-no-files-found: error        
 

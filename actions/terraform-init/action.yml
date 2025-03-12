@@ -105,7 +105,7 @@ runs:
     - name: Create Terraform Init Output Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ inputs.artifact_filename }}
+        name: ${{ inputs.artifact_filename }}-init-stdout
         path: ${{ inputs.artifact_filepath }}-init-stdout.txt
         if-no-files-found: error        
 
@@ -145,7 +145,7 @@ runs:
       uses: actions/upload-artifact@v4
       if: steps.init.outcome == 'failure'
       with:
-        name: ${{ inputs.artifact_filename }}
+        name: ${{ inputs.artifact_filename }}-init-stderr
         path: ${{ inputs.artifact_filepath }}-init-stderr.txt
         if-no-files-found: error        
 

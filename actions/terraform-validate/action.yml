@@ -105,7 +105,7 @@ runs:
     - name: Create Terraform Validate Output Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ inputs.artifact_filename }}
+        name: ${{ inputs.artifact_filename }}-validate-stdout
         path: ${{ inputs.artifact_filepath }}-validate-stdout.txt
         if-no-files-found: error        
 
@@ -145,7 +145,7 @@ runs:
       uses: actions/upload-artifact@v4
       if: steps.validate.outcome == 'failure'
       with:
-        name: ${{ inputs.artifact_filename }}
+        name: ${{ inputs.artifact_filename }}-validate-stderr
         path: ${{ inputs.artifact_filepath }}-validate-stderr.txt
         if-no-files-found: error        
 
