@@ -118,7 +118,7 @@ runs:
       uses: actions/upload-artifact@v4
       if: steps.plan-show.outcome == 'success'
       with:
-        name: ${{ env.ARTIFACT_NAME }}
+        name: ${{ env.ARTIFACT_NAME }}-show-plan-file
         path: "${{ env.WORKING_DIRECTORY }}${{ env.ARTIFACT_FILENAME }}*.txt"
         if-no-files-found: error        
 
