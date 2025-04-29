@@ -112,7 +112,7 @@ jobs:
             ~/.nuget/packages
 
       - name: Install JFrog CLI
-        uses: jfrog/setup-jfrog-cli@v4
+        uses: jfrog/setup-jfrog-cli@v4.5.6
         env:
           JF_URL: ${{ env.JFROG_API_BASE_URL }}
         with:
