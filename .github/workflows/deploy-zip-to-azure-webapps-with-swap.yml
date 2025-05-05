@@ -71,7 +71,7 @@ jobs:
     steps:
 
       - name: Validate inputs.azure_web_app_deploy_subscription_id
-        uses: ritterim/public-github-actions/actions/guid-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/guid-validator@v1.17
         with:
           guid: ${{ env.AZUREDEPLOYSUBSCRIPTIONID }}
 

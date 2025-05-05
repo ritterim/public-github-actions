@@ -178,57 +178,57 @@ jobs:
     steps:
 
       - name: Validate inputs.configuration
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
         with:
           case_sensitive: false
           regex_pattern: "^debug|release$"
           value: ${{ env.CONFIGURATION }}
 
       - name: Validate inputs.dotnet_project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
         with:
           path_name: ${{ env.DOTNETPROJECTDIRECTORY }}
 
       - name: Validate inputs.jfrog_build_name
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
         with: # This regex pattern is a bit of a guess
           regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
           value: ${{ inputs.jfrog_build_name }}
 
       - name: Validate inputs.jfrog_npm_feed_repo
-        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.17
         with:
           name: ${{ env.JFROG_NPM_FEED_REPO }}
 
       - name: Validate inputs.jfrog_nuget_feed_repo
-        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.17
         with:
           name: ${{ env.JFROG_NUGET_FEED_REPO }}
 
       - name: Validate inputs.jfrog_oidc_provider_name
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
         with: # This regex pattern is a bit of a guess
           regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
           value: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
 
       - name: Validate inputs.npm_package_json_filename
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
         with:
           file_name: ${{ env.NPMPACKAGEJSONFILENAME }}
 
       - name: Validate inputs.npm_project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
         with:
           path_name: ${{ env.NPMPROJECTDIRECTORY }}
 
       - name: Validate inputs.npm_run_build_script_name
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
         with: # This regex pattern is a bit of a guess
           regex_pattern: '^[A-Za-z0-9\-\:]{5,35}$'
           value: ${{ env.NPM_RUN_BUILD_SCRIPT_NAME }}
 
       - name: Validate inputs.npm_version
-        uses: ritterim/public-github-actions/actions/version-number-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.17
         with:
           version: ${{ env.NPMVERSION }}
 
