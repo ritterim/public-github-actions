@@ -59,7 +59,7 @@ jobs:
         run: echo "The 'inputs.run_tests' value is FALSE, skipping tests!"
 
       - name: Restore Workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.16.0
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17
         if: inputs.run_tests == true
         with:
           action: retrieve
