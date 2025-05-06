@@ -271,7 +271,7 @@ jobs:
           ref: ${{ github.ref }}
 
       - name: Restore Workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.16.0
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17
         if: inputs.run_tests == true
         with:
           action: retrieve

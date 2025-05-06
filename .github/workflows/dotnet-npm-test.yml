@@ -229,7 +229,7 @@ jobs:
           cache-dependency-path: "${{ inputs.npm_project_directory }}${{ inputs.npm_package_json_filename }}"
 
       - name: npm-config-github-packages-repository
-        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@v1.16.0
+        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@v1.17
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
