@@ -62,18 +62,18 @@ jobs:
     steps:
 
       - name: Validate secrets.jfrog_api_key
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
         with:
           regex_pattern: '^[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*$'
           value: ${{ secrets.jfrog_api_key }}
 
       - name: Validate inputs.artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
         with:
           file_name: ${{ env.ARTIFACTNAME }}
 
       - name: Validate inputs.report_artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.16.2
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
         with:
           file_name: ${{ env.REPORTARTIFACTNAME }}
 

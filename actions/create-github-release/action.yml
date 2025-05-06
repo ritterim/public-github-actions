@@ -28,17 +28,17 @@ runs:
   steps:
 
     - name: Validate inputs.github_repository
-      uses: ritterim/public-github-actions/actions/github-org-repository-validator@v1.16.2
+      uses: ritterim/public-github-actions/actions/github-org-repository-validator@v1.17
       with:
         github_repository: ${{ inputs.github_repository }}
 
     - name: Validate inputs.github_token
-      uses: ritterim/public-github-actions/actions/github-token-validator@v1.16.2
+      uses: ritterim/public-github-actions/actions/github-token-validator@v1.17
       with:
         token: ${{ inputs.github_token }}
 
     - name: Validate inputs.version_tag
-      uses: ritterim/public-github-actions/actions/version-number-validator@v1.16.2
+      uses: ritterim/public-github-actions/actions/version-number-validator@v1.17
       env:
         VERSIONTAG: ${{ inputs.version_tag }}
       with:
