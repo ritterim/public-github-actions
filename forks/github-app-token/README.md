@@ -29,7 +29,7 @@ jobs:
     steps:
       - name: Generate token
         id: generate_token
-        uses: ritterim/public-github-actions/forks/github-app-token@v1.16.0
+        uses: ritterim/public-github-actions/forks/github-app-token@v1.17
         with:
           app_id: ${{ secrets.APP_ID }}
 
