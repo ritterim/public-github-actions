@@ -28,17 +28,17 @@ You can use the 'git' command line to look at changes for a specific path / file
 
 ## Release Process
 
-Summary: Version tags which have [release notes published](https://github.com/ritterim/public-github-actions/releases) should be safe to use.  For upcoming releases, we recommend avoiding them until a release has been published.
+There are version tags such as "v1.17.13" if you want to pin to a specific patch.
 
-1. A new annotated tag will be pushed up to the repo.  This tag will have 'DRAFT' somewhere in the comment.
+If you want to get all bug fixes, there are now "floating" tags such as "v1.17" which will always point at the latest patch version for that major/minor version.
 
-2. The reusable workflows and actions will be updated to point at this new version tag.
+We do not yet publish a "v1" floating major-version tag.
 
-3. Changes are tested.
+1. A new major/minor/patch version annotated tag will be pushed up to the repo.  This will have a tag name of "vX.Y.Z", e.g. "v1.17.13".
 
-4. The annotated tag is deleted, then recreated with a comment of "Release x.y.z".
+2. A GitHub Release is created from the major/minor/patch version annotated tag.
 
-5. A GitHub Release is created from the annotated tag.
+3. The applicable floating annotated tags such as "v1.17" are deleted and recreated to point at the latest version. 
 
 # Reusable Workflows
 
