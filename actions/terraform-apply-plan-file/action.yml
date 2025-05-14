@@ -26,8 +26,8 @@ inputs:
     default: terraform.tfplan
 
   rimbot_registry_access_key:
-    description: The Azure table storage account access key for RIMbot (rimlogsdevrimbot).
-    required: true
+    description: The Azure table storage account access key for RIMbot (rimlogsdevrimbot).  This value is passed into our Terraform inputs so that RIMbot can write the Azure Web App information into an Azure Storage Table.  It only matters for Terraform plan/apply cycles where we are using that Powershell script.
+    required: false
 
   workflow_run_title: 
     required: true
