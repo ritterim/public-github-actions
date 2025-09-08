@@ -1,0 +1,368 @@
+name: Terraform Plan-Apply
+
+# This is opinionated that we're using Azure (the azure/login action).
+
+# We don't split this up into separate jobs because that would require putting the very
+# sensitive plan file into an artifact runner.  That's a file that should not be exposed.
+
+# The grep commands will blow up if it fails to find one of the '-e' patterns. 
+# The fix is to figure out what needs to be added to the list of patterns.
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+  pull-requests: write
+
+on:
+
+  workflow_call:
+
+    inputs:
+
+      github_event_name:
+        required: true
+        type: string
+        description: The value of 'github.event_name'.
+
+      ARM_CLIENT_ID:
+        required: true
+        type: string
+        description: The value of 'env.ARM_CLIENT_ID'.
+
+      ARM_TENANT_ID:
+        required: true
+        type: string
+        description: The value of 'env.ARM_TENANT_ID'.
+
+      ARM_SUBSCRIPTION_ID:
+        required: true
+        type: string
+        description: The value of 'env.ARM_SUBSCRIPTION_ID'.
+
+      perform_terraform_apply:
+        required: false
+        default: false
+        type: boolean
+        description: Whether to also run the 'terraform apply' step.
+
+      terraform_log_level:
+        required: false
+        default: OFF
+        type: string        
+        description: Defaults to "ERROR".  You can set TF_LOG to one of the log levels (in order of decreasing verbosity) TRACE, DEBUG, INFO, WARN, ERROR or OFF to change the verbosity of the logs.
+
+      terraform_version:
+        required: true
+        type: string
+
+      working_directory:
+        required: false
+        default: ./
+        type: string
+        description: The working directory for the terraform commands.  Could be "envs/dev/" or "./".
+
+      working_directory_name:
+        required: false
+        default: root
+        type: string
+        description: The working directory NAME for the terraform commands.  Could be "dev" or "hub" or "spoke-dev" or left empty ("root").
+
+      terraform_reader_github_app_id:
+        required: true
+        type: string
+        description: The application ID for the GitHub App that has read access to the other private Terraform repositories.
+
+    secrets: 
+
+      CLOUDFLARE_API_TOKEN: 
+        required: false
+        description: Used by the Cloudflare provider to authenticate.  Required if your Terraform plan uses Cloudflare resources.
+
+      JFROG_ACCESS_TOKEN: 
+        required: false
+        description: Used by the JFrog Artifactory/XRay provider to authenticate.  Required if your Terraform plan uses JFrog resources.
+
+      terraform_reader_github_app_private_key:
+        required: true
+        description: The private key for the GitHub App that has read access to the other private Terraform repositories.
+
+    outputs:
+      artifact_filename:
+        value: ${{ jobs.terraform.outputs.artifact_filename }}
+
+env:
+  ARM_USE_OIDC: "true"
+  ARM_USE_AZUREAD: "true"
+  ARM_CLIENT_ID: ${{ inputs.ARM_CLIENT_ID }}
+  ARM_TENANT_ID: ${{ inputs.ARM_TENANT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ inputs.ARM_SUBSCRIPTION_ID }}
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  JFROG_ACCESS_TOKEN: ${{ secrets.JFROG_ACCESS_TOKEN }}
+  
+  # https://developer.hashicorp.com/terraform/internals/debugging
+  TF_LOG: ${{ inputs.terraform_log_level }}
+  TF_LOG_PATH: ./terraform.log
+  TF_IN_AUTOMATION: "true"
+
+  WORKFLOW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  WORKFLOW_RUN_GIT_HASH: ${{ github.sha }}
+  WORKING_DIRECTORY_NAME: (${{ inputs.working_directory_name }})
+  WORKING_DIRECTORY_PATH: ${{ inputs.working_directory }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # The job name "Terraform Plan-Apply" is used in the "github-infrastructure" repository to setup branch protection using Rule Sets.  
+  # Changing the name will cause breakage in other infra repos unless reflected over in "required_status_checks".
+  terraform:
+    name: Terraform Plan-Apply
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ${{ inputs.working_directory }}
+
+    env:
+      ARTIFACT_FILENAME: terraform-unknown-0000
+      ARTIFACT_FILEPATH: terraform-unknown-0000
+      ARTIFACT_FILENAME_SUFFIX: plan-pr${{ github.event.number }}
+      WORKFLOW_RUN_TITLE: unknown-run-title
+
+    outputs:
+      artifact_filename: ${{ env.ARTIFACT_FILENAME }}        
+
+    steps:
+
+      - name: Validate inputs.working_directory
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.13.1
+        with:
+          path_name: ${{ inputs.working_directory }}
+
+      - name: Validate inputs.working_directory_name
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.13.1
+        with:
+          file_name: ${{ inputs.working_directory_name }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prevent re-running an apply build
+        if: inputs.perform_terraform_apply == true && github.run_attempt > 1
+        run: |
+          echo "Apply runs can not be re-tried.  Please submit a new PR."
+          exit 1
+
+      - name: Calculate Short Hash
+        run: |
+          echo "WORKFLOW_RUN_GIT_HASH=$(echo ${WORKFLOW_RUN_GIT_HASH} | cut -c1-8)" >> $GITHUB_ENV
+
+      # In situations where we are just doing a plan (not apply), it's useful for the email to use
+      # the pull request HEAD hash instead.
+      - name: Calculate Commit Hash for Plan Runs
+        if: inputs.perform_terraform_apply != true
+        env:
+          PRHEADSHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          echo "WORKFLOW_RUN_GIT_HASH=$(echo "${PRHEADSHA}" | cut -c1-8)" >> $GITHUB_ENV
+  
+      - name: Check Current Directory
+        run: pwd
+
+      - name: Check Directory Contents
+        run: ls -l
+
+      - name: Set ARTIFACT_FILENAME_SUFFIX
+        if: inputs.perform_terraform_apply
+        env:
+          PRNUMBER: ${{ github.event.number }}
+        run: |
+          ARTIFACT_FILENAME_SUFFIX=apply-pr${PRNUMBER}
+          echo ARTIFACT_FILENAME_SUFFIX=$ARTIFACT_FILENAME_SUFFIX >> $GITHUB_ENV
+
+      - name: Set Artifact Filename Variables
+        env:
+          GHRUNID: ${{ github.run_id }}
+        run: |
+          FLAT_WORKING_DIRECTORY_NAME=$(echo "${WORKING_DIRECTORY_NAME}" | sed -e 's/[^[:alnum:]|_|-|\/]//g' | sed -e 's/[^[:alnum:]|_|-]/-/g')
+          ARTIFACT_FILENAME=$(echo "terraform-${GITHUB_REPOSITORY#*\/}-${FLAT_WORKING_DIRECTORY_NAME}-${GHRUNID}-${ARTIFACT_FILENAME_SUFFIX}" | sed -e 's/--/-/g')
+          echo ARTIFACT_FILENAME=$ARTIFACT_FILENAME >> $GITHUB_ENV
+          echo ARTIFACT_FILEPATH=$WORKING_DIRECTORY_PATH$ARTIFACT_FILENAME >> $GITHUB_ENV
+
+      - name: Set WORKFLOW_RUN_TITLE
+        env:
+          GHRUNID: ${{ github.run_id }}
+        run: |
+          echo WORKFLOW_RUN_TITLE="[${GHRUNID}](${WORKFLOW_RUN_URL}) Commit: ${WORKFLOW_RUN_GIT_HASH}" >> $GITHUB_ENV
+
+      - name: Generate GH Token from GH App
+        id: generate_token
+        uses: ritterim/public-github-actions/forks/github-app-token@v1.13.1
+        with:
+          app_id: ${{ inputs.terraform_reader_github_app_id }}
+          private_key: ${{ secrets.terraform_reader_github_app_private_key }}
+
+      - name: Use Generated GITHUB_TOKEN
+        env:
+          GHTOKEN: ${{ steps.generate_token.outputs.token }}
+        run: echo "GITHUB_TOKEN=${GHTOKEN}" >> $GITHUB_ENV
+
+      - name: gh auth status
+        run: gh auth status
+
+      # the "foo" for the username can be anything at all
+      - name: Setup git credentials
+        uses: ritterim/github-actions/setup-git-credentials@v1.2024.402
+        with:
+          credentials: https://foo:${{ steps.generate_token.outputs.token }}@github.com
+
+      - name: gh auth status
+        run: gh auth status
+
+      - name: git config --list
+        run: git config --list
+
+      - uses: azure/login@v1
+        with:
+          client-id: ${{ inputs.ARM_CLIENT_ID }}
+          tenant-id: ${{ inputs.ARM_TENANT_ID }}
+          subscription-id: ${{ inputs.ARM_SUBSCRIPTION_ID }}
+
+      - name: 'az account show'
+        run: az account show
+
+      - name: 'az ad sp show (SELF)'
+        env:
+          ARM_CLIENT_ID: ${{ inputs.ARM_CLIENT_ID }}
+        run: az ad sp show --id "${ARM_CLIENT_ID}"
+
+      - name: 'az storage account list'
+        env:
+          ARM_SUBSCRIPTION_ID: ${{ inputs.ARM_SUBSCRIPTION_ID }}
+        run: az storage account list --subscription "${ARM_SUBSCRIPTION_ID}"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ inputs.terraform_version }}
+
+      # TERRAFORM FORMAT CHECK
+      # Did the developer remember to indent everything property with the 'tffmt.sh' script?
+
+      - name: Validate Format of Terraform Files
+        id: fmt
+        uses: ritterim/github-actions/terraform-fmt-check-recursive@v1.2024.402
+        with:
+          artifact_filename: ${{ env.ARTIFACT_FILENAME }}
+          artifact_filepath: ${{ env.ARTIFACT_FILEPATH }}
+          github_event_name: ${{ inputs.github_event_name }}
+          workflow_run_title: ${{ env.WORKFLOW_RUN_TITLE }}
+          working_directory: ${{ inputs.working_directory }}
+          working_directory_name: ${{ inputs.working_directory_name }}
+        env:
+          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+
+      - name: Stop on Terraform Format Check Failure
+        if: steps.fmt.outcome == 'failure'
+        run: exit 1
+
+      # TERRAFORM INIT
+
+      - name: Terraform Init
+        id: init
+        uses: ritterim/github-actions/terraform-init@v1.2024.402
+        with:
+          artifact_filename: ${{ env.ARTIFACT_FILENAME }}
+          artifact_filepath: ${{ env.ARTIFACT_FILEPATH }}
+          github_event_name: ${{ inputs.github_event_name }}
+          workflow_run_title: ${{ env.WORKFLOW_RUN_TITLE }}
+          working_directory: ${{ inputs.working_directory }}
+          working_directory_name: ${{ inputs.working_directory_name }}
+        env:
+          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+      
+      - name: Stop on Terraform Init Failure
+        if: steps.init.outcome == 'failure'
+        run: exit 1
+
+      # TERRAFORM VALIDATE
+
+      - name: Terraform Validate
+        id: validate
+        uses: ritterim/github-actions/terraform-validate@v1.2024.402
+        with:
+          artifact_filename: ${{ env.ARTIFACT_FILENAME }}
+          artifact_filepath: ${{ env.ARTIFACT_FILEPATH }}
+          github_event_name: ${{ inputs.github_event_name }}
+          workflow_run_title: ${{ env.WORKFLOW_RUN_TITLE }}
+          working_directory: ${{ inputs.working_directory }}
+          working_directory_name: ${{ inputs.working_directory_name }}
+        env:
+          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+      
+      - name: Stop on Terraform Validate Failure
+        if: steps.validate.outcome == 'failure'
+        run: exit 1
+
+      # CREATE PLAN FILE
+
+      - name: Create Terraform Plan File
+        id: plan
+        uses: ritterim/github-actions/terraform-create-plan-file@v1.2024.402
+        with:
+          artifact_filename: ${{ env.ARTIFACT_FILENAME }}
+          artifact_filepath: ${{ env.ARTIFACT_FILEPATH }}
+          github_event_name: ${{ inputs.github_event_name }}
+          workflow_run_title: ${{ env.WORKFLOW_RUN_TITLE }}
+          working_directory: ${{ inputs.working_directory }}
+          working_directory_name: ${{ inputs.working_directory_name }}
+        env:
+          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+
+      - name: Stop on Terraform Plan Failure
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+      # REPORT ON PLAN FILE
+
+      - name: Display Terraform Plan
+        id: plan-show
+        uses: ritterim/github-actions/terraform-show-plan-file@v1.2024.402
+        with:
+          artifact_filename: ${{ env.ARTIFACT_FILENAME }}
+          artifact_filepath: ${{ env.ARTIFACT_FILEPATH }}
+          github_event_name: ${{ inputs.github_event_name }}
+          plan_file_name: ${{ steps.plan.outputs.plan_file_name }}
+          workflow_run_title: ${{ env.WORKFLOW_RUN_TITLE }}
+          working_directory: ${{ inputs.working_directory }}
+          working_directory_name: ${{ inputs.working_directory_name }}
+        env:
+          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+
+      - name: Stop on Display Terraform Plan Failure
+        if: steps.plan-show.outcome == 'failure'
+        run: exit 1 
+
+      # TERRAFORM APPLY
+
+      - name: Terraform Apply
+        id: apply
+        uses: ritterim/github-actions/terraform-apply-plan-file@v1.2024.402
+        if: inputs.perform_terraform_apply == true
+        with:
+          artifact_filename: ${{ env.ARTIFACT_FILENAME }}
+          artifact_filepath: ${{ env.ARTIFACT_FILEPATH }}
+          github_event_name: ${{ inputs.github_event_name }}
+          plan_file_name: ${{ steps.plan.outputs.plan_file_name }}
+          workflow_run_title: ${{ env.WORKFLOW_RUN_TITLE }}
+          working_directory: ${{ inputs.working_directory }}
+          working_directory_name: ${{ inputs.working_directory_name }}
+        env:
+          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+
+      - name: Stop on Terraform Apply Failure
+        if: inputs.perform_terraform_apply == true && steps.plan-show.outcome == 'failure'
+        run: exit 1 
+
