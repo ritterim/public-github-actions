@@ -137,12 +137,12 @@ jobs:
     steps:
 
       - name: Validate inputs.working_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.13.1
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
         with:
           path_name: ${{ inputs.working_directory }}
 
       - name: Validate inputs.working_directory_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.13.1
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
         with:
           file_name: ${{ inputs.working_directory_name }}
 
@@ -199,7 +199,7 @@ jobs:
 
       - name: Generate GH Token from GH App
         id: generate_token
-        uses: ritterim/public-github-actions/forks/github-app-token@v1.13.1
+        uses: ritterim/public-github-actions/forks/github-app-token@v1.17
         with:
           app_id: ${{ inputs.terraform_reader_github_app_id }}
           private_key: ${{ secrets.terraform_reader_github_app_private_key }}
@@ -214,7 +214,7 @@ jobs:
 
       # the "foo" for the username can be anything at all
       - name: Setup git credentials
-        uses: ritterim/github-actions/setup-git-credentials@v1.2024.402
+        uses: ritterim/public-github-actions/actions/setup-git-credentials@v1.17
         with:
           credentials: https://foo:${{ steps.generate_token.outputs.token }}@github.com
 
@@ -253,7 +253,7 @@ jobs:
 
       - name: Validate Format of Terraform Files
         id: fmt
-        uses: ritterim/github-actions/terraform-fmt-check-recursive@v1.2024.402
+        uses: ritterim/public-github-actions/actions/terraform-fmt-check-recursive@v1.17
         with:
           artifact_filename: ${{ env.ARTIFACT_FILENAME }}
           artifact_filepath: ${{ env.ARTIFACT_FILEPATH }}
@@ -272,7 +272,7 @@ jobs:
 
       - name: Terraform Init
         id: init
-        uses: ritterim/github-actions/terraform-init@v1.2024.402
+        uses: ritterim/public-github-actions/actions/terraform-init@v1.17
         with:
           artifact_filename: ${{ env.ARTIFACT_FILENAME }}
           artifact_filepath: ${{ env.ARTIFACT_FILEPATH }}
@@ -291,7 +291,7 @@ jobs:
 
       - name: Terraform Validate
         id: validate
-        uses: ritterim/github-actions/terraform-validate@v1.2024.402
+        uses: ritterim/public-github-actions/actions/terraform-validate@v1.17
         with:
           artifact_filename: ${{ env.ARTIFACT_FILENAME }}
           artifact_filepath: ${{ env.ARTIFACT_FILEPATH }}
@@ -310,7 +310,7 @@ jobs:
 
       - name: Create Terraform Plan File
         id: plan
-        uses: ritterim/github-actions/terraform-create-plan-file@v1.2024.402
+        uses: ritterim/public-github-actions/actions/terraform-create-plan-file@v1.17
         with:
           artifact_filename: ${{ env.ARTIFACT_FILENAME }}
           artifact_filepath: ${{ env.ARTIFACT_FILEPATH }}
@@ -329,7 +329,7 @@ jobs:
 
       - name: Display Terraform Plan
         id: plan-show
-        uses: ritterim/github-actions/terraform-show-plan-file@v1.2024.402
+        uses: ritterim/public-github-actions/actions/terraform-show-plan-file@v1.17
         with:
           artifact_filename: ${{ env.ARTIFACT_FILENAME }}
           artifact_filepath: ${{ env.ARTIFACT_FILEPATH }}
@@ -349,7 +349,7 @@ jobs:
 
       - name: Terraform Apply
         id: apply
-        uses: ritterim/github-actions/terraform-apply-plan-file@v1.2024.402
+        uses: ritterim/public-github-actions/actions/terraform-apply-plan-file@v1.17
         if: inputs.perform_terraform_apply == true
         with:
           artifact_filename: ${{ env.ARTIFACT_FILENAME }}
