@@ -1,0 +1,27 @@
+name: Terraform Plan-Apply (no-op)
+
+# This is a no-op "Terraform Plan-Apply" job for the repositories where a branch protection rule or
+# GitHub Rule Set requires the Terraform plan/apply job to succeed.
+
+# It should be used in situations where the PR is editing miscellaneous files in the repo such
+# as a README or other files that don't update/provision resources.
+
+permissions:
+  contents: read
+
+on:
+
+  workflow_call:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # The job name "Terraform Plan-Apply" is used in the "github-infrastructure" repository to setup branch protection using Rule Sets.  
+  # Changing the name will cause breakage in other infra repos unless reflected over in "required_status_checks".
+  terraform:
+    name: Terraform Plan-Apply
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Doing nothing.  This is only here so that the 'required checks' in GitHub have something that passes."
