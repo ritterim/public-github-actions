@@ -479,6 +479,7 @@ Write-Host "Getting publication dates for all package versions..."
 
 $ActivityMessage = "Retrieving..."
 $count = 1
+$exportRecords = @()
 foreach ($package in $packages) {
     $PercentComplete = ($count / @($packages).count * 100)
     $pctComplete = ([Math]::Floor($PercentComplete)).ToString("N0").PadLeft(3, ' ') + "%"
@@ -487,9 +488,12 @@ foreach ($package in $packages) {
     $count++
 
     $entry = Get-NpmPackagePublishDate -PackageSpec $package.PackageKeySplit.PackageSpec -Version $package.version
+
     if ($null -eq $entry) {
         Write-Warning "Unable to get entry for: $($package.PackageKeySplit.PackageSpec) version: $($package.version)"
+        continue
     }
+
     if ($null -eq $entry.PublishDate) {
         Write-Warning "Unable to get publish date for: $($package.PackageKeySplit.PackageSpec) version: $($package.version)"
     }
@@ -498,6 +502,15 @@ foreach ($package in $packages) {
         Write-Debug "$($package.PackageKeySplit.PackageSpec) ver: $($package.version) uploaded: $($publishDate)"
         if ($publishDate -gt $newestPublishDate) { $newestPublishDate = $publishDate }
     }
+
+    $exportRecord = [PSCustomObject]@{
+        PackageSpec = $entry.PackageSpec
+        Scope = $entry.Scope
+        Package = $entry.Package
+        Version = $entry.Version
+        PublishDate = $entry.PublishDate
+    }
+    $exportRecords += $exportRecord
 }
 
 Write-Debug "newestPublishDate: $($newestPublishDate)"
@@ -509,6 +522,12 @@ Write-Host "Days since latest publish date: $($daysSinceLatestPublishDate)"
 
 Write-Debug "CacheHit: $($global:CacheHit)"
 Write-Debug "CacheMiss: $($global:CacheMiss)"
+
+$exportFileName = "npm-check-package-lock-publish-dates.csv"
+$exportFileDirectory = "./"
+$exportFilePath = Join-Path -Path $exportFileDirectory -ChildPath $exportFileName
+Write-Host "Export results to: $($exportFilePath)"
+$exportRecords | Sort-Object -Property PackageSpec | Export-CSV -nti -Encoding UTF8BOM -Path $exportFilePath
 
 if ($MinimumPublishAgeDays -gt $daysSinceLatestPublishDate) {
     Write-Error "Found NPM packages published $($daysSinceLatestPublishDate) ago, below the threshold of $($MinimumPublishAgeDays) days." -ErrorAction Stop
