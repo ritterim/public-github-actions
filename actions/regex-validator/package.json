@@ -20,7 +20,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@actions/core": "^1.11.1",
+    "@actions/core": "^2.0.3",
     "ensure-error": "^4.0.0"
   },
   "devDependencies": {

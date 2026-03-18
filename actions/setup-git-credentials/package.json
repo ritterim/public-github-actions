@@ -16,7 +16,7 @@
     "build": "tsc && ncc build src/index.ts --minify --v8-cache"
   },
   "dependencies": {
-    "@actions/core": "^1.11.1",
+    "@actions/core": "^2.0.3",
     "@actions/exec": "^1.0.4"
   },
   "devDependencies": {
