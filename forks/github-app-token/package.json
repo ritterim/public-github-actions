@@ -20,9 +20,9 @@
   },
   "dependencies": {
     "@actions/core": "^3.0.0",
-    "@actions/github": "^5.1.1",
-    "@octokit/auth-app": "^4.0.13",
-    "@octokit/request": "^6.2.3",
+    "@actions/github": "^9.0.0",
+    "@octokit/auth-app": "^8.2.0",
+    "@octokit/request": "^10.0.8",
     "ensure-error": "^4.0.0",
     "is-base64": "^1.1.0"
   },
@@ -30,17 +30,15 @@
     "@trivago/prettier-plugin-sort-imports": "^4.0.0",
     "@types/is-base64": "^1.1.1",
     "@types/node": "^16.11.26",
-    "@vercel/ncc": "^0.36.1",
-    "eslint-config-prettier": "^8.10.0",
-    "eslint-plugin-import": "^2.28.1",
-    "eslint-plugin-sort-destructure-keys": "^1.5.0",
-    "eslint-plugin-typescript-sort-keys": "^2.3.0",
+    "@vercel/ncc": "^0.38.4",
+    "eslint-plugin-sort-destructure-keys": "^3.0.0",
+    "eslint-plugin-typescript-sort-keys": "^3.3.0",
     "prettier": "^2.8.8",
     "prettier-plugin-packagejson": "^2.4.14",
     "typescript": "^4.9.4",
-    "xo": "^0.56.0",
-    "yarn-deduplicate": "^6.0.1",
     "vite": "^4.5.3",
-    "vite-plugin-dts": "^2.3.0"
+    "vite-plugin-dts": "^2.3.0",
+    "xo": "^1.2.3",
+    "yarn-deduplicate": "^6.0.1"
   }
 }
