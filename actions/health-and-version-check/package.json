@@ -16,7 +16,7 @@
         }
     },
     "scripts": {
-        "build": "tsc && ncc build src/index.ts --minify --v8-cache",
+        "build": "tsc && ncc build src/index.ts --v8-cache && rm -f dist/[0-9]*.index.js",
         "test": "jest"
     },
     "dependencies": {
