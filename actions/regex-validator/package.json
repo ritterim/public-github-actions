@@ -28,7 +28,7 @@
     "@types/is-base64": "^1.1.1",
     "@types/jest": "^29.5.3",
     "@types/node": "^16.11.26",
-    "@vercel/ncc": "^0.36.1",
+    "@vercel/ncc": "^0.38.4",
     "eslint-config-prettier": "^8.6.0",
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-sort-destructure-keys": "^1.4.0",
