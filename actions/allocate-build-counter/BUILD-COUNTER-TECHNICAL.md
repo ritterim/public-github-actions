@@ -111,9 +111,7 @@ At 50 builds per day, a single counter takes ~3.6 years to reach 65,535. Because
 
 ### Rollover recovery
 
-At build number ≥ 65,000 the action emits a `::warning::` annotation as advance notice (~535 builds of runway). At rollover it emits another warning.
-
-TODO: Consider emitting an error at ≥ 65500?
+At build number ≥ 65,500 the action **fails** with a `::error::` annotation, blocking the build. At build number 65,000–65,499 it emits a `::warning::` annotation as advance notice (~500 builds of runway). At rollover it emits another warning.
 
 Recovery is self-service: change the `counter_key` in the calling workflow (e.g. `repo` → `repo2`). The new counter_key starts from 1. No access to the central `build-counter` repository is required, and no coordination with the counter store owner is needed.
 

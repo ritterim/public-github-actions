@@ -331,9 +331,7 @@ Note that there is usually a GitHub ruleset installed on the build counter repos
 
 **First run:** Counter automatically starts at `1`. No bootstrap required.
 
-**Rollover:** At 65,536, the counter wraps to `0` (16-bit limit; required by build systems such as NPM that reject larger patch values). A workflow warning annotation starts firing at 65,000 and again at rollover. To avoid version collisions without touching the central repository, change the `counter_key` in your calling workflow (e.g. `repo` → `repo2`) — the new counter_key starts a fresh sequence from 1.
-
-TODO: Did we make it an error (not just a warning) if the value exceeds 65535?
+**Rollover:** At 65,536, the counter wraps to `0` (16-bit limit; required by build systems such as NPM that reject larger patch values). The action **fails** with an error annotation at 65,500, blocking the build as a safeguard against rollover. A workflow warning annotation starts firing at 65,000 as advance notice (~500 builds of runway). To avoid hitting the hard limit, change the `counter_key` in your calling workflow (e.g. `repo` → `repo2`) before your counter reaches 65,500 — the new counter_key starts a fresh sequence from 1.
 
 **Tag cleanup:** The allocator deletes the previous tag after each successful allocation. Only the current counter value is retained per calling repository per counter_key.
 

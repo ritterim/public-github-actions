@@ -102,9 +102,9 @@ The action uses optimistic locking with random backoff:
 
 ### Rollover Behavior
 
-Build numbers wrap at 65536 (0-65535, 16-bit). At build number ≥ 65,000 the action emits a `::warning::` annotation as advance notice. At rollover to 0 it emits another warning. Builds are not blocked.  TODO: Consider changing to errors for values over 65500?
+Build numbers wrap at 65536 (0-65535, 16-bit). At build number ≥ 65,500 the action fails with a `::error::` annotation and blocks the build. At build number 65,000–65,499 it emits a `::warning::` annotation as advance notice (~500 builds of runway). At rollover to 0 it emits another warning.
 
-To avoid version collisions after rollover, change the `counter_key` in the calling workflow (e.g. `repo` → `repo2`). The new counter_key starts a fresh sequence from 1. No access to the central repository is required.
+To avoid hitting the hard limit, change the `counter_key` in the calling workflow (e.g. `repo` → `repo2`) before your counter reaches 65,500. The new counter_key starts a fresh sequence from 1. No access to the central repository is required.
 
 ### Tag Cleanup
 
