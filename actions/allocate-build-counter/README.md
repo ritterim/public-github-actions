@@ -4,13 +4,13 @@ This composite GitHub Action allocates a monotonic build counter (0-65535) using
 
 ## How It Works
 
-Counter tags live in a shared `build-counter` repository and are namespaced by the calling repository:
+Counter tags live in a shared build counter repository (usually `build-counter`) and are namespaced by the calling repository:
 
 ```
 _counters/{owner}/{repo}/{counter_key}-{number}
 ```
 
-The action uses a GitHub App installed on `build-counter` to generate a short-lived token, then clones that repository and uses Git's atomic tag push semantics to implement optimistic locking:
+The action uses a GitHub App installed on the build counter repository to generate a short-lived token, then clones that repository and uses Git's atomic tag push semantics to implement optimistic locking:
 
 1. **Clone counter repo** using the short-lived app token
 2. **Fetch existing tags** matching the calling repo's namespace
@@ -102,7 +102,7 @@ The action uses optimistic locking with random backoff:
 
 ### Rollover Behavior
 
-Build numbers wrap at 65536 (0-65535, 16-bit). At build number ≥ 65,000 the action emits a `::warning::` annotation as advance notice. At rollover to 0 it emits another warning. Builds are not blocked.
+Build numbers wrap at 65536 (0-65535, 16-bit). At build number ≥ 65,000 the action emits a `::warning::` annotation as advance notice. At rollover to 0 it emits another warning. Builds are not blocked.  TODO: Consider changing to errors for values over 65500?
 
 To avoid version collisions after rollover, change the `counter_key` in the calling workflow (e.g. `repo` → `repo2`). The new counter_key starts a fresh sequence from 1. No access to the central repository is required.
 
@@ -126,6 +126,8 @@ Likely causes:
 ### Build number is always 0
 
 The action is running in read-only mode — `app_id` was not provided. Check that `counter_app_id` (and the private key secret) are passed by the workflow job that calls this action.
+
+Pull requests callers will also get zero by design.
 
 ### Counter reset unexpectedly
 
@@ -151,15 +153,15 @@ The calling workflow itself does **not** need `contents: write`.
 
 - PowerShell 7.0+ (available on all GitHub Actions runners)
 - `git` (standard on GitHub Actions runners)
-- Internet access to clone `build-counter` via HTTPS
+- Internet access to clone the build counter repository via HTTPS
 
 ## Security
 
-The GitHub App private key is the primary sensitive credential. If compromised, an attacker can generate tokens for the app's installation — which covers **only** `build-counter`. They can write tags to that one repository and nothing else.
+The GitHub App private key is the primary sensitive credential. If compromised, an attacker can generate tokens for the app's installation — which covers **only** the build counter repository. They can write tags to that one repository and nothing else.
 
 Key mitigations:
 
-- **Single-repo installation** — the app is installed on `build-counter` only. No other repository is reachable with the token.
+- **Single-repo installation** — the app is installed on the build counter repository only. No other repository is reachable with the token.
 - **Ruleset bypass** — a tag ruleset on `_counters/**` restricts creation and deletion to the app. Even org admins cannot modify counter tags without being in the bypass list.
 - **Minimal permissions** — the app has only `Contents: read and write`. No Actions, secrets, workflow, or administration access.
 - **Short-lived tokens** — installation tokens expire after 1 hour and are generated fresh each run. The private key itself does not expire but can be rotated by generating a replacement, updating the org secret, and revoking the old key.
