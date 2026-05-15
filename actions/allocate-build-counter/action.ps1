@@ -29,8 +29,6 @@ GitHub action outputs:
   tag - The git tag created for this build counter
 #>
 
-#TODO: Additional security reviews of the code.
-
 #Requires -Version 7.0
 
 param(
@@ -195,10 +193,12 @@ function Get-ResolvedRepository {
 
 function Format-GitArgsForDisplay {
     param([string[]] $Arguments)
-    # Redact embedded basic-auth tokens in URL-shaped args before logging.
-    # Pattern: scheme://userinfo:token@host -> scheme://userinfo:***@host
+    # Redact embedded tokens and credentials before logging.
+    # Pattern 1: scheme://userinfo:token@host -> scheme://userinfo:***@host
+    # Pattern 2: Authorization: token ... -> Authorization: token ***
     return $Arguments | ForEach-Object {
-        $_ -replace '(://[^:/\s@]+):[^@\s]+@', '$1:***@'
+        $_ -replace '(://[^:/\s@]+):[^@\s]+@', '$1:***@' `
+           -replace '(Authorization: token\s+)\S+', '$1***'
     }
 }
 
@@ -241,14 +241,31 @@ function Initialize-CounterRepository {
         [string] $DestPath = ''
     )
 
-    $gitHost = $GitServer -replace '^https://', ''
-    $resolvedUrl = if ($RepoUrl) { $RepoUrl } else { "https://x-access-token:${Token}@${gitHost}/${Owner}/${Name}.git" }
+    # Use clean URL without embedded token; authentication via http.extraheader in git commands
+    $resolvedUrl = if ($RepoUrl) { $RepoUrl } else { "${GitServer}/${Owner}/${Name}.git" }
     $clonePath = if ($DestPath) { $DestPath } else { '/tmp/build-counter-repo' }
+
+    # Validate that $clonePath is safe (under temp directory or is the hardcoded default)
+    if ($clonePath -ne '/tmp/build-counter-repo') {
+        $tmpRoot = [System.IO.Path]::GetTempPath()
+        $resolved = [System.IO.Path]::GetFullPath($clonePath)
+        if (-not $resolved.StartsWith($tmpRoot)) {
+            Write-Error "DestPath must be under temp directory, got: $clonePath"
+            exit 1
+        }
+    }
 
     Write-Verbose "Cloning counter repository from $Owner/$Name"
     Remove-Item -Path $clonePath -Recurse -Force -ErrorAction SilentlyContinue
 
-    Invoke-GitCommand @('clone', '--filter=blob:none', '--no-checkout', '--depth=1', $resolvedUrl, $clonePath)
+    # Clone with token via header to keep it out of git config
+    $authHeader = "Authorization: token $Token"
+    Invoke-GitCommand @('-c', "http.extraheader=$authHeader", 'clone', '--filter=blob:none', '--no-checkout', '--depth=1', $resolvedUrl, $clonePath)
+
+    # Ensure remote URL has no embedded credentials
+    $cleanUrl = if ($RepoUrl -like 'file://*') { $RepoUrl } else { $resolvedUrl }
+    Invoke-GitCommand @('remote', 'set-url', 'origin', $cleanUrl) -RepoPath $clonePath -IgnoreErrors
+
     Write-Verbose "Successfully cloned to $clonePath"
     return $clonePath
 }
@@ -256,11 +273,13 @@ function Initialize-CounterRepository {
 function Get-NextBuildNumber {
     param(
         [string] $RepoPath,
-        [string] $TagPrefix
+        [string] $TagPrefix,
+        [string] $Token = ''
     )
 
     Write-Verbose "Fetching tags for prefix: $TagPrefix"
-    Invoke-GitCommand @('fetch', '--tags', '--force') -RepoPath $RepoPath -IgnoreErrors
+    $fetchArgs = if ($Token) { @('-c', "http.extraheader=Authorization: token $Token") + @('fetch', '--tags', '--force') } else { @('fetch', '--tags', '--force') }
+    Invoke-GitCommand $fetchArgs -RepoPath $RepoPath -IgnoreErrors
 
     $allTags = Invoke-GitCommand @('tag', '-l', "${TagPrefix}*") -RepoPath $RepoPath -IgnoreErrors -CaptureOutput | Where-Object { $_ }
 
@@ -290,14 +309,16 @@ function Get-NextBuildNumber {
 function Push-BuildNumberTag {
     param(
         [string] $RepoPath,
-        [string] $NewTag
+        [string] $NewTag,
+        [string] $Token = ''
     )
 
     Write-Verbose "Creating tag: $NewTag"
     Invoke-GitCommand @('tag', $NewTag) -RepoPath $RepoPath
 
     Write-Verbose "Pushing tag to origin"
-    Invoke-GitCommand @('push', 'origin', "refs/tags/${NewTag}") -RepoPath $RepoPath -IgnoreErrors
+    $pushArgs = if ($Token) { @('-c', "http.extraheader=Authorization: token $Token") + @('push', 'origin', "refs/tags/${NewTag}") } else { @('push', 'origin', "refs/tags/${NewTag}") }
+    Invoke-GitCommand $pushArgs -RepoPath $RepoPath -IgnoreErrors
     if ($LASTEXITCODE -eq 0) {
         return $true
     }
@@ -311,7 +332,8 @@ function Remove-OldBuildNumberTags {
     param(
         [string] $RepoPath,
         [string] $TagPrefix,
-        [string] $NewTag
+        [string] $NewTag,
+        [string] $Token = ''
     )
 
     # Self-healing: only consider tags whose post-prefix portion is digits-only.
@@ -325,7 +347,8 @@ function Remove-OldBuildNumberTags {
     if ($tagsToDelete) {
         Write-Verbose "Cleaning up $($tagsToDelete.Count) old tag(s)"
         foreach ($oldTag in $tagsToDelete) {
-            Invoke-GitCommand @('push', 'origin', '--delete', $oldTag) -RepoPath $RepoPath -IgnoreErrors
+            $deleteArgs = if ($Token) { @('-c', "http.extraheader=Authorization: token $Token") + @('push', 'origin', '--delete', $oldTag) } else { @('push', 'origin', '--delete', $oldTag) }
+            Invoke-GitCommand $deleteArgs -RepoPath $RepoPath -IgnoreErrors
             if ($LASTEXITCODE -ne 0) {
                 Write-Warning "Failed to delete old tag $oldTag (git exit code $LASTEXITCODE) - tag will be retried on next allocation"
             }
@@ -451,7 +474,7 @@ function Invoke-AllocateBuildCounter {
     for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
         Write-Verbose "Attempt $attempt/${MaxRetries}: fetching current counter"
 
-        $counterInfo = Get-NextBuildNumber -RepoPath $repoPath -TagPrefix $tagPrefix
+        $counterInfo = Get-NextBuildNumber -RepoPath $repoPath -TagPrefix $tagPrefix -Token $AppToken
         $nextNumber = $counterInfo.NextNumber
 
         if ($nextNumber -ge 65500) {
@@ -465,8 +488,8 @@ function Invoke-AllocateBuildCounter {
 
         $newTag = "${tagPrefix}${nextNumber}"
 
-        if (Push-BuildNumberTag -RepoPath $repoPath -NewTag $newTag) {
-            Remove-OldBuildNumberTags -RepoPath $repoPath -TagPrefix $tagPrefix -NewTag $newTag
+        if (Push-BuildNumberTag -RepoPath $repoPath -NewTag $newTag -Token $AppToken) {
+            Remove-OldBuildNumberTags -RepoPath $repoPath -TagPrefix $tagPrefix -NewTag $newTag -Token $AppToken
 
             Write-Verbose "Successfully allocated build number: $nextNumber"
             Set-GitHubOutput @{
