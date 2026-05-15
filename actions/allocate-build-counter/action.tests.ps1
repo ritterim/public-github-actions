@@ -1,4 +1,5 @@
 #TODO: This file is getting too large, break it down into smaller Pester test files
+#TODO: Add a workflow that tests PRs / merges that change things in the actions folder
 
 BeforeAll {
     # Dot-source the action script to load functions (with -NoRun to skip main logic)
@@ -684,9 +685,10 @@ Describe 'Invoke-AllocateBuildCounter' {
 
     It 'returns build_number=0 in read-only mode on pull_request event' {
         $env:GITHUB_EVENT_NAME = 'pull_request'
+        $env:APP_TOKEN = ''
         Mock -CommandName 'Set-GitHubOutput'
 
-        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 -AppToken ''
+        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5
 
         Assert-MockCalled -CommandName 'Set-GitHubOutput' -Times 1 -ParameterFilter {
             $Outputs.build_number -eq 0 -and $Outputs.tag -match '_counters/org/repo/repo-0'
@@ -695,26 +697,29 @@ Describe 'Invoke-AllocateBuildCounter' {
 
     It 'throws when no token AND event is not pull_request' {
         $env:GITHUB_EVENT_NAME = 'push'
-        { Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 -AppToken '' } | Should -Throw '*No APP_TOKEN provided outside of pull_request context*'
+        $env:APP_TOKEN = ''
+        { Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 } | Should -Throw '*No APP_TOKEN provided outside of pull_request context*'
     }
 
     It 'throws when no token AND GITHUB_EVENT_NAME is empty (fail closed)' {
         $env:GITHUB_EVENT_NAME = ''
-        { Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 -AppToken '' } | Should -Throw '*No APP_TOKEN provided outside of pull_request context*'
+        $env:APP_TOKEN = ''
+        { Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 } | Should -Throw '*No APP_TOKEN provided outside of pull_request context*'
     }
 
     It 'throws when no token AND event is workflow_dispatch' {
         $env:GITHUB_EVENT_NAME = 'workflow_dispatch'
-        { Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 -AppToken '' } | Should -Throw '*No APP_TOKEN provided outside of pull_request context*'
+        $env:APP_TOKEN = ''
+        { Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 } | Should -Throw '*No APP_TOKEN provided outside of pull_request context*'
     }
 
-    It 'prefers APP_TOKEN environment variable over parameter' {
+    It 'uses APP_TOKEN environment variable' {
         $testRepo = New-TestGitRepo
         $env:APP_TOKEN = 'env-token'
 
         Mock -CommandName 'Set-GitHubOutput' -MockWith { }
 
-        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 -AppToken 'param-token' `
+        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 `
             -RepoUrl "file://$($testRepo.BareDir)" -DestPath "$($testRepo.WorkDir)-test"
 
         Assert-MockCalled -CommandName 'Set-GitHubOutput' -Times 1 -ParameterFilter {
@@ -727,6 +732,7 @@ Describe 'Invoke-AllocateBuildCounter' {
 
     It 'successfully allocates build number on first attempt' {
         $testRepo = New-TestGitRepo
+        $env:APP_TOKEN = 'test-token'
         $script:capturedOutput = @{}
 
         Mock -CommandName 'Set-GitHubOutput' -MockWith {
@@ -734,7 +740,7 @@ Describe 'Invoke-AllocateBuildCounter' {
             $script:capturedOutput = $Outputs
         }
 
-        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 -AppToken 'test-token' `
+        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 `
             -RepoUrl "file://$($testRepo.BareDir)" -DestPath "$($testRepo.WorkDir)-test"
 
         $script:capturedOutput.build_number | Should -Be 1
@@ -747,42 +753,46 @@ Describe 'Invoke-AllocateBuildCounter' {
 
 
     It 'returns early when counter_key validation fails' {
+        $env:APP_TOKEN = 'test-token'
         $initRepoCalls = 0
         Mock -CommandName 'Initialize-CounterRepository' -MockWith {
             $initRepoCalls++
         }
 
-        Invoke-AllocateBuildCounter -CounterKey 'invalid-key!' -MaxRetries 5 -AppToken 'test-token'
+        Invoke-AllocateBuildCounter -CounterKey 'invalid-key!' -MaxRetries 5
 
         $initRepoCalls | Should -Be 0
     }
 
     It 'returns early when max retries validation fails' {
+        $env:APP_TOKEN = 'test-token'
         $initRepoCalls = 0
         Mock -CommandName 'Initialize-CounterRepository' -MockWith {
             $initRepoCalls++
         }
 
-        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 101 -AppToken 'test-token'
+        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 101
 
         $initRepoCalls | Should -Be 0
     }
 
     It 'returns early when GITHUB_SERVER_URL is not the canonical github.com' {
         $env:GITHUB_SERVER_URL = 'https://evil.com'
+        $env:APP_TOKEN = 'test-token'
         $initRepoCalls = 0
         Mock -CommandName 'Initialize-CounterRepository' -MockWith { $initRepoCalls++ }
 
-        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 -AppToken 'test-token'
+        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5
 
         $initRepoCalls | Should -Be 0
     }
 
     It 'returns early when -RepoUrl is malformed' {
+        $env:APP_TOKEN = 'test-token'
         $initRepoCalls = 0
         Mock -CommandName 'Initialize-CounterRepository' -MockWith { $initRepoCalls++ }
 
-        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 -AppToken 'test-token' `
+        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 `
             -RepoUrl 'http://github.com/org/repo.git'
 
         $initRepoCalls | Should -Be 0
@@ -790,20 +800,22 @@ Describe 'Invoke-AllocateBuildCounter' {
 
     It 'returns early when COUNTER_REPO_OWNER is malformed' {
         $env:COUNTER_REPO_OWNER = 'bad-owner-'
+        $env:APP_TOKEN = 'test-token'
         $initRepoCalls = 0
         Mock -CommandName 'Initialize-CounterRepository' -MockWith { $initRepoCalls++ }
 
-        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 -AppToken 'test-token'
+        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5
 
         $initRepoCalls | Should -Be 0
     }
 
     It 'returns early when COUNTER_REPO_NAME is malformed' {
         $env:COUNTER_REPO_NAME = 'bad@name'
+        $env:APP_TOKEN = 'test-token'
         $initRepoCalls = 0
         Mock -CommandName 'Initialize-CounterRepository' -MockWith { $initRepoCalls++ }
 
-        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 -AppToken 'test-token'
+        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5
 
         $initRepoCalls | Should -Be 0
     }
@@ -811,20 +823,22 @@ Describe 'Invoke-AllocateBuildCounter' {
     It 'returns early when GITHUB_REPOSITORY_OWNER is malformed' {
         $env:GITHUB_REPOSITORY_OWNER = 'bad-owner-'
         $env:COUNTER_REPO_OWNER = 'goodowner'  # avoid validator failing on counter owner first
+        $env:APP_TOKEN = 'test-token'
         $initRepoCalls = 0
         Mock -CommandName 'Initialize-CounterRepository' -MockWith { $initRepoCalls++ }
 
-        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 -AppToken 'test-token'
+        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5
 
         $initRepoCalls | Should -Be 0
     }
 
     It 'returns early when GITHUB_REPOSITORY is malformed' {
         $env:GITHUB_REPOSITORY = 'org/bad@repo'
+        $env:APP_TOKEN = 'test-token'
         $initRepoCalls = 0
         Mock -CommandName 'Initialize-CounterRepository' -MockWith { $initRepoCalls++ }
 
-        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 -AppToken 'test-token'
+        Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5
 
         $initRepoCalls | Should -Be 0
     }

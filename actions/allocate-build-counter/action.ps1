@@ -29,7 +29,6 @@ GitHub action outputs:
   tag - The git tag created for this build counter
 #>
 
-#TODO: AppToken should never be passed as a parameter, only as environment variables.  Passing as parameter could leak it to other processes or store it in a history file.
 #TODO: Additional security reviews of the code.
 
 #Requires -Version 7.0
@@ -37,7 +36,6 @@ GitHub action outputs:
 param(
     [string] $CounterKey = 'repo',
     [int] $MaxRetries = 25,
-    [string] $AppToken = '',
     [switch] $NoRun
 )
 
@@ -355,7 +353,6 @@ function Invoke-AllocateBuildCounter {
     param(
         [string] $CounterKey,
         [int] $MaxRetries,
-        [string] $AppToken,
         [string] $RepoUrl = '',
         [string] $DestPath = ''
     )
@@ -414,8 +411,7 @@ function Invoke-AllocateBuildCounter {
 
     $counterRepo = "$counterRepoOwner/$counterRepoName"
 
-    # Environment variable takes precedence over param
-    $AppToken = if ($env:APP_TOKEN) { $env:APP_TOKEN } else { $AppToken }
+    $AppToken = $env:APP_TOKEN
 
     $tagPrefix = "_counters/$resolvedOrg/$resolvedRepo/$CounterKey-"
 
@@ -507,7 +503,7 @@ $resolvedDestPath = if (-not $isGitHubActions -and $env:BUILD_COUNTER_DEST_PATH)
 
 try {
     Invoke-AllocateBuildCounter -CounterKey $resolvedCounterKey -MaxRetries $resolvedMaxRetries `
-        -AppToken $AppToken -RepoUrl $resolvedRepoUrl -DestPath $resolvedDestPath
+        -RepoUrl $resolvedRepoUrl -DestPath $resolvedDestPath
 }
 catch {
     Write-Error "Action failed: $_"
