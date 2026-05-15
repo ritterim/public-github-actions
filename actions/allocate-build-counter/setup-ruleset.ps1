@@ -19,8 +19,6 @@ The numeric ID of the GitHub App that should bypass the ruleset. Required.
 ./setup-ruleset.ps1 -Repository my-org/build-counter -AppId 123456
 #>
 
-#TODO: Additional security reviews of the code.
-
 param(
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^[a-zA-Z0-9][a-zA-Z0-9-]*/[a-zA-Z0-9_][a-zA-Z0-9._-]*$')]
@@ -37,12 +35,18 @@ if ($AppId -notmatch '^\d+$') {
     exit 1
 }
 
+[int64]$AppIdInt = $AppId
+if ($AppIdInt -le 0 -or $AppIdInt -gt [int32]::MaxValue) {
+    Write-Error "AppId must be a positive integer between 1 and 2147483647. Received: $AppId"
+    exit 1
+}
+
 try {
     # Verify the target repository exists and the caller can reach it. The
     # script no longer derives the repo from the current working directory,
     # so this check replaces the cwd-context guard.
     Write-Host "Verifying repository: $Repository" -ForegroundColor Cyan
-    $null = gh api "repos/$Repository" --jq '.full_name' 2>$null
+    $null = gh api "repos/$Repository" --jq '.full_name' 2>&1
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Repository '$Repository' not found or not accessible with the current gh token."
         exit 1
@@ -52,16 +56,18 @@ try {
     # installations visible to the current token; if the caller has admin:org
     # on the owning org this will include the build-counter app installation.
     Write-Host "Verifying GitHub App with ID: $AppId" -ForegroundColor Cyan
-    $appInfo = gh api "app/installations" --paginate --jq ".[] | select(.app_id == $AppId)" 2>$null
-    if (-not $appInfo) {
+    $jqAppFilter = ".[] | select(.app_id == $AppIdInt)"
+    $appInfo = gh api "app/installations" --paginate --jq $jqAppFilter 2>&1
+    if ($LASTEXITCODE -ne 0 -or -not $appInfo) {
         Write-Error "GitHub App with ID $AppId not found or not installed in this organization."
         exit 1
     }
 
     # Idempotency: skip if a ruleset with the same name already exists.
     $rulesetName = "Build Counter Tag Protection"
-    $existing = gh api "repos/$Repository/rulesets" --jq ".[] | select(.name == `"$rulesetName`")" 2>$null
-    if ($existing) {
+    $jqRulesetFilter = ".[] | select(.name == ""$rulesetName"")"
+    $existing = gh api "repos/$Repository/rulesets" --jq $jqRulesetFilter 2>&1
+    if ($LASTEXITCODE -eq 0 -and $existing) {
         Write-Host "Ruleset '$rulesetName' already exists on $Repository - skipping." -ForegroundColor Yellow
         return
     }
@@ -96,10 +102,10 @@ try {
         -X POST `
         --input - `
         -H "Accept: application/vnd.github+json" `
-        -H "X-GitHub-Api-Version: 2022-11-28"
+        -H "X-GitHub-Api-Version: 2022-11-28" 2>&1
 
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed to create ruleset."
+        Write-Error "Failed to create ruleset. Check that the GitHub App has admin permissions on the repository."
         exit 1
     }
 
