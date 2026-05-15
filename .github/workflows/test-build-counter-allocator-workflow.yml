@@ -43,5 +43,3 @@ jobs:
         env:
           BUILD_NUMBER: ${{ needs.allocate.outputs.build_number }}
           COUNTER_TAG: ${{ needs.allocate.outputs.tag }}
-
-# TODO: Create a copy of this to test the calculate-version-using-build-counter-allocator.yml workflow
