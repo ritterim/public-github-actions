@@ -314,17 +314,28 @@ jobs:
           echo "git_commit_date=${COMMIT_DATE}" >> "${GITHUB_OUTPUT}"
           echo "git_commit_timestamp=${COMMIT_TIMESTAMP}" >> "${GITHUB_OUTPUT}"
 
-      # TODO: Use environment variables here, not direct injection of the steps.version.outputs values to avoid script injection
       - name: Display Version Outputs
+        env:
+          SHORT_GIT_HASH: ${{ steps.version.outputs.short_git_hash }}
+          GIT_HASH: ${{ steps.version.outputs.git_hash }}
+          MAJOR_MINOR_VERSION: ${{ steps.version.outputs.major_minor_version }}
+          PATCH_VERSION: ${{ steps.version.outputs.patch_version }}
+          VERSION: ${{ steps.version.outputs.version }}
+          INFORMATIONAL_VERSION: ${{ steps.version.outputs.informational_version }}
+          VERSION_SUFFIX: ${{ steps.version.outputs.version_suffix }}
+          BUILD_DATE: ${{ steps.version.outputs.build_date }}
+          BUILD_TIMESTAMP: ${{ steps.version.outputs.build_timestamp }}
+          GIT_COMMIT_DATE: ${{ steps.version.outputs.git_commit_date }}
+          GIT_COMMIT_TIMESTAMP: ${{ steps.version.outputs.git_commit_timestamp }}
         run: |
-          echo "short_git_hash: ${{ steps.version.outputs.short_git_hash }}"
-          echo "git_hash: ${{ steps.version.outputs.git_hash }}"
-          echo "major_minor_version: ${{ steps.version.outputs.major_minor_version }}"
-          echo "patch_version: ${{ steps.version.outputs.patch_version }}"
-          echo "version: ${{ steps.version.outputs.version }}"
-          echo "informational_version: ${{ steps.version.outputs.informational_version }}"
-          echo "version_suffix: ${{ steps.version.outputs.version_suffix }}"
-          echo "build_date: ${{ steps.version.outputs.build_date }}"
-          echo "build_timestamp: ${{ steps.version.outputs.build_timestamp }}"
-          echo "git_commit_date: ${{ steps.version.outputs.git_commit_date }}"
-          echo "git_commit_timestamp: ${{ steps.version.outputs.git_commit_timestamp }}"
+          echo "short_git_hash: $SHORT_GIT_HASH"
+          echo "git_hash: $GIT_HASH"
+          echo "major_minor_version: $MAJOR_MINOR_VERSION"
+          echo "patch_version: $PATCH_VERSION"
+          echo "version: $VERSION"
+          echo "informational_version: $INFORMATIONAL_VERSION"
+          echo "version_suffix: $VERSION_SUFFIX"
+          echo "build_date: $BUILD_DATE"
+          echo "build_timestamp: $BUILD_TIMESTAMP"
+          echo "git_commit_date: $GIT_COMMIT_DATE"
+          echo "git_commit_timestamp: $GIT_COMMIT_TIMESTAMP"
