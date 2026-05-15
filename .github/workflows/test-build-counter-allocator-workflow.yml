@@ -1,0 +1,43 @@
+name: "Test: Build Counter Allocator"
+
+# ## Purpose
+# Standalone testing workflow for the build-counter-allocator reusable workflow.
+# Allocates a build counter and displays the result for validation.
+# Triggered on push to master, all pull requests, and manual dispatch via workflow_dispatch.
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+# TODO: Test on PR and push to the trunk branch when changes are made to any of the related files  
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+
+  allocate:
+    uses: ./.github/workflows/build-counter-allocator.yml
+    with:
+      counter_key: test
+      max_retries: 25
+      counter_app_id: ${{ vars.BUILD_COUNTER_APP_ID }}
+    secrets:
+      BUILD_COUNTER_APP_PRIVATE_KEY: ${{ secrets.BUILD_COUNTER_APP_PRIVATE_KEY }}
+
+  # TODO: Use environment variables here, not direct injection of the values to avoid script injection
+  display-results:
+    needs: [ allocate ]
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "Build number : ${{ needs.allocate.outputs.build_number }}"
+          echo "Counter tag  : ${{ needs.allocate.outputs.tag }}"
+
+# TODO: Create a copy of this to test the calculate-version-using-build-counter-allocator.yml workflow
