@@ -66,6 +66,5 @@ runs:
         APP_TOKEN: ${{ steps.app-token.outputs.token }}
         COUNTER_REPO_OWNER: ${{ inputs.counter_repo_owner }}
         COUNTER_REPO_NAME: ${{ inputs.counter_repo_name }}
-      run: ${{ github.action_path }}/action.ps1
-
-# TODO: Examine the run: line above for script injection from github.action_path
+        ACTION_PATH: ${{ github.action_path }}
+      run: '& "$env:ACTION_PATH/action.ps1"'

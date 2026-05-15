@@ -31,13 +31,15 @@ jobs:
     secrets:
       BUILD_COUNTER_APP_PRIVATE_KEY: ${{ secrets.BUILD_COUNTER_APP_PRIVATE_KEY }}
 
-  # TODO: Use environment variables here, not direct injection of the values to avoid script injection
   display-results:
     needs: [ allocate ]
     runs-on: ubuntu-latest
     steps:
       - run: |
-          echo "Build number : ${{ needs.allocate.outputs.build_number }}"
-          echo "Counter tag  : ${{ needs.allocate.outputs.tag }}"
+          echo "Build number : $BUILD_NUMBER"
+          echo "Counter tag  : $COUNTER_TAG"
+        env:
+          BUILD_NUMBER: ${{ needs.allocate.outputs.build_number }}
+          COUNTER_TAG: ${{ needs.allocate.outputs.tag }}
 
 # TODO: Create a copy of this to test the calculate-version-using-build-counter-allocator.yml workflow
