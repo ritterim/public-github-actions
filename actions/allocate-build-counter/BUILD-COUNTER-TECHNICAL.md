@@ -4,14 +4,23 @@ Architecture decisions, security design, and concurrency model for the build cou
 
 ## Contents
 
-- [Why Git Tags as a Counter](#why-git-tags-as-a-counter)
-- [Tag Namespace Design](#tag-namespace-design)
-- [Counter Repository Ownership](#counter-repository-ownership)
-- [Concurrency Model](#concurrency-model)
-- [16-Bit Counter Range](#16-bit-counter-range)
-- [Security Design](#security-design)
-- [Supply-chain hardening](#supply-chain-hardening)
-- [Workflow Inventory](#workflow-inventory)
+- [Build Counter — Technical Reference](#build-counter--technical-reference)
+  - [Contents](#contents)
+  - [Why Git Tags as a Counter](#why-git-tags-as-a-counter)
+  - [Tag Namespace Design](#tag-namespace-design)
+  - [Counter Repository Ownership](#counter-repository-ownership)
+  - [Concurrency Model](#concurrency-model)
+    - [Layer 1 — Workflow-level serialization (concurrency group)](#layer-1--workflow-level-serialization-concurrency-group)
+    - [Layer 2 — Optimistic locking in the action](#layer-2--optimistic-locking-in-the-action)
+  - [16-Bit Counter Range](#16-bit-counter-range)
+    - [Rollover recovery](#rollover-recovery)
+  - [Security Design](#security-design)
+    - [GitHub App blast radius](#github-app-blast-radius)
+    - [Tag ruleset](#tag-ruleset)
+    - [Short-lived tokens](#short-lived-tokens)
+    - [Audit log (GitHub Enterprise)](#audit-log-github-enterprise)
+  - [Supply-chain hardening](#supply-chain-hardening)
+  - [Workflow Inventory](#workflow-inventory)
 
 ---
 
@@ -104,6 +113,8 @@ At 50 builds per day, a single counter takes ~3.6 years to reach 65,535. Because
 
 At build number ≥ 65,000 the action emits a `::warning::` annotation as advance notice (~535 builds of runway). At rollover it emits another warning.
 
+TODO: Consider emitting an error at ≥ 65500?
+
 Recovery is self-service: change the `counter_key` in the calling workflow (e.g. `repo` → `repo2`). The new counter_key starts from 1. No access to the central `build-counter` repository is required, and no coordination with the counter store owner is needed.
 
 ---
@@ -112,7 +123,7 @@ Recovery is self-service: change the `counter_key` in the calling workflow (e.g.
 
 ### GitHub App blast radius
 
-The GitHub App is installed on **one repository only** (`build-counter`) and has one permission: **Contents: read and write**. A compromised private key allows an attacker to:
+The GitHub App is installed on **one repository only** (usually `build-counter`) and has one permission: **Contents: read and write**. A compromised private key allows an attacker to:
 
 - Write or delete tags in `build-counter` — disrupting counter sequences
 - Nothing else — no access to Actions, secrets, code in any other repository
@@ -121,7 +132,7 @@ This is the intentional blast radius. The counter store is a throwaway tag store
 
 ### Tag ruleset
 
-A tag ruleset on `_counters/**` in the `build-counter` repository restricts tag creation and deletion to the GitHub App. The app is the only actor in the bypass list. Org admins cannot modify counter tags without being explicitly added to the bypass list.
+A tag ruleset on `_counters/**` in the build counter repository restricts tag creation and deletion to the GitHub App. The app is the only actor in the bypass list. Org admins cannot modify counter tags without being explicitly added to the bypass list.
 
 This prevents:
 - Manual tag manipulation that would corrupt counter state
@@ -143,7 +154,7 @@ Every installation token generation appears in the organization audit log. Anoma
 
 ## Supply-chain hardening
 
-The GitHub App token has `Contents: write` on `build-counter`. Any executable file that lives in `build-counter` is reachable by a stolen app key: an attacker could modify it and wait for the next admin or workflow to run the tampered copy.
+The GitHub App token has `Contents: write` on `build-counter`. Any executable file that lives in the build counter repository is reachable by a stolen app key: an attacker could modify it and wait for the next admin or workflow to run the tampered copy.
 
 To eliminate that path, every piece of executable content related to the counter system lives here in [`ritterim/public-github-actions`](https://github.com/ritterim/public-github-actions), where the build-counter GitHub App has no write access:
 
@@ -151,7 +162,7 @@ To eliminate that path, every piece of executable content related to the counter
 - The reusable workflows (`build-counter-allocator.yml`, `calculate-version-using-build-counter-allocator.yml`)
 - The operator setup scripts (`setup-app-installation.ps1`, `setup-ruleset.ps1`) — note that the setup scripts run with **admin:org** scope on an operator's laptop, a strictly higher-trust context than the workflow runtime; keeping them off `build-counter` is the more important of the two moves.
 
-`build-counter` itself is a pure tag store with no executable content. Even full write access to `build-counter` does not let an attacker tamper with the code that callers — or admins — execute.
+The build counter repository itself is a pure tag store with no executable content. Even full write access to the build counter repository  does not let an attacker tamper with the code that callers — or admins — execute.
 
 ---
 
