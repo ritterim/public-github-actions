@@ -185,7 +185,9 @@ Both approaches are hosted in a shared central repository and called via reusabl
 **Option A: Use `calculate-version-using-build-counter-allocator.yml`** (recommended)
 - Allocates a counter and computes a full semver in one workflow
 - Best when: You need version information for your build artifacts
-- Pick `version_source: version_txt` to read `major.minor` from `version.txt`, or `version_source: parameters` to pass `major_minor_version` directly (TODO: Rewrite this to break out the options as sub-bullets)
+- Pick your version source:
+  - `version_source: version_txt` — read `major.minor` from `version.txt`
+  - `version_source: parameters` — pass `major_minor_version` directly
 
 **Option B: Use `build-counter-allocator.yml`** (minimal allocation only)
 - Allocates a counter number without version calculation
