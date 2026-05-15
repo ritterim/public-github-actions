@@ -173,4 +173,58 @@ Describe 'Invoke-AllocateBuildCounter' {
 
         $initRepoCalls | Should -Be 0
     }
+
+    It 'throws hard error when build counter reaches exactly 65500' {
+        $testRepo = New-TestGitRepo
+        $env:APP_TOKEN = 'test-token'
+        $tagPrefix = '_counters/org/repo/repo-'
+
+        & git -C $testRepo.BareDir tag "${tagPrefix}65499" 2>&1 | Out-Null
+        & git -C $testRepo.WorkDir push origin "refs/tags/${tagPrefix}65499" 2>&1 | Out-Null
+
+        { Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 `
+            -RepoUrl "file://$($testRepo.BareDir)" -DestPath "$($testRepo.WorkDir)-test" } | Should -Throw '*reached hard limit*65500*'
+
+        Remove-TestGitRepo -Repo $testRepo
+        Remove-Item "$($testRepo.WorkDir)-test" -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
+    It 'throws hard error when build counter already past 65500 (skip scenario)' {
+        $testRepo = New-TestGitRepo
+        $env:APP_TOKEN = 'test-token'
+        $tagPrefix = '_counters/org/repo/repo-'
+
+        & git -C $testRepo.BareDir tag "${tagPrefix}65510" 2>&1 | Out-Null
+        & git -C $testRepo.WorkDir push origin "refs/tags/${tagPrefix}65510" 2>&1 | Out-Null
+
+        { Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 `
+            -RepoUrl "file://$($testRepo.BareDir)" -DestPath "$($testRepo.WorkDir)-test" } | Should -Throw '*reached hard limit*'
+
+        Remove-TestGitRepo -Repo $testRepo
+        Remove-Item "$($testRepo.WorkDir)-test" -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
+    It 'emits warning and allocates successfully at 65001' {
+        $testRepo = New-TestGitRepo
+        $env:APP_TOKEN = 'test-token'
+        $tagPrefix = '_counters/org/repo/repo-'
+        $script:capturedOutput = @{}
+
+        & git -C $testRepo.BareDir tag "${tagPrefix}65000" 2>&1 | Out-Null
+        & git -C $testRepo.WorkDir push origin "refs/tags/${tagPrefix}65000" 2>&1 | Out-Null
+
+        Mock -CommandName 'Set-GitHubOutput' -MockWith {
+            param($Outputs)
+            $script:capturedOutput = $Outputs
+        }
+
+        { Invoke-AllocateBuildCounter -CounterKey 'repo' -MaxRetries 5 `
+            -RepoUrl "file://$($testRepo.BareDir)" -DestPath "$($testRepo.WorkDir)-test" } | Should -Not -Throw
+
+        $script:capturedOutput.build_number | Should -Be 65001
+        $script:capturedOutput.tag | Should -Be "${tagPrefix}65001"
+
+        Remove-TestGitRepo -Repo $testRepo
+        Remove-Item "$($testRepo.WorkDir)-test" -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
