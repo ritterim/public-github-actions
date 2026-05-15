@@ -45,7 +45,7 @@ Run these steps once from the org that will own the `build-counter` repository. 
 
 Create a private repository named `build-counter` in the owning org. Initialize it with a single commit (e.g. a README) so it has a valid HEAD for tag operations.
 
-This repository is the single tag store for all orgs in the enterprise. The owning org does not need to be the same org as the calling repositories. The counter repository hosts no workflows or action code; calling workflows clone it solely to read and write `_counters/**` tags via the GitHub App token.
+This repository can be the single tag store for all orgs in the enterprise. The owning org does not need to be the same org as the calling repositories. The counter repository hosts no workflows or action code; calling workflows clone it solely to read and write `_counters/**` tags via the GitHub App token.
 
 #### 2. Register the GitHub App
 
@@ -148,7 +148,7 @@ For each additional organization whose workflows will call the counter, store th
 
 `BUILD_COUNTER_REPO_OWNER` tells the reusable workflows where to find the counter repository. It is not needed for single-org tenants (GitHub Teams) — leave it unset and the workflows default to the calling repo's own org.
 
-Then allow the calling org to consume the reusable workflows from the repository that hosts them (for Ritterim that is `ritterim/public-github-actions`; for a private fork, your own actions repository):
+Then allow the calling org to consume the reusable workflows from the repository that hosts them (for RitterIM that is `ritterim/public-github-actions`; for a private fork, your own actions repository):
 
 1. Navigate to **Settings → Actions → General** in the calling org
 2. Select **"Allow reusable workflows from selected repositories"**
@@ -184,8 +184,8 @@ Both approaches are hosted in a shared central repository and called via reusabl
 
 **Option A: Use `calculate-version-using-build-counter-allocator.yml`** (recommended)
 - Allocates a counter and computes a full semver in one workflow
-- Pick `version_source: version_txt` to read `major.minor` from `version.txt`, or `version_source: parameters` to pass `major_minor_version` directly
 - Best when: You need version information for your build artifacts
+- Pick `version_source: version_txt` to read `major.minor` from `version.txt`, or `version_source: parameters` to pass `major_minor_version` directly (TODO: Rewrite this to break out the options as sub-bullets)
 
 **Option B: Use `build-counter-allocator.yml`** (minimal allocation only)
 - Allocates a counter number without version calculation
@@ -193,7 +193,7 @@ Both approaches are hosted in a shared central repository and called via reusabl
 
 ### 2. Set Up Your Workflow
 
-> Examples target `ritterim/public-github-actions@v1.17`. Private forks substitute their own org/repo path.
+> Examples target `ritterim/public-github-actions@v1.17`. Private forks should substitute their own org/repo path.
 
 **If using `calculate-version-using-build-counter-allocator.yml` (recommended), reading major.minor from `version.txt`:**
 
@@ -227,7 +227,7 @@ jobs:
       BUILD_COUNTER_APP_PRIVATE_KEY: ${{ secrets.BUILD_COUNTER_APP_PRIVATE_KEY }}
 ```
 
-The reusable workflow reads `vars.BUILD_COUNTER_APP_ID` and `vars.BUILD_COUNTER_REPO_OWNER` from the calling org automatically — no need to pass them explicitly. PR builds receive `build_number=0` automatically; non-PR builds without the secret fail loudly so misconfiguration cannot silently ship `version 0`.
+The reusable workflow reads `vars.BUILD_COUNTER_APP_ID` and `vars.BUILD_COUNTER_REPO_OWNER` from the calling org automatically — no need to pass them explicitly. PR builds receive `build_number=0` automatically; non-PR builds without the secret fail loudly so misconfiguration cannot silently ship `build_number=0`.
 
 **If using `build-counter-allocator.yml`:**
 
@@ -260,7 +260,7 @@ jobs:
       BUILD_COUNTER_APP_PRIVATE_KEY: ${{ secrets.BUILD_COUNTER_APP_PRIVATE_KEY }}
 ```
 
-If the secret is missing on a non-PR event, the action fails loudly — there is no silent fallback to `version 0`.
+If the secret is missing on a non-PR event, the action fails loudly — there is no silent fallback to `build_number=0`.
 
 **For PR builds** (counter increment not required):
 
@@ -280,7 +280,7 @@ concurrency:
 
 ### 5. Access the Counter and Version Values
 
-Counter tags are written to `build-counter` in the namespace `_counters/{owner}/{repo}/{counter_key}-{number}`.
+Counter tags are written to the build counter repository in the namespace `_counters/{owner}/{repo}/{counter_key}-{number}`.
 
 **If using `calculate-version-using-build-counter-allocator.yml`**, access the version output:
 
@@ -308,7 +308,7 @@ build:
 
 ## Inspection and Troubleshooting
 
-Counter tags live in `build-counter`, not in the calling repository.
+Counter tags live in the build counter repository (usually `build-counter`), not in the calling repository.
 
 **View the current counter for a repository:**
 ```bash
@@ -323,13 +323,17 @@ git push origin --delete '_counters/my-org/my-repo/repo-<N>'
 ```
 The next run will start from `1`.
 
+Note that there is usually a GitHub ruleset installed on the build counter repository which will prevent modification of the `_counters/**` namespace.  You may need to add your administrator/maintainer account to the allow list before making adjustments to build counter tags.
+
 ---
 
 ## Behavior Reference
 
 **First run:** Counter automatically starts at `1`. No bootstrap required.
 
-**Rollover:** At 65,536, the counter wraps to `0` (16-bit limit; required by build systems such as NPM that reject larger patch values). A workflow warning annotation fires at 65,000 and again at rollover. To avoid version collisions without touching the central repository, change the `counter_key` in your calling workflow (e.g. `repo` → `repo2`) — the new counter_key starts a fresh sequence from 1.
+**Rollover:** At 65,536, the counter wraps to `0` (16-bit limit; required by build systems such as NPM that reject larger patch values). A workflow warning annotation starts firing at 65,000 and again at rollover. To avoid version collisions without touching the central repository, change the `counter_key` in your calling workflow (e.g. `repo` → `repo2`) — the new counter_key starts a fresh sequence from 1.
+
+TODO: Did we make it an error (not just a warning) if the value exceeds 65535?
 
 **Tag cleanup:** The allocator deletes the previous tag after each successful allocation. Only the current counter value is retained per calling repository per counter_key.
 
