@@ -53,8 +53,6 @@ Skip running setup-ruleset.ps1 at the end.
 ./setup-app-installation.ps1 -Hostname github.com -CounterRepository my-org/build-counter -AppId 123456 -SkipCredentialStore
 #>
 
-#TODO: Additional security reviews of the code.
-
 param(
     [Parameter(Mandatory)]
     [ValidatePattern('^[a-zA-Z0-9][a-zA-Z0-9.\-]*[a-zA-Z0-9]$')]
@@ -67,6 +65,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$AppId,
 
+    [ValidatePattern('^[a-z0-9][a-z0-9-]*[a-z0-9]$')]
     [string]$AppSlug,
 
     [string]$PrivateKeyFile,
@@ -92,7 +91,7 @@ function Assert-Hostname {
 
 function Assert-CounterRepository {
     param([string]$Repository, [string]$Hostname)
-    $null = gh api "repos/$Repository" --hostname $Hostname --jq '.full_name' 2>$null
+    $null = gh api "repos/$Repository" --hostname $Hostname --jq '.full_name' 2>&1
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Counter repository '$Repository' not found or not accessible on $Hostname. Create it first, or check that your gh token has access."
         exit 1
@@ -101,6 +100,11 @@ function Assert-CounterRepository {
 
 function Open-Url {
     param([string]$Url)
+    # Validate URL format to prevent opening malicious URLs
+    if (-not ($Url -match '^https://[a-zA-Z0-9][a-zA-Z0-9.\-]*[a-zA-Z0-9](/.*)?$')) {
+        Write-Error "Invalid URL format: $Url"
+        exit 1
+    }
     if ($IsWindows) { Start-Process $Url }
     elseif ($IsMacOS) { & open $Url }
     else { & xdg-open $Url 2>/dev/null }
@@ -108,8 +112,9 @@ function Open-Url {
 
 function Get-Installation {
     param([string]$Org, [string]$Hostname, [int]$Id)
+    $jqFilter = ".installations[] | select(.app_id == $Id)"
     $result = gh api "/orgs/$Org/installations" --hostname $Hostname --paginate `
-        --jq ".installations[] | select(.app_id == $Id)" 2>$null
+        --jq $jqFilter 2>$null
     if ($LASTEXITCODE -ne 0 -or -not $result) { return $null }
     return $result | ConvertFrom-Json
 }
@@ -169,15 +174,15 @@ if ($installation) {
     # Re-verify
     $installation = Get-Installation -Org $Org -Hostname $Hostname -Id ([int]$AppId)
     if (-not $installation) {
-        Write-Warning "Still cannot confirm installation via API. Continuing — this may fail if the app is not installed."
-        Write-Warning "Check: https://$Hostname/organizations/$Org/settings/installations"
-    } else {
-        if ($installation.repository_selection -ne "selected") {
-            Write-Error "App installed on all repositories. Re-install scoped to only $CounterRepository : https://$Hostname/organizations/$Org/settings/installations/$($installation.id)"
-            exit 1
-        }
-        Write-Host "  Installation confirmed. Scope: $($installation.repository_selection)" -ForegroundColor Green
+        Write-Error "Cannot confirm app installation via API. Installation may have failed."
+        Write-Error "Check app settings: https://$Hostname/organizations/$Org/settings/installations"
+        exit 1
     }
+    if ($installation.repository_selection -ne "selected") {
+        Write-Error "App installed on all repositories. Re-install scoped to only $CounterRepository : https://$Hostname/organizations/$Org/settings/installations/$($installation.id)"
+        exit 1
+    }
+    Write-Host "  Installation confirmed. Scope: $($installation.repository_selection)" -ForegroundColor Green
 }
 
 # --- step 2: store org variable and secret ---
@@ -203,10 +208,11 @@ if (-not $SkipCredentialStore) {
         $privateKey = Get-Content $PrivateKeyFile -Raw
     } else {
         Write-Host ""
-        Write-Host "Paste the private key PEM (press Enter then Ctrl+Z on Windows / Ctrl+D on Mac/Linux when done):" -ForegroundColor Yellow
+        Write-Host "Paste the private key PEM (input will be hidden):" -ForegroundColor Yellow
+        Write-Host "Press Enter, then Ctrl+Z on Windows / Ctrl+D on Mac/Linux when done:" -ForegroundColor Yellow
         $lines = @()
         while ($true) {
-            $line = $Host.UI.ReadLine()
+            $line = Read-Host -MaskInput -ErrorAction SilentlyContinue
             if ($null -eq $line) { break }
             $lines += $line
         }
@@ -219,7 +225,12 @@ if (-not $SkipCredentialStore) {
     }
 
     $privateKey | gh secret set BUILD_COUNTER_APP_PRIVATE_KEY --org $Org
-    if ($LASTEXITCODE -ne 0) {
+    $setSecretExitCode = $LASTEXITCODE
+
+    # Clear sensitive data from memory
+    [System.GC]::Collect()
+
+    if ($setSecretExitCode -ne 0) {
         Write-Error "Failed to set org secret BUILD_COUNTER_APP_PRIVATE_KEY."
         exit 1
     }
