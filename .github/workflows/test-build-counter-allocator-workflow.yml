@@ -1,9 +1,8 @@
 name: "Test: Build Counter Allocator"
 
-# ## Purpose
 # Standalone testing workflow for the build-counter-allocator reusable workflow.
 # Allocates a build counter and displays the result for validation.
-# Triggered on push to master, all pull requests, and manual dispatch via workflow_dispatch.
+# Triggered on push to master and pull requests when files in the action directory change.
 
 permissions:
   contents: read
@@ -12,12 +11,15 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
-# TODO: Test on PR and push to the trunk branch when changes are made to any of the related files  
 on:
   push:
     branches:
       - master
+    paths:
+      - 'actions/allocate-build-counter/**'
   pull_request:
+    paths:
+      - 'actions/allocate-build-counter/**'
   workflow_dispatch:
 
 jobs:
