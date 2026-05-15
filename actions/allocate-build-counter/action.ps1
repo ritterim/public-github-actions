@@ -454,7 +454,10 @@ function Invoke-AllocateBuildCounter {
         $counterInfo = Get-NextBuildNumber -RepoPath $repoPath -TagPrefix $tagPrefix
         $nextNumber = $counterInfo.NextNumber
 
-        if ($nextNumber -eq 0) {
+        if ($nextNumber -ge 65500) {
+            Write-Output "::error::Build counter '$CounterKey' is at $nextNumber which is at or above the hard limit (65500). Change the counter_key (e.g. 'repo2') in your calling workflow to reset the counter."
+            throw "Build counter '$CounterKey' reached hard limit at $nextNumber (>= 65500)"
+        } elseif ($nextNumber -eq 0) {
             Write-Output "::warning::Build counter has rolled over from 65535 to 0. Change the counter_key (e.g. 'repo2') in your calling workflow to start a fresh counter sequence without touching the central repository."
         } elseif ($nextNumber -ge 65000) {
             Write-Output "::warning::Build counter is at $nextNumber (max 65535). Plan a counter_key change (e.g. 'repo2') in your calling workflow before rollover."
