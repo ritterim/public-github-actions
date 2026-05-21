@@ -226,7 +226,7 @@ jobs:
 
       - name: Allocate Build Counter
         if: ${{ !inputs.build_number }}
-        uses: ritterim/public-github-actions/actions/allocate-build-counter@e3c97fd80de648f59ed6bb0c20f10a8b1f4e346e
+        uses: ritterim/public-github-actions/actions/allocate-build-counter@76245ce1da126f3c0f2c95a82cf17b03762c9212
         id: allocate
         with:
           counter_key: ${{ inputs.counter_key }}
