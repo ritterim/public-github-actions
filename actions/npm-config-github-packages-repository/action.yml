@@ -33,7 +33,9 @@ runs:
       env: 
         GHTOKEN: ${{ inputs.github_token }}
       run: |
-        echo "${GHTOKEN}" | grep -E '^(gh[pousr]_[A-Za-z0-9_]{36,251}|github_pat_[a-zA-Z0-9_]+|v[0-9]\.[0-9a-f]{40})$'
+        echo "Token length: ${#GHTOKEN}"
+        echo "Token type: $(echo "$GHTOKEN" | grep -oE '^(ghp_|ghs_|gho_|ghu_|github_pat_|v[0-9]\.)' || echo 'unknown')"
+        echo "${GHTOKEN}" | grep -qE '^(gh[pousr]_[A-Za-z0-9_]{36,251}|github_pat_[a-zA-Z0-9_]+|v[0-9]\.[0-9a-f]{40})$'
 
     - name: Verify current NPM config
       shell: bash
