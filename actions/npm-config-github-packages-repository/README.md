@@ -15,8 +15,6 @@ You must have requested `packages: read` (or `packages:write` to publish) in you
 
 ## Notes 
 
-- GitHub App tokens can not currently be used to access a GitHub Packages NPM registry.
- 
 - The NPM scope must match your GitHub organization name.  GitHub Packages will not let you push up NPM packages for another scope.
 
 # Example
