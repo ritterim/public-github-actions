@@ -28,16 +28,18 @@ runs:
       with:
         npm_scope: ${{ inputs.npm_scope }}
 
-    # https://github.blog/changelog/2026-04-24-notice-about-upcoming-new-format-for-github-app-installation-tokens/
-    # https://github.blog/engineering/platform-security/behind-githubs-new-authentication-token-formats/
-    - name: Validate inputs.github_token
+    - name: Debug inputs.github_token
       shell: bash
-      env: 
+      env:
         GHTOKEN: ${{ inputs.github_token }}
       run: |
         echo "Token length: ${#GHTOKEN}"
         echo "Token type: $(echo "$GHTOKEN" | grep -oE '^(ghp_|ghs_|gho_|ghu_|github_pat_|v[0-9]\.)' || echo 'unknown')"
-        echo "${GHTOKEN}" | grep -qE '^(gh[pousr]_[A-Za-z0-9._-]{36,}|github_pat_[a-zA-Z0-9_]+|v[0-9]\.[0-9a-f]{40})$'
+
+    - name: Validate inputs.github_token
+      uses: ritterim/public-github-actions/actions/github-token-validator@v1.17
+      with:
+        token: ${{ inputs.github_token }}
 
     - name: Verify current NPM config
       shell: bash
