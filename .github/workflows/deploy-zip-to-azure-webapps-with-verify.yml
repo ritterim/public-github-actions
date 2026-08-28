@@ -1,5 +1,9 @@
 name: Azure Zip Deploy
 
+permissions:
+  contents: read
+  id-token: write
+
 # Push the zip file artifact to an Azure Web App slot using a federated Entra ID.
 # This also checks for a version string or git hash at a given endpoint to validate
 # that the slot is running the correct version.  If the slot is healthy, but running
@@ -66,6 +70,10 @@ jobs:
     timeout-minutes: 60
     environment:
       name: ${{ inputs.environment_name }}
+
+    concurrency:
+      group: deploy-${{ inputs.azure_web_app_name }}-${{ inputs.azure_web_app_slot_name }}
+      cancel-in-progress: false
 
     env:
       AZUREDEPLOYSUBSCRIPTIONID: ${{ inputs.azure_web_app_deploy_subscription_id }}

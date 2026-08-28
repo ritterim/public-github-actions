@@ -1,5 +1,8 @@
 name: Deploy (IIS)
 
+permissions:
+  contents: read
+
 # Deploy a IIS web deploy package (zip file) to IIS via Web Deploy.
 # Uses Basic authentication.  
 # NTLM authentication doesn't seem to function properly in our testing.
@@ -66,9 +69,12 @@ jobs:
     name: Build (.NET)
     runs-on: ${{ inputs.github_job_runner_spec }}
     timeout-minutes: 60
+    concurrency:
+      group: deploy-iis-${{ inputs.iis_deploy_server_fqdn }}-${{ inputs.msdeploy_param_filepath }}
+      cancel-in-progress: false
     defaults:
       run:
-        shell: pwsh    
+        shell: pwsh
 
     env:
       ARTIFACT_FILENAME: ${{ inputs.artifact_filename }}
