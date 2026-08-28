@@ -144,11 +144,13 @@ jobs:
           echo "PKGJSONVER=$PKGJSONVER" >> $GITHUB_ENV
 
       - run: ls -la
+        if: runner.debug == '1'
 
       - name: npm pack
         run: npm pack
 
       - run: ls -la
+        if: runner.debug == '1'
 
       - name: Set Outputs
         id: set-outputs

@@ -46,6 +46,7 @@ jobs:
     steps:
 
       - name: github context debug information
+        if: runner.debug == '1'
         working-directory: ./
         env:          
           GITHUB_BASE_REF: ${{ github.base_ref }}
@@ -69,8 +70,10 @@ jobs:
           echo "github.sha=$GITHUB_SHA"
 
       - run: env | sort
+        if: runner.debug == '1'
 
       - name: Look at github.event object
+        if: runner.debug == '1'
         env:
           EVENTOBJECT: ${{ toJSON(github.event) }}
         run: echo "github.event=\n$EVENTOBJECT"

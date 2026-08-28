@@ -58,6 +58,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - run: ls -la
+        if: runner.debug == '1'
 
       - name: Publish NPM Package File to GitHub Packages
         run: npm publish "${ARTIFACTFILEPATH}"

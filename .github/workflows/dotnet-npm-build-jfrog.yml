@@ -234,6 +234,7 @@ jobs:
           version: ${{ env.NPMVERSION }}
 
       - name: github context debug information
+        if: runner.debug == '1'
         working-directory: ./
         env:          
           GITHUB_BASE_REF: ${{ github.base_ref }}
@@ -346,12 +347,14 @@ jobs:
         working-directory: ${{ env.NPMPROJECTDIRECTORY }}
 
       - run: ls -la
+        if: runner.debug == '1'
         working-directory: ${{ env.NPMPROJECTDIRECTORY }}
 
       - name: jf dotnet build
         run: jf dotnet build --configuration "${CONFIGURATION}"
 
       - run: ls -la
+        if: runner.debug == '1'
 
       - name: Persist Workspace
         id: persist-workspace

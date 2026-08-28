@@ -83,6 +83,7 @@ jobs:
           name: ${{ inputs.artifact_name }}
 
       - run: ls -la
+        if: runner.debug == '1'
 
       - uses: azure/login@v2
         with:

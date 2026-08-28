@@ -30,11 +30,15 @@ runs:
 
     - name: Debug inputs.github_token
       shell: bash
+      if: runner.debug == '1'
       env:
         GHTOKEN: ${{ inputs.github_token }}
       run: |
-        echo "Token length: ${#GHTOKEN}"
-        echo "Token type: $(echo "$GHTOKEN" | grep -oE '^(ghp_|ghs_|gho_|ghu_|github_pat_|v[0-9]\.)' || echo 'unknown')"
+        if [ "${#GHTOKEN}" -gt 5 ]; then
+          echo "Token length check: pass"
+        else
+          echo "Token length check: fail"
+        fi
 
     - name: Validate inputs.github_token
       uses: ritterim/public-github-actions/actions/github-token-validator@v1.17

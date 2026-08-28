@@ -63,6 +63,7 @@ jobs:
           myget_api_key: ${{ secrets.myget_api_key }}
 
       - run: ls -la
+        if: runner.debug == '1'
 
       - name: Publish NPM Package File to MyGet
         run: npm publish "${ARTIFACTFILEPATH}"
