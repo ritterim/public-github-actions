@@ -180,81 +180,81 @@ jobs:
     steps:
 
       - name: Validate inputs.publish_artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17.2
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17.28
         with:
           file_name: ${{ env.PUBLISHARTIFACTNAME }}
 
       - name: Validate inputs.npm_package_json_filename
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17.2
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17.28
         with:
           file_name: ${{ env.NPMPACKAGEJSONFILENAME }}
 
       - name: Validate inputs.npm_package_lock_json_filename
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17.2
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17.28
         with:
           file_name: ${{ env.NPMPACKAGELOCKJSONFILENAME }}
 
       - name: Validate inputs.npm_project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.2
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.28
         with:
           path_name: ${{ env.NPMPROJECTDIRECTORY }}
 
       - name: Validate inputs.publish_artifact_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.2
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.28
         with:
           path_name: ${{ env.PUBLISHARTIFACTDIRECTORY }}
 
       - name: Validate inputs.publish_working_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.2
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.28
         with:
           path_name: ${{ env.PUBLISHWORKINGDIRECTORY }}
 
       - name: Validate inputs.informational_version
-        uses: ritterim/public-github-actions/actions/version-number-validator@v1.17.2
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.17.28
         with:
           version: ${{ env.INFORMATIONALVERSION }}
 
       - name: Validate inputs.jfrog_build_name
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.28
         with: # This regex pattern is a bit of a guess
           regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
           value: ${{ inputs.jfrog_build_name }}
 
       - name: Validate inputs.jfrog_npm_feed_repo
-        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.17.28
         with:
           name: ${{ env.JFROG_NPM_FEED_REPO }}
 
       - name: Validate inputs.jfrog_oidc_provider_name
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.28
         with: # This regex pattern is a bit of a guess
           regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
           value: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
 
       - name: Validate inputs.version
-        uses: ritterim/public-github-actions/actions/version-number-validator@v1.17.2
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.17.28
         with:
           version: ${{ env.VERSION }}
 
       - name: Validate ZIPFILENAME
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17.2
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17.28
         with:
           file_name: ${{ env.ZIPFILENAME }}
 
       - name: Validate inputs.target_brand
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.2
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.28
         with:
           value: ${{ env.TARGET_BRAND }}
           regex_pattern: '^(standard|whitelabel)$'
 
       - name: Validate inputs.target_environment
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.2
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.28
         with:
           value: ${{ env.TARGET_ENVIRONMENT }}
           regex_pattern: '^(development|staging|production)$'
 
       - name: Validate inputs.target_configuration
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.2
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.28
         with:
           value: ${{ env.TARGET_CONFIGURATION }}
           regex_pattern: '^(release|debug)$'
@@ -284,14 +284,14 @@ jobs:
           echo "github.sha=$GITHUB_SHA"
 
       - name: Checkout Project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
           lfs: true
 
       # This creates the setup-jfrog-cli-server server ID
       - name: Install JFrog CLI
-        uses: jfrog/setup-jfrog-cli@v4.5.6
+        uses: jfrog/setup-jfrog-cli@v5
         env:
           JF_URL: ${{ env.JFROG_API_BASE_URL }}
         with:
@@ -308,7 +308,7 @@ jobs:
 
       # See this for why setup-node can be slow: https://github.com/actions/setup-node/issues/726#issuecomment-1527198808
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node_version }}
           cache: 'npm'
@@ -432,7 +432,7 @@ jobs:
 
       - name: Upload Artifact for Deployment
         id: upload-publish-artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.publish_artifact_name }}
           path: "${{ inputs.publish_working_directory }}output/${{ env.ZIPFILENAME }}"

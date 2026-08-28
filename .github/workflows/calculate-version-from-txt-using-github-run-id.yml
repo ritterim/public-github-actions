@@ -91,13 +91,13 @@ jobs:
     steps:
 
       - name: Checkout Project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
 
       - name: Calculate Version
         id: version
-        uses: ritterim/public-github-actions/actions/calculate-version-from-txt-using-github-run-id@v1.17
+        uses: ritterim/public-github-actions/actions/calculate-version-from-txt-using-github-run-id@v1.17.28
         with:
           version_suffix: ${{ inputs.version_suffix }}
           github_run_id_baseline: ${{ inputs.github_run_id_baseline }}
