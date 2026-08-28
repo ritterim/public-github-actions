@@ -1,0 +1,320 @@
+version: 2
+updates:
+
+  # Reusable workflows and any root-level action manifest.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Vendored fork with its own .github/workflows tree.
+  - package-ecosystem: "github-actions"
+    directory: "/forks/persist-workspace"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Vendored fork with its own action.yml.
+  - package-ecosystem: "github-actions"
+    directory: "/forks/github-app-token"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # One entry per composite/JS action, since the github-actions ecosystem
+  # only scans the directory given, not its subdirectories.
+  - package-ecosystem: "github-actions"
+    directory: "/actions/allocate-build-counter"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/attach-artifact-to-release"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/azure-web-app-swap-when-healthy"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/calculate-version-from-txt-using-github-run-id"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/create-github-release"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/file-name-validator"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/file-path-name-validator"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/github-org-repository-validator"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/github-token-validator"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/guid-validator"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/health-and-version-check"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/jfrog-artifactory-repository-name-validator"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/npm-check-package-lock-publish-dates"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/npm-config-github-packages-repository"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/npm-config-myget-packages-repository"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/npm-config-npmjs-org-registry"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/npm-package-name-validator"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/npm-package-scope-validator"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/npmjs-access-token-validator"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/path-name-validator"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/regex-validator"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/setup-git-credentials"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/terraform-apply-plan-file"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/terraform-create-plan-file"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/terraform-fmt-check-recursive"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/terraform-init"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/terraform-show-plan-file"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/terraform-validate"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/version-number-major-minor-validator"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/actions/version-number-validator"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # npm lockfiles. `directories` supports an explicit list plus cross-directory
+  # grouping, so these five collapse into one PR per shared dependency bump
+  # instead of five.
+  - package-ecosystem: "npm"
+    directories:
+      - "/actions/azure-web-app-swap-when-healthy"
+      - "/actions/health-and-version-check"
+      - "/actions/regex-validator"
+      - "/actions/setup-git-credentials"
+      - "/forks/github-app-token"
+    schedule:
+      interval: "weekly"
+    groups:
+      npm-dependencies:
+        group-by: "dependency-name"
