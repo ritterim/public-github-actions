@@ -103,7 +103,7 @@ runs:
           > "${STDOUTFILE}"
 
     - name: Create Terraform Format Check Output Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ inputs.artifact_filename }}-fmt-check-stdout
         path: ${{ inputs.artifact_filepath }}-fmt-check-stdout.txt
@@ -142,7 +142,7 @@ runs:
           > "${STDERRFILE}"
 
     - name: Create Terraform Format Check Error Output Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       if: steps.fmt-check.outcome == 'failure'
       with:
         name: ${{ inputs.artifact_filename }}-fmt-check-stderr
@@ -163,7 +163,7 @@ runs:
         echo "$EOF" >> "$GITHUB_ENV"
 
     - name: Report on Terraform Format Check Failure to GitHub PR
-      uses: actions/github-script@v6
+      uses: actions/github-script@v9
       if: steps.fmt-check.outcome == 'failure'
       with:
         github-token: ${{ env.GITHUB_TOKEN }}
