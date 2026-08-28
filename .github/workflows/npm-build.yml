@@ -61,6 +61,7 @@ jobs:
   build:
     name: Build (NPM)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     defaults:
       run:
           working-directory: ${{ inputs.project_directory }}

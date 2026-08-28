@@ -6,6 +6,7 @@ on:
 jobs:
   init:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,6 +20,7 @@ jobs:
   step-a:
     needs: [init]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/setup-node@v4
       - uses: bissolli/gh-action-persist-workspace@v1
@@ -31,6 +33,7 @@ jobs:
   step-b:
     needs: [init]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/setup-node@v4
       - uses: bissolli/gh-action-persist-workspace@v1

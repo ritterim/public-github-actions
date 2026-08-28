@@ -29,6 +29,7 @@ jobs:
   publish:
     name: GitHub Packages Publish (NPM)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     env:
       ARTIFACTNAME: ${{ inputs.artifact_name }}

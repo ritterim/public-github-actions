@@ -29,6 +29,7 @@ jobs:
   azure-webapps-zip-deploy:
     name: Azure Zip Deploy
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment:
       name: ${{ inputs.environment_name }}
 

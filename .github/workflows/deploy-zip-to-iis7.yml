@@ -65,6 +65,7 @@ jobs:
     # Note that changing either the 'build:' label or the value of the 'name:' can cause breakage for the GitHub branch protection rules.
     name: Build (.NET)
     runs-on: ${{ inputs.github_job_runner_spec }}
+    timeout-minutes: 60
     defaults:
       run:
         shell: pwsh    

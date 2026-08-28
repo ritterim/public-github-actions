@@ -73,6 +73,7 @@ jobs:
   version:
     name: version.txt Calculation
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     outputs:
       short_git_hash: ${{ steps.version.outputs.short_git_hash }}

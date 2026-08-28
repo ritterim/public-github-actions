@@ -52,6 +52,7 @@ jobs:
   build:
     name: Build (.NET)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: ${{ inputs.project_directory }}

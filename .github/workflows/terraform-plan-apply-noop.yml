@@ -23,5 +23,6 @@ jobs:
   terraform:
     name: Terraform Plan-Apply
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - run: echo "Doing nothing.  This is only here so that the 'required checks' in GitHub have something that passes."

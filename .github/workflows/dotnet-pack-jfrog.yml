@@ -105,6 +105,7 @@ jobs:
   pack:
     name: Pack (.NET)
     runs-on: ${{ inputs.github_job_runner_spec }}
+    timeout-minutes: 30
     defaults:
       run:
           working-directory: ${{ inputs.project_directory }}

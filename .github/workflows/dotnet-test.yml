@@ -102,6 +102,7 @@ jobs:
   tests:
     name: Test (.NET)
     runs-on: ${{ inputs.github_job_runner_spec }}
+    timeout-minutes: 60
     defaults:
       run:
           working-directory: ${{ inputs.project_directory }}
