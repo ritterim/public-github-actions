@@ -184,7 +184,16 @@ jobs:
           for branch in "${ALLOWEDBRANCHES[@]}"
           do
             echo "  Check agaisnt [$branch]"
-            if [[ "${TAGGEDBRANCHES[@]}" =~ "remotes/origin/$branch" ]]
+            FOUND=0
+            for t in "${TAGGEDBRANCHES[@]}"
+            do
+              if [[ "$t" == "remotes/origin/$branch" ]]
+              then
+                FOUND=1
+                break
+              fi
+            done
+            if [[ "$FOUND" -eq 1 ]]
             then
               echo "    Value [$branch] found!"
               let "FOUNDCOUNT=FOUNDCOUNT+1"
