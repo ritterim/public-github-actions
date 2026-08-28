@@ -101,24 +101,24 @@ jobs:
     steps:
 
       - name: Validate inputs.configuration
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.28
         with:
           case_sensitive: false
           regex_pattern: "^debug|release$"
           value: ${{ env.CONFIGURATION }}
 
       - name: Validate inputs.npm_package_json_filename
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17.28
         with:
           file_name: ${{ env.NPMPACKAGEJSONFILENAME }}
 
       - name: Validate inputs.npm_project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.28
         with:
           path_name: ${{ env.NPMPROJECTDIRECTORY }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.28
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
@@ -146,12 +146,12 @@ jobs:
           echo "github.sha=$GITHUB_SHA"
 
       - name: Checkout Project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ inputs.dotnet_version }}
           source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
@@ -159,7 +159,7 @@ jobs:
           NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Setup ~/.nuget/packages cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           key: nuget-packages-${{ runner.os }}-${{ hashFiles(env.NUGETHASHFILES) }}
           path: |
@@ -167,14 +167,14 @@ jobs:
 
       # See this for why setup-node can be slow: https://github.com/actions/setup-node/issues/726#issuecomment-1527198808
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node_version }}
           cache: 'npm'
           cache-dependency-path: "${{ inputs.npm_project_directory }}${{ inputs.npm_package_json_filename }}"
 
       - name: npm-config-github-packages-repository
-        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@v1.17
+        uses: ritterim/public-github-actions/actions/npm-config-github-packages-repository@v1.17.28
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -193,6 +193,6 @@ jobs:
 
       - name: Persist Workspace
         id: persist-workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17.28
         with:
           artifact_name_suffix: ${{ inputs.persisted_workspace_artifact_suffix }}

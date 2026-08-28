@@ -96,24 +96,24 @@ jobs:
     steps:
 
       - name: Validate inputs.jfrog_build_name
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.28
         with: # This regex pattern is a bit of a guess
           regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
           value: ${{ inputs.jfrog_build_name }}
 
       - name: Validate inputs.jfrog_npm_feed_repo
-        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.17.28
         with:
           name: ${{ env.JFROG_NPM_FEED_REPO }}
 
       - name: Validate inputs.jfrog_oidc_provider_name
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.28
         with: # This regex pattern is a bit of a guess
           regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
           value: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.28
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
@@ -123,19 +123,19 @@ jobs:
         run: echo "The 'inputs.run_tests' value is FALSE, skipping tests!"
 
       - name: Checkout Project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
 
       - name: Restore Workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17.28
         with:
           action: retrieve
           artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
 
       # This creates the setup-jfrog-cli-server server ID
       - name: Install JFrog CLI
-        uses: jfrog/setup-jfrog-cli@v4.5.6
+        uses: jfrog/setup-jfrog-cli@v5
         env:
           JF_URL: ${{ env.JFROG_API_BASE_URL }}
         with:

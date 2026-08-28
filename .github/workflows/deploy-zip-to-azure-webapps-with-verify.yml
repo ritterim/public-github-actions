@@ -72,12 +72,12 @@ jobs:
     steps:
 
       - name: Validate inputs.azure_web_app_deploy_subscription_id
-        uses: ritterim/public-github-actions/actions/guid-validator@v1.17
+        uses: ritterim/public-github-actions/actions/guid-validator@v1.17.28
         with:
           guid: ${{ env.AZUREDEPLOYSUBSCRIPTIONID }}
 
       - name: Download artifact from build job
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.artifact_name }}
 
@@ -94,7 +94,7 @@ jobs:
       - run: az account set --subscription "${AZUREDEPLOYSUBSCRIPTIONID}"
 
       - name: Zip Deploy to Azure
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ inputs.azure_web_app_name }}
           slot-name: ${{ inputs.azure_web_app_slot_name }}
@@ -104,7 +104,7 @@ jobs:
       # This catches any problems where the application slot did not restart as expected post-deploy.
       # Tends to only happen on Linux Azure Web App instances.
       - name: Check for expected version in the deployed slot.
-        uses: ritterim/public-github-actions/actions/health-and-version-check@v1.17.3
+        uses: ritterim/public-github-actions/actions/health-and-version-check@v1.17.28
         with:
           azure_web_app_name: ${{ inputs.azure_web_app_name }}
           azure_web_app_resource_group_name: ${{ inputs.azure_web_app_resource_group_name }}

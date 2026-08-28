@@ -130,31 +130,31 @@ jobs:
     steps:
 
       - name: Validate inputs.configuration
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.28
         with:
           case_sensitive: false
           regex_pattern: "^debug|release$"
           value: ${{ env.CONFIGURATION }}
 
       - name: Validate inputs.jfrog_build_name
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.28
         with: # This regex pattern is a bit of a guess
           regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
           value: ${{ inputs.jfrog_build_name }}
 
       - name: Validate inputs.jfrog_nuget_feed_repo
-        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.17.28
         with:
           name: ${{ env.JFROG_NUGET_FEED_REPO }}
 
       - name: Validate inputs.jfrog_oidc_provider_name
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.28
         with: # This regex pattern is a bit of a guess
           regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
           value: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.28
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
@@ -182,13 +182,13 @@ jobs:
           echo "github.sha=$GITHUB_SHA"
 
       - name: Checkout Project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
 
       # This creates the setup-jfrog-cli-server server ID
       - name: Install JFrog CLI
-        uses: jfrog/setup-jfrog-cli@v4.5.6
+        uses: jfrog/setup-jfrog-cli@v5
         env:
           JF_URL: ${{ env.JFROG_API_BASE_URL }}
         with:
@@ -198,12 +198,12 @@ jobs:
         run: jf config show
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ inputs.dotnet_version }}
 
       - name: Setup ~/.nuget/packages cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           key: nuget-packages-${{ runner.os }}-${{ hashFiles(env.NUGETHASHFILES) }}
           path: |
@@ -239,7 +239,7 @@ jobs:
 
       - name: Persist Workspace
         id: persist-workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17.28
         with:
           artifact_name_suffix: ${{ inputs.persisted_workspace_artifact_suffix }}
 
