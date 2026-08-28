@@ -19,7 +19,7 @@
     "build": "tsc && ncc build src/index.ts --minify --v8-cache"
   },
   "dependencies": {
-    "@actions/core": "^3.0.0",
+    "@actions/core": "^3.0.1",
     "@actions/github": "^9.0.0",
     "@octokit/auth-app": "^8.2.0",
     "@octokit/request": "^10.0.8",
