@@ -103,7 +103,7 @@ runs:
 
     - name: Upload the workspace artifact
       if: ${{ inputs.action == 'persist' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ env.ARTIFACTNAME }}
         path: tmp-persisted-workspace/${{ env.TGZFILENAME }}
@@ -119,7 +119,7 @@ runs:
 
     - name: Retrieve workspace
       if: ${{ inputs.action == 'retrieve' }}
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: ${{ env.ARTIFACTNAME }}
 
