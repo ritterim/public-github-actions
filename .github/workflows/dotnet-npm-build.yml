@@ -123,6 +123,7 @@ jobs:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: github context debug information
+        if: runner.debug == '1'
         working-directory: ./
         env:          
           GITHUB_BASE_REF: ${{ github.base_ref }}
@@ -190,6 +191,7 @@ jobs:
         run: dotnet build --configuration "${CONFIGURATION}"
 
       - run: ls -la
+        if: runner.debug == '1'
 
       - name: Persist Workspace
         id: persist-workspace

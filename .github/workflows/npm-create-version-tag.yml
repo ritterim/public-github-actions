@@ -126,6 +126,7 @@ jobs:
       - run: git status
 
       - name: github context debug information
+        if: runner.debug == '1'
         working-directory: ./
         env:          
           GITHUB_BASE_REF: ${{ github.base_ref }}
@@ -212,6 +213,7 @@ jobs:
           echo "PKGJSONVER=$PKGJSONVER" >> $GITHUB_ENV
 
       - run: ls -la "${PROJECTDIRECTORY}"
+        if: runner.debug == '1'
 
       - run: git status
 

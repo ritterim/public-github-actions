@@ -99,6 +99,7 @@ jobs:
           value: ${{ env.JFROG_API_KEY }}
 
       - name: github context debug information
+        if: runner.debug == '1'
         working-directory: ./
         env:          
           GITHUB_BASE_REF: ${{ github.base_ref }}

@@ -72,6 +72,7 @@ jobs:
 #     NODE_AUTH_TOKEN: ${{ secrets.npmjs_org_api_key }}
 
       - run: ls -la
+        if: runner.debug == '1'
 
       - name: Publish NPM Package (PUBLIC)
         if: inputs.access_public == true

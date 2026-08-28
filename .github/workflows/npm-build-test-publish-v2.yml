@@ -259,6 +259,7 @@ jobs:
           regex_pattern: '^(release|debug)$'
 
       - name: github context debug information
+        if: runner.debug == '1'
         working-directory: ./
         env:          
           GITHUB_BASE_REF: ${{ github.base_ref }}
@@ -299,8 +300,10 @@ jobs:
         run: jf config show "$JFROG_SETUP_DEFAULT_SERVER_ID"
 
       - run: ls -la "$NPMPACKAGEJSONFILENAME"
+        if: runner.debug == '1'
 
       - run: ls -la "$NPMPACKAGELOCKJSONFILENAME"
+        if: runner.debug == '1'
 
       # See this for why setup-node can be slow: https://github.com/actions/setup-node/issues/726#issuecomment-1527198808
       - name: Setup Node.js
@@ -353,6 +356,7 @@ jobs:
         run: jf npm run ci:build --verbose
 
       - run: ls -la
+        if: runner.debug == '1'
 
       - name: npm run test
         working-directory:  ${{ env.NPMPROJECTDIRECTORY }}

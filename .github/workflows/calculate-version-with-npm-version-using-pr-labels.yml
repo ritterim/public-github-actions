@@ -137,6 +137,7 @@ jobs:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: github context debug information
+        if: runner.debug == '1'
         working-directory: ./
         env:          
           GITHUB_BASE_REF: ${{ github.base_ref }}
