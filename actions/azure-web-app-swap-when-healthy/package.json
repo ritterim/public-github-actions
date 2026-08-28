@@ -20,10 +20,10 @@
         "test": "jest"
     },
     "dependencies": {
-        "@actions/core": "^3.0.0",
+        "@actions/core": "^3.0.1",
         "@azure/arm-appservice": "^14.1.0",
         "@azure/arm-resources": "^5.2.0",
-        "@azure/identity": "^4.13.0",
+        "@azure/identity": "^4.13.2",
         "axios": "^1.15.0",
         "ensure-error": "^4.0.0"
     },
