@@ -34,6 +34,7 @@ jobs:
   display-results:
     needs: [ allocate ]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - run: |
           echo "Build number : $BUILD_NUMBER"

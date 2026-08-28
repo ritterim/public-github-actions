@@ -41,6 +41,7 @@ jobs:
   publish:
     name: NPM Publish (npmjs.org)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       ARTIFACTNAME: ${{ inputs.artifact_name }}
       ARTIFACTFILEPATH: ${{ inputs.artifact_file_path }}

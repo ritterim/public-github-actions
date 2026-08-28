@@ -200,6 +200,7 @@ jobs:
   version:
     name: Version Calculation
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     concurrency:
       group: build-counter-${{ github.repository }}-${{ inputs.counter_key || 'repo' }}
 

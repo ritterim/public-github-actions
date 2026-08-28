@@ -80,6 +80,7 @@ jobs:
   version:
     name: Version from package.json
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: ${{ inputs.project_directory }}

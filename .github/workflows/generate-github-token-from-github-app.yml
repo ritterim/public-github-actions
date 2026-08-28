@@ -55,6 +55,7 @@ jobs:
   generate-token:
     name: Generate Token
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     env:
       ACTIONS_SECRET_PASSING_PASSPHRASE: ${{ secrets.gh_actions_secret_passing_passphrase }}
