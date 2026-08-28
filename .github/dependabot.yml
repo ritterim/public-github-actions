@@ -6,6 +6,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -16,6 +17,7 @@ updates:
     directory: "/forks/persist-workspace"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -26,6 +28,7 @@ updates:
     directory: "/forks/github-app-token"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -37,6 +40,7 @@ updates:
     directory: "/actions/allocate-build-counter"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -46,6 +50,7 @@ updates:
     directory: "/actions/attach-artifact-to-release"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -55,6 +60,7 @@ updates:
     directory: "/actions/azure-web-app-swap-when-healthy"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -64,6 +70,7 @@ updates:
     directory: "/actions/calculate-version-from-txt-using-github-run-id"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -73,6 +80,7 @@ updates:
     directory: "/actions/create-github-release"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -82,6 +90,7 @@ updates:
     directory: "/actions/file-name-validator"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -91,6 +100,7 @@ updates:
     directory: "/actions/file-path-name-validator"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -100,6 +110,7 @@ updates:
     directory: "/actions/github-org-repository-validator"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -109,6 +120,7 @@ updates:
     directory: "/actions/github-token-validator"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -118,6 +130,7 @@ updates:
     directory: "/actions/guid-validator"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -127,6 +140,7 @@ updates:
     directory: "/actions/health-and-version-check"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -136,6 +150,7 @@ updates:
     directory: "/actions/jfrog-artifactory-repository-name-validator"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -145,6 +160,7 @@ updates:
     directory: "/actions/npm-check-package-lock-publish-dates"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -154,6 +170,7 @@ updates:
     directory: "/actions/npm-config-github-packages-repository"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -163,6 +180,7 @@ updates:
     directory: "/actions/npm-config-myget-packages-repository"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -172,6 +190,7 @@ updates:
     directory: "/actions/npm-config-npmjs-org-registry"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -181,6 +200,7 @@ updates:
     directory: "/actions/npm-package-name-validator"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -190,6 +210,7 @@ updates:
     directory: "/actions/npm-package-scope-validator"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -199,6 +220,7 @@ updates:
     directory: "/actions/npmjs-access-token-validator"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -208,6 +230,7 @@ updates:
     directory: "/actions/path-name-validator"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -217,6 +240,7 @@ updates:
     directory: "/actions/regex-validator"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -226,6 +250,7 @@ updates:
     directory: "/actions/setup-git-credentials"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -235,6 +260,7 @@ updates:
     directory: "/actions/terraform-apply-plan-file"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -244,6 +270,7 @@ updates:
     directory: "/actions/terraform-create-plan-file"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -253,6 +280,7 @@ updates:
     directory: "/actions/terraform-fmt-check-recursive"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -262,6 +290,7 @@ updates:
     directory: "/actions/terraform-init"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -271,6 +300,7 @@ updates:
     directory: "/actions/terraform-show-plan-file"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -280,6 +310,7 @@ updates:
     directory: "/actions/terraform-validate"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -289,6 +320,7 @@ updates:
     directory: "/actions/version-number-major-minor-validator"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -298,6 +330,7 @@ updates:
     directory: "/actions/version-number-validator"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
@@ -315,6 +348,7 @@ updates:
       - "/forks/github-app-token"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
     groups:
       npm-dependencies:
         group-by: "dependency-name"
