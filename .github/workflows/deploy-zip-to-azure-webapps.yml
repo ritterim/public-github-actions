@@ -1,5 +1,9 @@
 name: Azure Zip Deploy
 
+permissions:
+  contents: read
+  id-token: write
+
 on:
   workflow_call:
     inputs:
@@ -32,6 +36,10 @@ jobs:
     timeout-minutes: 30
     environment:
       name: ${{ inputs.environment_name }}
+
+    concurrency:
+      group: deploy-${{ inputs.azure_web_app_name }}-${{ inputs.azure_web_app_slot_name }}
+      cancel-in-progress: false
 
     env:
       AZUREDEPLOYSUBSCRIPTIONID: ${{ inputs.azure_web_app_deploy_subscription_id }}
