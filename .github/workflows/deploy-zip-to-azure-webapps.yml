@@ -47,19 +47,19 @@ jobs:
     steps:
 
       - name: Validate inputs.azure_web_app_deploy_subscription_id
-        uses: ritterim/public-github-actions/actions/guid-validator@v1.17
+        uses: ritterim/public-github-actions/actions/guid-validator@v1.17.32
         with:
           guid: ${{ env.AZUREDEPLOYSUBSCRIPTIONID }}
 
       - name: Download artifact from build job
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.artifact_name }}
 
       - run: ls -la
         if: runner.debug == '1'
 
-      - uses: azure/login@v2
+      - uses: azure/login@v3
         with:
           client-id: ${{ vars.ARTIFACT_DEPLOYER_AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.ARTIFACT_DEPLOYER_AZURE_TENANT_ID }}
@@ -70,7 +70,7 @@ jobs:
       - run: az account set --subscription "${AZUREDEPLOYSUBSCRIPTIONID}"
 
       - name: Zip Deploy to Azure
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ inputs.azure_web_app_name }}
           slot-name: ${{ inputs.azure_web_app_slot_name }}

@@ -83,19 +83,19 @@ jobs:
     steps:
 
       - name: Validate inputs.azure_web_app_deploy_subscription_id
-        uses: ritterim/public-github-actions/actions/guid-validator@v1.17
+        uses: ritterim/public-github-actions/actions/guid-validator@v1.17.32
         with:
           guid: ${{ env.AZUREDEPLOYSUBSCRIPTIONID }}
 
       - name: Download artifact from build job
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.artifact_name }}
 
       - run: ls -la
         if: runner.debug == '1'
 
-      - uses: azure/login@v2
+      - uses: azure/login@v3
         with:
           client-id: ${{ vars.ARTIFACT_DEPLOYER_AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.ARTIFACT_DEPLOYER_AZURE_TENANT_ID }}
@@ -106,14 +106,14 @@ jobs:
       - run: az account set --subscription "${AZUREDEPLOYSUBSCRIPTIONID}"
 
       - name: Zip Deploy to Azure
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ inputs.azure_web_app_name }}
           slot-name: ${{ inputs.azure_web_app_slot_name }}
           package: ${{ inputs.artifact_filename }}
 
       - name: Check for expected version in staging slot.
-        uses: ritterim/public-github-actions/actions/health-and-version-check@v1.17.3
+        uses: ritterim/public-github-actions/actions/health-and-version-check@v1.17.32
         with:
           azure_web_app_name: ${{ inputs.azure_web_app_name }}
           azure_web_app_resource_group_name: ${{ inputs.azure_web_app_resource_group_name }}
@@ -122,7 +122,7 @@ jobs:
           expected_version_string: ${{ inputs.expected_version_string }}
 
       - name: Swap Slots Once Healthy
-        uses: ritterim/public-github-actions/actions/azure-web-app-swap-when-healthy@v1.17.3
+        uses: ritterim/public-github-actions/actions/azure-web-app-swap-when-healthy@v1.17.32
         with:
           azure_web_app_name: ${{ inputs.azure_web_app_name }}
           azure_web_app_resource_group_name: ${{ inputs.azure_web_app_resource_group_name }}
@@ -130,7 +130,7 @@ jobs:
           azure_web_app_deploy_subscription_id: ${{ inputs.azure_web_app_deploy_subscription_id }}
         
       - name: Check for expected version in production slot.
-        uses: ritterim/public-github-actions/actions/health-and-version-check@v1.17.3
+        uses: ritterim/public-github-actions/actions/health-and-version-check@v1.17.32
         with:
           azure_web_app_name: ${{ inputs.azure_web_app_name }}
           azure_web_app_resource_group_name: ${{ inputs.azure_web_app_resource_group_name }}
