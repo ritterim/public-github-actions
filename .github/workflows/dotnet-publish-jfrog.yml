@@ -148,50 +148,50 @@ jobs:
     steps:
 
       - name: Validate inputs.artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17.32
         with:
           file_name: ${{ env.ARTIFACTNAME }}
 
       - name: Validate inputs.configuration
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.32
         with:
           case_sensitive: false
           regex_pattern: "^debug|release$"
           value: ${{ env.CONFIGURATION }}
 
       - name: Validate inputs.jfrog_build_name
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.32
         with: # This regex pattern is a bit of a guess
           regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
           value: ${{ inputs.jfrog_build_name }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.32
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: Validate inputs.publish_working_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.32
         with:
           path_name: ${{ env.PUBLISH_WORKING_DIRECTORY }}
 
       - name: Validate inputs.informational_version
-        uses: ritterim/public-github-actions/actions/version-number-validator@v1.17
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.17.32
         with:
           version: ${{ env.INFORMATIONALVERSION }}
 
       - name: Validate inputs.version
-        uses: ritterim/public-github-actions/actions/version-number-validator@v1.17
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.17.32
         with:
           version: ${{ env.VERSION }}
 
       - name: Validate PUBLISHARTIFACTDIRECTORY
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.32
         with:
           path_name: ${{ env.PUBLISHARTIFACTDIRECTORY }}
 
       - name: Validate ZIPFILENAME
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17.32
         with:
           file_name: ${{ env.ZIPFILENAME }}
 
@@ -220,19 +220,19 @@ jobs:
           echo "github.sha=$GITHUB_SHA"
 
       - name: Checkout Project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
 
       - name: Restore Workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17.32
         with:
           action: retrieve
           artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
 
       # This creates the setup-jfrog-cli-server server ID
       - name: Install JFrog CLI
-        uses: jfrog/setup-jfrog-cli@v4.5.6
+        uses: jfrog/setup-jfrog-cli@v5
         env:
           JF_URL: ${{ env.JFROG_API_BASE_URL }}
         with:
@@ -242,7 +242,7 @@ jobs:
         run: jf config show
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ inputs.dotnet_version }}
           source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
@@ -250,7 +250,7 @@ jobs:
           NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Setup ~/.nuget/packages cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           key: nuget-packages-${{ runner.os }}-${{ hashFiles(env.NUGETHASHFILES) }}
           path: |
@@ -338,7 +338,7 @@ jobs:
 
       - name: Upload Artifact for Deployment
         id: upload-artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.artifact_name }}
           path: "${{ inputs.publish_working_directory }}output/${{ env.ZIPFILENAME }}"

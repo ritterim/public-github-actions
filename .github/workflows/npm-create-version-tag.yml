@@ -89,27 +89,27 @@ jobs:
     steps:
 
       - name: Validate inputs.npm_scope
-        uses: ritterim/public-github-actions/actions/npm-package-scope-validator@v1.17
+        uses: ritterim/public-github-actions/actions/npm-package-scope-validator@v1.17.32
         with:
           npm_scope: ${{ env.NPMSCOPE }}
 
       - name: Validate inputs.npm_package_name
-        uses: ritterim/public-github-actions/actions/npm-package-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/npm-package-name-validator@v1.17.32
         with:
           package_name: ${{ env.NPMPACKAGENAME }}
 
       - name: Validate inputs.package_json_filename
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17.32
         with:
           file_name: ${{ env.PACKAGEJSONFILENAME }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.32
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: Validate inputs.version
-        uses: ritterim/public-github-actions/actions/version-number-validator@v1.17
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.17.32
         with:
           version: ${{ env.NPMVERSION }}
 
@@ -120,7 +120,7 @@ jobs:
           echo "HEADCOMMITTITLE=${HEADCOMMITTITLE}" >> $GITHUB_ENV
 
       - name: Checkout Project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
 

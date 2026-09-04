@@ -250,56 +250,56 @@ jobs:
     steps:
 
       - name: Validate inputs.artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17.32
         with:
           file_name: ${{ env.ARTIFACTNAME }}
 
       - name: Validate inputs.configuration
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.32
         with:
           case_sensitive: false
           regex_pattern: "^debug|release$"
           value: ${{ env.CONFIGURATION }}
 
       - name: Validate inputs.jfrog_build_name
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.32
         with: # This regex pattern is a bit of a guess
           regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
           value: ${{ inputs.jfrog_build_name }}
 
       - name: Validate inputs.jfrog_npm_feed_repo
-        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.17.32
         with:
           name: ${{ env.JFROG_NPM_FEED_REPO }}
 
       - name: Validate inputs.jfrog_nuget_feed_repo
-        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.17.32
         with:
           name: ${{ env.JFROG_NUGET_FEED_REPO }}
 
       - name: Validate inputs.jfrog_oidc_provider_name
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.32
         with: # This regex pattern is a bit of a guess
           regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
           value: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
 
       - name: Validate inputs.npm_package_json_filename
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17.32
         with:
           file_name: ${{ env.NPMPACKAGEJSONFILENAME }}
 
       - name: Validate inputs.npm_project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.32
         with:
           path_name: ${{ env.NPMPROJECTDIRECTORY }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.32
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: Validate RIMDEVTESTS__SQL__PASSWORD (must be 8-250 chars)
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.32
         if: inputs.docker_mssql_image != ''
         with:
           value: ${{ env.RIMDEVTESTS__SQL__PASSWORD }}
@@ -311,12 +311,12 @@ jobs:
         run: echo "The 'inputs.run_tests' value is FALSE, skipping tests!"
 
       - name: Checkout Project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
 
       - name: Restore Workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17.32
         if: inputs.run_tests == true
         with:
           action: retrieve
@@ -348,7 +348,7 @@ jobs:
 
       # This creates the setup-jfrog-cli-server server ID
       - name: Install JFrog CLI
-        uses: jfrog/setup-jfrog-cli@v4.5.6
+        uses: jfrog/setup-jfrog-cli@v5
         env:
           JF_URL: ${{ env.JFROG_API_BASE_URL }}
         with:
@@ -358,12 +358,12 @@ jobs:
         run: jf config show
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ inputs.dotnet_version }}
 
       - name: Setup ~/.nuget/packages cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         if: inputs.run_tests == true
         with:
           key: nuget-packages-${{ runner.os }}-${{ hashFiles(env.NUGETHASHFILES) }}
@@ -385,7 +385,7 @@ jobs:
 
       # See this for why setup-node can be slow: https://github.com/actions/setup-node/issues/726#issuecomment-1527198808
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node_version }}
           cache: 'npm'
@@ -448,7 +448,7 @@ jobs:
 
       - name: Upload Artifacts
         id: upload-artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: inputs.run_tests == true
         with:
           name: ${{ inputs.artifact_name }}
