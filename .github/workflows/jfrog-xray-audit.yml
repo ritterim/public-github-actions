@@ -82,7 +82,7 @@ jobs:
     steps:
 
       - name: Validate inputs.jfrog_oidc_provider_name
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.32
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
         with: # This regex pattern is a bit of a guess
           regex_pattern: '^[A-Za-z0-9\-]{5,55}$'
           value: ${{ env.JFROG_OIDC_PROVIDER_NAME }}
@@ -90,30 +90,30 @@ jobs:
 #TODO: Validate inputs.jfrog_xray_watch_list
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.32
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: Validate inputs.report_artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17.32
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
         with:
           file_name: ${{ env.REPORTARTIFACTNAME }}
 
       - name: Restore Workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17.32
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17
         with:
           action: retrieve
           artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
 
       - name: Setup ~/.nuget/packages cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           key: nuget-packages-${{ runner.os }}-${{ hashFiles(env.NUGETHASHFILES) }}
           path: |
             ~/.nuget/packages
 
       - name: Install JFrog CLI
-        uses: jfrog/setup-jfrog-cli@v5
+        uses: jfrog/setup-jfrog-cli@deda456d982fc5e9a7a020b63eb0d2968aedd33e # v5.1.0
         env:
           JF_URL: ${{ env.JFROG_API_BASE_URL }}
         with:
@@ -135,7 +135,7 @@ jobs:
 
       - name: Upload Artifacts
         if: steps.audit.outcome == 'success'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ env.REPORTARTIFACTNAME }}
           path: ${{ env.REPORTARTIFACTNAME }}.*

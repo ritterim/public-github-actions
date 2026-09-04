@@ -74,45 +74,45 @@ jobs:
     steps:
 
       - name: Validate inputs.artifact_name
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17.32
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
         with:
           file_name: ${{ env.ARTIFACTNAME }}
 
       - name: Validate inputs.configuration
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.32
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
         with:
           case_sensitive: false
           regex_pattern: "^debug|release$"
           value: ${{ env.CONFIGURATION }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.32
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: Validate inputs.informational_version
-        uses: ritterim/public-github-actions/actions/version-number-validator@v1.17.32
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.17
         with:
           version: ${{ env.INFORMATIONALVERSION }}
 
       - name: Validate inputs.version
-        uses: ritterim/public-github-actions/actions/version-number-validator@v1.17.32
+        uses: ritterim/public-github-actions/actions/version-number-validator@v1.17
         with:
           version: ${{ env.VERSION }}
 
       - name: Restore Workspace
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17.32
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17
         with:
           action: retrieve
           artifact_name: ${{ inputs.persisted_workspace_artifact_name }}
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: ${{ inputs.dotnet_version }}
 
       - name: Setup ~/.nuget/packages cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           key: nuget-packages-${{ runner.os }}-${{ hashFiles(env.NUGETHASHFILES) }}
           path: |
@@ -134,7 +134,7 @@ jobs:
 
       - name: Upload Artifacts
         id: upload-artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ inputs.artifact_name }}
           path: "${{ inputs.project_directory }}artifacts/*.*nupkg"

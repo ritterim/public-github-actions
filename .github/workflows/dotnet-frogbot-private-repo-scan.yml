@@ -77,24 +77,24 @@ jobs:
     steps:
 
       - name: Validate inputs.configuration
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.32
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
         with:
           case_sensitive: false
           regex_pattern: "^debug|release$"
           value: ${{ env.CONFIGURATION }}
 
       - name: Validate inputs.jfrog_nuget_feed_repo
-        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.17.32
+        uses: ritterim/public-github-actions/actions/jfrog-artifactory-repository-name-validator@v1.17
         with:
           name: ${{ env.JFROG_NUGET_FEED_REPO }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.32
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
       - name: Validate secrets.jfrog_api_key JWT
-        uses: ritterim/public-github-actions/actions/regex-validator@v1.17.32
+        uses: ritterim/public-github-actions/actions/regex-validator@v1.17
         with:
           regex_pattern: '^[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*$'
           value: ${{ env.JFROG_API_KEY }}
@@ -124,17 +124,17 @@ jobs:
           echo "github.sha=$GITHUB_SHA"
 
       - name: Checkout Project
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.ref }}
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: ${{ inputs.dotnet_version }}
 
       - name: Setup ~/.nuget/packages cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           key: nuget-packages-${{ runner.os }}-${{ hashFiles(env.NUGETHASHFILES) }}
           path: |

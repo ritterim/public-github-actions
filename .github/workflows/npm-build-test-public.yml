@@ -81,12 +81,12 @@ jobs:
     steps:
 
       - name: Validate inputs.package_json_filename
-        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17.32
+        uses: ritterim/public-github-actions/actions/file-name-validator@v1.17
         with:
           file_name: ${{ env.PACKAGEJSONFILENAME }}
 
       - name: Validate inputs.project_directory
-        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17.32
+        uses: ritterim/public-github-actions/actions/path-name-validator@v1.17
         with:
           path_name: ${{ env.PROJECTDIRECTORY }}
 
@@ -115,13 +115,13 @@ jobs:
           echo "github.sha=$GITHUB_SHA"
 
       - name: Checkout Project
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.ref }}
 
       # See this for why setup-node can be slow: https://github.com/actions/setup-node/issues/726#issuecomment-1527198808
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ inputs.node_version }}
           cache: 'npm'
@@ -147,6 +147,6 @@ jobs:
       - name: Persist Workspace
         id: persist-workspace
         if: inputs.persist_workspace == true
-        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17.32
+        uses: ritterim/public-github-actions/forks/persist-workspace@v1.17
         with:
           artifact_name_suffix: ${{ inputs.persisted_workspace_artifact_suffix }}
