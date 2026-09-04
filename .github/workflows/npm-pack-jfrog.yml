@@ -181,7 +181,7 @@ jobs:
           version: ${{ env.NPMVERSION }}
 
       - name: Checkout Project
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.ref }}
 
@@ -199,7 +199,7 @@ jobs:
 
       # This creates the setup-jfrog-cli-server server ID
       - name: Install JFrog CLI
-        uses: jfrog/setup-jfrog-cli@v4.5.6
+        uses: jfrog/setup-jfrog-cli@deda456d982fc5e9a7a020b63eb0d2968aedd33e # v5.1.0
         env:
           JF_URL: ${{ env.JFROG_API_BASE_URL }}
         with:
@@ -256,7 +256,7 @@ jobs:
 
       - name: Upload Artifact
         id: upload-artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ steps.set-outputs.outputs.artifact_name }}
           path: ${{ steps.set-outputs.outputs.artifact_file_path }}
