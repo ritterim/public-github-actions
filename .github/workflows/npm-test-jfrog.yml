@@ -124,7 +124,7 @@ jobs:
         run: echo "The 'inputs.run_tests' value is FALSE, skipping tests!"
 
       - name: Checkout Project
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.ref }}
 
@@ -136,7 +136,7 @@ jobs:
 
       # This creates the setup-jfrog-cli-server server ID
       - name: Install JFrog CLI
-        uses: jfrog/setup-jfrog-cli@v4.5.6
+        uses: jfrog/setup-jfrog-cli@deda456d982fc5e9a7a020b63eb0d2968aedd33e # v5.1.0
         env:
           JF_URL: ${{ env.JFROG_API_BASE_URL }}
         with:
