@@ -22,7 +22,7 @@
     "dependencies": {
         "@actions/core": "^3.0.1",
         "@azure/arm-appservice": "^19.0.0",
-        "@azure/identity": "^4.13.2",
+        "@azure/identity": "^4.14.1",
         "axios": "^1.20.0",
         "ensure-error": "^5.0.0"
     },
