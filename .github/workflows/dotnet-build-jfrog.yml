@@ -253,7 +253,9 @@ jobs:
           NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: dotnet restore --configfile "${RUNNER_TEMP}/nuget.config" --verbosity="${DOTNET_RESTORE_VERBOSITY}"
 
-      - run: dotnet build --configuration "${CONFIGURATION}"
+      # --no-restore: an implicit restore here would not use the generated config and
+      # would run with no package sources (they were removed above).
+      - run: dotnet build --no-restore --configuration "${CONFIGURATION}"
 
       - run: ls -la
         if: runner.debug == '1'

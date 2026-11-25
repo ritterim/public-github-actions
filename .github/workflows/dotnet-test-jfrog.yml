@@ -329,6 +329,7 @@ jobs:
       # nuget.config, including one with <clear/>, does not change the sources.
       # NuGet expands %NUGET_AUTH_TOKEN% at restore time, so the token is not written to disk.
       - name: Create NuGet config (nuget.org + GitHub Packages)
+        if: inputs.run_tests == true
         run: |
           cat > "${RUNNER_TEMP}/nuget.config" <<EOF
           <?xml version="1.0" encoding="utf-8"?>
@@ -349,6 +350,7 @@ jobs:
           dotnet nuget list source --configfile "${RUNNER_TEMP}/nuget.config"
 
       - name: dotnet restore (nuget.org + GitHub Packages)
+        if: inputs.run_tests == true
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: dotnet restore --configfile "${RUNNER_TEMP}/nuget.config"
@@ -356,13 +358,18 @@ jobs:
       # https://github.com/dotnet/core/issues/7412
       # We can't feed in --no-build or --no-restore or else the test command will just fail silently
       # instead of throwing an error when it fails to restore the dependencies.
+      # RestoreConfigFile points the implicit restore at the generated config; otherwise it
+      # would run with no package sources (they were removed above).
       - name: dotnet test
         if: inputs.run_tests == true
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           dotnet test \
             --logger "console;verbosity=normal" \
             --logger "trx;logfilename=testResults.trx" \
-            --configuration "${CONFIGURATION}"
+            --configuration "${CONFIGURATION}" \
+            -p:RestoreConfigFile="${RUNNER_TEMP}/nuget.config"
 
       - name: Find .trx files
         if: inputs.run_tests == true
