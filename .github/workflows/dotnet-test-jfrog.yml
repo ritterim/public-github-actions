@@ -329,6 +329,7 @@ jobs:
       # nuget.config, including one with <clear/>, does not change the sources.
       # NuGet expands %NUGET_AUTH_TOKEN% at restore time, so the token is not written to disk.
       - name: Create NuGet config (nuget.org + GitHub Packages)
+        if: inputs.run_tests == true
         run: |
           cat > "${RUNNER_TEMP}/nuget.config" <<EOF
           <?xml version="1.0" encoding="utf-8"?>
@@ -349,6 +350,7 @@ jobs:
           dotnet nuget list source --configfile "${RUNNER_TEMP}/nuget.config"
 
       - name: dotnet restore (nuget.org + GitHub Packages)
+        if: inputs.run_tests == true
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: dotnet restore --configfile "${RUNNER_TEMP}/nuget.config"
