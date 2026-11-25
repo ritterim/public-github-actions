@@ -1,15 +1,19 @@
 name: Test (.NET)
 
-# Uses JFrog Artifactory as the sole upstream repository for resolving the NuGet packages.
-# It's expected that you point at a 'virtual' Artifactory repository which can also
-# resolve any public NuGet packages which you consume.
+# Restores NuGet packages from nuget.org and the GitHub Packages NuGet feed of the
+# repository owner (https://nuget.pkg.github.com/<owner>/index.json).  JFrog Artifactory
+# is no longer used for package resolution.  The JFrog CLI is still used to publish
+# build information to Artifactory.
 
 # The "jfrog/setup-jfrog-cli" action requires "id-token: write" or else you will get
 # an error about: "Unable to get ACTIONS_ID_TOKEN_REQUEST_URL env variable".
 
+# Reading from the GitHub Packages NuGet feed requires "packages: read".
+
 permissions:
   contents: read
   id-token: write
+  packages: read
 
 on:
 
@@ -110,7 +114,7 @@ on:
         type: string
 
       jfrog_nuget_feed_repo:
-        description: The 'virtual' JFrog Artifactory repository identifier for NuGet package retrieval.
+        description: DEPRECATED, no longer used for NuGet package retrieval (packages now restore from nuget.org and GitHub Packages).  Still required and validated for backward compatibility.
         required: true
         type: string
 
@@ -321,11 +325,33 @@ jobs:
 
       - run: dotnet nuget list source
 
-      - name: Configure .NET / NuGet using JFrog CLI
-        run: jf dotnet-config --server-id-resolve setup-jfrog-cli-server --repo-resolve "${JFROG_NUGET_FEED_REPO}"
+      # The restore uses only this generated config (--configfile), so a repo-level
+      # nuget.config, including one with <clear/>, does not change the sources.
+      # NuGet expands %NUGET_AUTH_TOKEN% at restore time, so the token is not written to disk.
+      - name: Create NuGet config (nuget.org + GitHub Packages)
+        run: |
+          cat > "${RUNNER_TEMP}/nuget.config" <<EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <packageSources>
+              <clear />
+              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+              <add key="github" value="https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json" />
+            </packageSources>
+            <packageSourceCredentials>
+              <github>
+                <add key="Username" value="${GITHUB_REPOSITORY_OWNER}" />
+                <add key="ClearTextPassword" value="%NUGET_AUTH_TOKEN%" />
+              </github>
+            </packageSourceCredentials>
+          </configuration>
+          EOF
+          dotnet nuget list source --configfile "${RUNNER_TEMP}/nuget.config"
 
-      - name: .NET Restore using JFrog CLI
-        run: jf dotnet restore
+      - name: dotnet restore (nuget.org + GitHub Packages)
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: dotnet restore --configfile "${RUNNER_TEMP}/nuget.config"
 
       # https://github.com/dotnet/core/issues/7412
       # We can't feed in --no-build or --no-restore or else the test command will just fail silently
