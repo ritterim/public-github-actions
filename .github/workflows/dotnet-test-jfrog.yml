@@ -356,13 +356,18 @@ jobs:
       # https://github.com/dotnet/core/issues/7412
       # We can't feed in --no-build or --no-restore or else the test command will just fail silently
       # instead of throwing an error when it fails to restore the dependencies.
+      # RestoreConfigFile points the implicit restore at the generated config; otherwise it
+      # would run with no package sources (they were removed above).
       - name: dotnet test
         if: inputs.run_tests == true
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           dotnet test \
             --logger "console;verbosity=normal" \
             --logger "trx;logfilename=testResults.trx" \
-            --configuration "${CONFIGURATION}"
+            --configuration "${CONFIGURATION}" \
+            -p:RestoreConfigFile="${RUNNER_TEMP}/nuget.config"
 
       - name: Find .trx files
         if: inputs.run_tests == true
